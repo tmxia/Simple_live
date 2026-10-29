@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   webdav_client: ^1.2.2
-  archive: ^3.6.1
+  archive: ^4.0.7
   flutter:
     sdk: flutter
   simple_live_core:
@@ -59,7 +59,7 @@ dependency_overrides:
 
 dev_dependencies:
   webdav_client: ^1.2.2
-  archive: ^3.6.1
+  archive: ^4.0.7
   flutter_test:
     sdk: flutter
 
