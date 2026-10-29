@@ -104,16 +104,39 @@ class SyncController extends BaseController {
   void onReceiveFavorite(bool overlay, String data) async {
     try {
       var jsonBody = json.decode(data);
+      int remoteCount = jsonBody.length;
+      int localCount = DBService.instance.followBox.length;
+      
+      // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
+      if (overlay && localCount > remoteCount) {
+        bool confirm = await SmartDialog.show<bool>(
+          builder: (_) => AlertDialog(
+            title: const Text("同步确认"),
+            content: Text("手机端仅发送了 $remoteCount 条关注，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
+            actions: [
+              TextButton(onPressed: () => SmartDialog.dismiss(result: false), child: const Text("取消")),
+              TextButton(onPressed: () => SmartDialog.dismiss(result: true), child: const Text("继续覆盖")),
+            ],
+          ),
+        );
+        if (confirm != true) return;
+      }
+
       if (overlay) {
         await DBService.instance.followBox.clear();
       }
       for (var item in jsonBody) {
-        var user = FollowUser.fromJson(item);
-        await DBService.instance.followBox.put(user.id, user);
+        try {
+          // ★ 兼容手机端传来的多余字段（TV 端模型没有 tag）
+           
+          var user = FollowUser.fromJson(item);
+          await DBService.instance.followBox.put(user.id, user);
+        } catch (e) {
+          Log.logPrint("解析关注用户失败: $e");
+        }
       }
       SmartDialog.showToast('已同步关注用户列表');
       EventBus.instance.emit(Constant.kUpdateFollow, 0);
-      SmartDialog.showToast("已同步关注列表");
     } catch (e) {
       SmartDialog.showToast("同步失败:$e");
       Log.logPrint(e);
@@ -123,10 +146,29 @@ class SyncController extends BaseController {
   void onReceiveHistory(bool overlay, String data) async {
     try {
       var jsonBody = json.decode(data);
+      int remoteCount = jsonBody.length;
+      int localCount = DBService.instance.historyBox.length;
+      
+      // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
+      if (overlay && localCount > remoteCount) {
+        bool confirm = await SmartDialog.show<bool>(
+          builder: (_) => AlertDialog(
+            title: const Text("同步确认"),
+            content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
+            actions: [
+              TextButton(onPressed: () => SmartDialog.dismiss(result: false), child: const Text("取消")),
+              TextButton(onPressed: () => SmartDialog.dismiss(result: true), child: const Text("继续覆盖")),
+            ],
+          ),
+        );
+        if (confirm != true) return;
+      }
+
       if (overlay) {
         await DBService.instance.historyBox.clear();
       }
       for (var item in jsonBody) {
+      try {
         var history = History.fromJson(item);
         if (DBService.instance.historyBox.containsKey(history.id)) {
           var old = DBService.instance.historyBox.get(history.id);
@@ -139,6 +181,9 @@ class SyncController extends BaseController {
       }
       SmartDialog.showToast('已同步历史记录');
       EventBus.instance.emit(Constant.kUpdateHistory, 0);
+      } catch (e) {
+        Log.logPrint("解析历史记录失败: $e");
+      }
     } catch (e) {
       SmartDialog.showToast("同步失败:$e");
       Log.logPrint(e);

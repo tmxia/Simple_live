@@ -1,136 +1,198 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:remixicon/remixicon.dart';
-import 'package:simple_live_app/app/app_style.dart';
-import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/modules/sync/remote_sync/webdav/remote_sync_webdav_controller.dart';
-import 'package:simple_live_app/routes/route_path.dart';
-import 'package:simple_live_app/widgets/settings/settings_card.dart';
+import 'package:simple_live_app/services/local_storage_service.dart';
 
-class RemoteSyncWebDAVPage extends GetView<RemoteSyncWebDAVController> {
+class RemoteSyncWebDAVPage extends StatefulWidget {
   const RemoteSyncWebDAVPage({super.key});
+
+  @override
+  State<RemoteSyncWebDAVPage> createState() => _RemoteSyncWebDAVPageState();
+}
+
+class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
+  final controller = Get.put(RemoteSyncWebDAVController());
+
+  late TextEditingController urlController;
+  late TextEditingController userController;
+  late TextEditingController passController;
+
+  @override
+  void initState() {
+    super.initState();
+    urlController = TextEditingController(
+      text: LocalStorageService.instance.getValue(RemoteSyncWebDAVController.kWebDAVUri, ""),
+    );
+    userController = TextEditingController(
+      text: LocalStorageService.instance.getValue(RemoteSyncWebDAVController.kWebDAVUser, ""),
+    );
+    passController = TextEditingController(
+      text: LocalStorageService.instance.getValue(RemoteSyncWebDAVController.kWebDAVPassword, ""),
+    );
+  }
+
+  @override
+  void dispose() {
+    urlController.dispose();
+    userController.dispose();
+    passController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("WebDAV同步"),
+        title: const Text("WebDAV 同步"),
+        centerTitle: true,
       ),
-      body: ListView(
-        padding: AppStyle.edgeInsetsA12,
-        children: [
-          SettingsCard(
-            child: Obx(
-              () => Column(
-                children: controller.notLogin.value
-                    ? [
-                        ListTile(
-                          title: const Text("点击登录"),
-                          leading: const Icon(Icons.login),
-                          subtitle: const Text("登录后可以同步您的所有数据"),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            Get.toNamed(RoutePath.kRemoteSyncWebDavConfig);
-                          },
-                        ),
-                      ]
-                    : [
-                        ListTile(
-                          title: const Text("已登录"),
-                          leading: const Icon(Icons.cloud_circle_outlined),
-                          subtitle: Text(controller.user.value),
-                          trailing: const Icon(Icons.logout),
-                          onTap: () {
-                            controller.onLogout();
-                          },
-                        ),
-                        AppStyle.divider,
-                        ListTile(
-                          title: const Text("上传到云端"),
-                          subtitle: Text("上次上传：${controller.lastUploadTime}"),
-                          leading: const Icon(Icons.cloud_upload_outlined),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () {
-                            controller.doWebDAVUpload();
-                          },
-                        ),
-                        AppStyle.divider,
-                        ListTile(
-                          title: const Text("恢复到本地"),
-                          subtitle: Text("上次恢复：${controller.lastRecoverTime}"),
-                          leading: const Icon(Icons.cloud_download_outlined),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.settings),
-                                onPressed: showSetting,
-                              ),
-                              const Icon(Icons.chevron_right),
-                            ],
-                          ),
-                          onTap: () {
-                            controller.doWebDAVRecovery();
-                          },
-                          onLongPress: showSetting,
-                        ),
-                      ],
-              ),
+      body: Obx(() {
+        // 1. 全屏 Loading 状态
+        if (controller.isLoading.value) {
+          return const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text("正在测试连接，请稍候..."),
+              ],
             ),
+          );
+        }
+
+        // 2. 已连接的面板
+        if (!controller.notLogin.value) {
+          return _buildSyncPanel();
+        }
+
+        // 3. 未连接（显示登录表单）
+        return _buildLoginForm();
+      }),
+    );
+  }
+
+  // 登录表单
+  Widget _buildLoginForm() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TextField(
+            controller: urlController,
+            decoration: const InputDecoration(
+              labelText: "服务器地址",
+              hintText: "https://dav.example.com",
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.link),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: userController,
+            decoration: const InputDecoration(
+              labelText: "账号",
+              hintText: "请输入账号",
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: passController,
+            obscureText: true,
+            decoration: const InputDecoration(
+              labelText: "密码",
+              hintText: "请输入密码",
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.lock),
+            ),
+          ),
+          const SizedBox(height: 32),
+          FilledButton(
+            onPressed: () {
+              FocusScope.of(context).unfocus();
+              controller.saveConfig(
+                urlController.text.trim(),
+                userController.text.trim(),
+                passController.text.trim(),
+              );
+            },
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: const Text("保存并连接", style: TextStyle(fontSize: 16)),
           ),
         ],
       ),
     );
   }
 
-  void showSetting() {
-    Utils.showBottomSheet(
-      title: '同步选项',
+  // 已连接面板
+  Widget _buildSyncPanel() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          AppStyle.divider,
-          Obx(
-            () => CheckboxListTile(
-              secondary: const Icon(Remix.heart_line),
-              title: const Text("同步关注列表"),
-              value: controller.isSyncFollows.value,
-              controlAffinity: ListTileControlAffinity.trailing,
-              onChanged: (value) => controller.changeIsSyncFollows(),
+          // 状态卡片
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.green.withAlpha(20),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.green, width: 1),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 48),
+                SizedBox(height: 12),
+                Text("WebDAV 已连接", style: TextStyle(color: Colors.green, fontSize: 18, fontWeight: FontWeight.bold)),
+              ],
             ),
           ),
-          AppStyle.divider,
-          Obx(
-            () => CheckboxListTile(
-              secondary: const Icon(Icons.history),
-              title: const Text("同步播放历史记录"),
-              value: controller.isSyncHistories.value,
-              controlAffinity: ListTileControlAffinity.trailing,
-              onChanged: (value) => controller.changeIsSyncHistories(),
-            ),
+          const SizedBox(height: 24),
+          
+          // 时间记录
+          ListTile(
+            leading: const Icon(Icons.cloud_upload),
+            title: const Text("最后备份时间"),
+            subtitle: Text(controller.lastUploadTime.value),
           ),
-          AppStyle.divider,
-          Obx(
-            () => CheckboxListTile(
-              secondary: const Icon(Remix.shield_keyhole_line),
-              title: const Text("同步屏蔽字"),
-              value: controller.isSyncBlockWord.value,
-              controlAffinity: ListTileControlAffinity.trailing,
-              onChanged: (value) => controller.changeIsSyncBlockWord(),
-            ),
+          ListTile(
+            leading: const Icon(Icons.cloud_download),
+            title: const Text("最后恢复时间"),
+            subtitle: Text(controller.lastRecoverTime.value),
           ),
-          AppStyle.divider,
-          Obx(
-            () => CheckboxListTile(
-              secondary: const Icon(Remix.account_circle_line),
-              title: const Text("同步哔哩哔哩账号"),
-              value: controller.isSyncBilibiliAccount.value,
-              controlAffinity: ListTileControlAffinity.trailing,
-              onChanged: (value) => controller.changeIsSyncBilibiliAccount(),
-            ),
+          const SizedBox(height: 24),
+          const Divider(),
+          const SizedBox(height: 24),
+          
+          // 操作按钮
+          OutlinedButton.icon(
+            onPressed: () => controller.backup(),
+            icon: const Icon(Icons.upload),
+            label: const Text("立即上传备份"),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
           ),
-          AppStyle.divider,
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => controller.recovery(),
+            icon: const Icon(Icons.download),
+            label: const Text("从云端恢复"),
+            style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+          ),
+          const SizedBox(height: 32),
+          
+          // 修改配置按钮
+          TextButton.icon(
+            onPressed: () {
+              controller.notLogin.value = true;
+            },
+            icon: const Icon(Icons.settings, color: Colors.grey),
+            label: const Text("修改配置", style: TextStyle(color: Colors.grey)),
+          ),
         ],
       ),
     );
