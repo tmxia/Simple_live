@@ -81,7 +81,7 @@ class RemoteSyncWebDAVController extends GetxController {
       LocalStorageService.instance.setValue(LocalStorageService.kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "备份上传成功");
     } catch (e) {
-      Log.e("WebDAV Backup Error: $e");
+      Log.e("WebDAV Backup Error: $e", StackTrace.current);
       Get.snackbar("失败", "备份上传失败");
     } finally {
       isLoading.value = false;
@@ -102,7 +102,7 @@ class RemoteSyncWebDAVController extends GetxController {
       LocalStorageService.instance.setValue(LocalStorageService.kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "恢复数据成功");
     } catch (e) {
-      Log.e("WebDAV Recovery Error: $e");
+      Log.e("WebDAV Recovery Error: $e", StackTrace.current);
       Get.snackbar("失败", "恢复数据失败");
     } finally {
       isLoading.value = false;

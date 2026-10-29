@@ -61,10 +61,10 @@ class RemoteSyncWebDAVPage extends GetView<RemoteSyncWebDAVController> {
   Widget _buildSyncPanel() {
     return Column(
       children: [
-        Text("当前账号: ${controller.user.value}", style: AppStyle.bodyStyleWhite.copyWith(fontSize: 24.w)),
+        Text("当前账号: ${controller.user.value}", style: TextStyle(color: Colors.white, fontSize: 24.w, fontWeight: FontWeight.normal)),
         AppStyle.vGap16,
-        Text("最后备份: ${controller.lastUploadTime.value}", style: AppStyle.bodyStyleWhite),
-        Text("最后恢复: ${controller.lastRecoverTime.value}", style: AppStyle.bodyStyleWhite),
+        Text("最后备份: ${controller.lastUploadTime.value}", style: TextStyle(color: Colors.white, fontSize: 20.w)),
+        Text("最后恢复: ${controller.lastRecoverTime.value}", style: TextStyle(color: Colors.white, fontSize: 20.w)),
         AppStyle.vGap32,
         HighlightButton(
           focusNode: AppFocusNode(),
@@ -75,7 +75,7 @@ class RemoteSyncWebDAVPage extends GetView<RemoteSyncWebDAVController> {
         HighlightButton(
           focusNode: AppFocusNode(),
           text: "从备份恢复",
-          onTap: () => controller.recover(),
+          onTap: () => controller.recovery(),
         ),
       ],
     );
@@ -86,7 +86,7 @@ class RemoteSyncWebDAVPage extends GetView<RemoteSyncWebDAVController> {
       padding: EdgeInsets.symmetric(vertical: 12.h),
       child: Row(
         children: [
-          SizedBox(width: 150.w, child: Text(label, style: AppStyle.bodyStyleWhite)),
+          SizedBox(width: 150.w, child: Text(label, style: TextStyle(color: Colors.white, fontSize: 20.w))),
           Expanded(
             child: TextField(
               obscureText: obscure,
