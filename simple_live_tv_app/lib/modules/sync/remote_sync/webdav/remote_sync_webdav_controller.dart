@@ -34,16 +34,16 @@ class RemoteSyncWebDAVController extends GetxController {
   }
 
   void doWebDAVInit() {
-    var uri = LocalStorageService.instance.getValue(LocalStorageService.kWebDAVUri, "");
+    var uri = LocalStorageService.instance.getValue(kWebDAVUri, "");
     if (uri.isEmpty) {
       notLogin.value = true;
     } else {
-      user.value = LocalStorageService.instance.getValue(LocalStorageService.kWebDAVUser, "");
-      var password = LocalStorageService.instance.getValue(LocalStorageService.kWebDAVPassword, "");
+      user.value = LocalStorageService.instance.getValue(kWebDAVUser, "");
+      var password = LocalStorageService.instance.getValue(kWebDAVPassword, "");
       davClient = DAVClient(uri, user.value, password);
       
-      lastRecoverTime.value = Utils.parseTime(DateTime.fromMillisecondsSinceEpoch(LocalStorageService.instance.getValue(LocalStorageService.kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch)));
-      lastUploadTime.value = Utils.parseTime(DateTime.fromMillisecondsSinceEpoch(LocalStorageService.instance.getValue(LocalStorageService.kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch)));
+      lastRecoverTime.value = Utils.parseTime(DateTime.fromMillisecondsSinceEpoch(LocalStorageService.instance.getValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch)));
+      lastUploadTime.value = Utils.parseTime(DateTime.fromMillisecondsSinceEpoch(LocalStorageService.instance.getValue(kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch)));
       checkIsLogin();
     }
   }
@@ -58,9 +58,9 @@ class RemoteSyncWebDAVController extends GetxController {
   }
 
   void saveConfig(String uri, String user, String pass) {
-    LocalStorageService.instance.setValue(LocalStorageService.kWebDAVUri, uri);
-    LocalStorageService.instance.setValue(LocalStorageService.kWebDAVUser, user);
-    LocalStorageService.instance.setValue(LocalStorageService.kWebDAVPassword, pass);
+    LocalStorageService.instance.setValue(kWebDAVUri, uri);
+    LocalStorageService.instance.setValue(kWebDAVUser, user);
+    LocalStorageService.instance.setValue(kWebDAVPassword, pass);
     doWebDAVInit();
   }
 
@@ -78,7 +78,7 @@ class RemoteSyncWebDAVController extends GetxController {
       
       await davClient.backup(Uint8List.fromList(bytes));
       lastUploadTime.value = Utils.parseTime(DateTime.now());
-      LocalStorageService.instance.setValue(LocalStorageService.kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch);
+      LocalStorageService.instance.setValue(kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "备份上传成功");
     } catch (e) {
       Log.e("WebDAV Backup Error: $e", StackTrace.current);
@@ -99,7 +99,7 @@ class RemoteSyncWebDAVController extends GetxController {
       // await DbService.instance.restoreData(backupData);
       
       lastRecoverTime.value = Utils.parseTime(DateTime.now());
-      LocalStorageService.instance.setValue(LocalStorageService.kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
+      LocalStorageService.instance.setValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "恢复数据成功");
     } catch (e) {
       Log.e("WebDAV Recovery Error: $e", StackTrace.current);
