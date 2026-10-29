@@ -1,3 +1,4 @@
+import 'package:simple_live_tv_app/models/db/follow_user_tag.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:simple_live_tv_app/models/db/follow_user.dart';

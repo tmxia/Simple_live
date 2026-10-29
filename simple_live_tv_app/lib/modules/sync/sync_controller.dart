@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -109,7 +110,7 @@ class SyncController extends BaseController {
       
       // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
       if (overlay && localCount > remoteCount) {
-        bool confirm = await SmartDialog.show<bool>(
+        bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
             title: const Text("同步确认"),
             content: Text("手机端仅发送了 $remoteCount 条关注，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
@@ -151,7 +152,7 @@ class SyncController extends BaseController {
       
       // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
       if (overlay && localCount > remoteCount) {
-        bool confirm = await SmartDialog.show<bool>(
+        bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
             title: const Text("同步确认"),
             content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
