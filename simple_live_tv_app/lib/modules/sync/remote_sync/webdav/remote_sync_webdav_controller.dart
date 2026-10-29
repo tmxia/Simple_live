@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:isolate';
 import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:get/get.dart';
@@ -8,11 +7,17 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
-import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'webdav_client.dart';
 
 class RemoteSyncWebDAVController extends GetxController {
+  // 统一定义在这里，绝对安全
+  static const String kWebDAVUri = "WebDAVUri";
+  static const String kWebDAVUser = "WebDAVUser";
+  static const String kWebDAVPassword = "kWebDAVPassword";
+  static const String kWebDAVLastUploadTime = "kWebDAVLastUploadTime";
+  static const String kWebDAVLastRecoverTime = "kWebDAVLastRecoverTime";
+
   var passwordVisible = true.obs;
   var isSyncFollows = true.obs;
   var isSyncHistories = true.obs;
@@ -68,11 +73,7 @@ class RemoteSyncWebDAVController extends GetxController {
     isLoading.value = true;
     try {
       final Map<String, dynamic> backupData = {};
-      
       // 这里可以替换为你实际需要导出的数据库数据
-      // final follows = await DbService.instance.getFollowUsers();
-      // backupData['follows'] = follows.map((e) => e.toJson()).toList();
-      
       final jsonStr = jsonEncode(backupData);
       final bytes = utf8.encode(jsonStr);
       
@@ -80,8 +81,8 @@ class RemoteSyncWebDAVController extends GetxController {
       lastUploadTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "备份上传成功");
-    } catch (e) {
-      Log.e("WebDAV Backup Error: $e", StackTrace.current);
+    } catch (e, st) {
+      Log.e("WebDAV Backup Error: $e", st);
       Get.snackbar("失败", "备份上传失败");
     } finally {
       isLoading.value = false;
@@ -94,15 +95,12 @@ class RemoteSyncWebDAVController extends GetxController {
       final data = await davClient.recovery();
       final jsonStr = utf8.decode(data);
       final Map<String, dynamic> backupData = jsonDecode(jsonStr);
-      
       // 这里可以实现具体的恢复逻辑
-      // await DbService.instance.restoreData(backupData);
-      
       lastRecoverTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
       Get.snackbar("成功", "恢复数据成功");
-    } catch (e) {
-      Log.e("WebDAV Recovery Error: $e", StackTrace.current);
+    } catch (e, st) {
+      Log.e("WebDAV Recovery Error: $e", st);
       Get.snackbar("失败", "恢复数据失败");
     } finally {
       isLoading.value = false;
