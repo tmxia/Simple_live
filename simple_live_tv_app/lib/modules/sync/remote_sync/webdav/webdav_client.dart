@@ -30,9 +30,9 @@ class DAVClient {
   // 获取云端备份文件的最后修改时间
   Future<DateTime?> getRemoteFileMTime() async {
     try {
-      final props = await client.readProps(backupFile);
-      if (props.isNotEmpty) {
-        return props.first.mTime;
+      final file = await client.readProps(backupFile);
+      if (file.mTime != null) {
+        return file.mTime;
       }
     } catch (_) {
       // 文件不存在或网络错误
