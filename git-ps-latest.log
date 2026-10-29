@@ -1,0 +1,265 @@
+build-android	编译 App 端 Release APK	﻿2026-10-29T13:09:37.1900936Z ##[group]Run flutter pub get
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1901576Z ^[[36;1mflutter pub get^[[0m
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1901857Z ^[[36;1mflutter build apk --release^[[0m
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1927915Z shell: /usr/bin/bash -e {0}
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1928166Z env:
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1928433Z   JAVA_HOME: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.21-9/x64
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1928863Z   JAVA_HOME_17_X64: /opt/hostedtoolcache/Java_Zulu_jdk/17.0.21-9/x64
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1929301Z   FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.47.8-x64/flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1929682Z   PUB_CACHE: /home/runner/.pub-cache
+build-android	编译 App 端 Release APK	2026-10-29T13:09:37.1929943Z ##[endgroup]
+build-android	编译 App 端 Release APK	2026-10-29T13:09:41.2383356Z Resolving dependencies...
+build-android	编译 App 端 Release APK	2026-10-29T13:09:42.7091966Z Downloading packages...
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7958679Z + _fe_analyzer_shared 67.0.0 (110.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7959523Z + analyzer 6.4.1 (14.6.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7960164Z + archive 4.5.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7960621Z + args 2.7.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7961119Z + async 2.13.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7961845Z + auto_orientation_v2 2.4.7
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7962305Z + boolean_selector 2.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7962824Z + brotli 0.6.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7963329Z + build 2.4.1 (5.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7963821Z + build_config 1.1.2 (1.4.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7964154Z + build_daemon 4.1.7
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7964454Z + build_resolvers 2.4.2 (3.0.4 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7964802Z + build_runner 2.4.13 (2.17.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7965152Z + build_runner_core 7.3.2 (9.3.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7965520Z + built_collection 5.1.2 (6.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7965854Z + built_value 8.13.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7966133Z + canvas_danmaku 0.2.7 (0.3.3 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7966464Z + characters 1.4.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7966720Z + checked_yaml 2.0.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7966991Z + cli_util 0.4.2 (0.6.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7967316Z + clock 1.1.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7967574Z + code_assets 1.0.0 (2.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7967908Z + code_builder 4.13.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7968188Z + collection 1.19.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7968492Z + connectivity_plus 7.3.1 (7.3.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7968824Z + connectivity_plus_platform_interface 2.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7969126Z + convert 3.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7969355Z + cross_file 0.3.5+5 (0.4.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7969630Z + crypto 3.0.8
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7969891Z + cupertino_icons 1.0.9 (2.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7970335Z + dart_quickjs 1.0.0 from git https://github.com/xiaoyaocz/dart_quickjs at a31682
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7970796Z + dart_style 2.3.6 (3.1.14 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7971083Z + dbus 0.7.15 (0.8.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7971745Z + device_info_plus 12.4.0 (13.3.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7972346Z + device_info_plus_platform_interface 7.0.3 (8.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7973076Z + dio 5.11.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7973413Z + dio_web_adapter 2.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7973802Z + dynamic_color 1.9.0 (2.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7974279Z + extended_image 10.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7974665Z + extended_image_library 5.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7975065Z + fake_async 1.3.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7975387Z + ffi 2.2.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7975691Z + file 7.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7976026Z + file_picker 10.3.10 (13.3.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7976470Z + fixnum 1.1.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7976795Z + floating 6.0.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7977144Z + flutter 0.0.0 from sdk flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7977557Z + flutter_easyrefresh 2.2.2 (discontinued)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7978088Z + flutter_inappwebview 6.1.5
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7978493Z + flutter_inappwebview_android 1.1.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7978993Z + flutter_inappwebview_internal_annotations 1.3.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7979555Z + flutter_inappwebview_ios 1.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7980002Z + flutter_inappwebview_macos 1.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7980502Z + flutter_inappwebview_platform_interface 1.3.0+1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7981045Z + flutter_inappwebview_web 1.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7982047Z + flutter_inappwebview_windows 0.6.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7982610Z + flutter_launcher_icons 0.13.1 (0.14.4 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7983184Z + flutter_lints 2.0.3 (6.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7983653Z + flutter_localizations 0.0.0 from sdk flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7983971Z + flutter_plugin_android_lifecycle 2.0.35
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7984300Z + flutter_smart_dialog 4.9.8+10 (5.3.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7984668Z + flutter_staggered_grid_view 0.7.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7984965Z + flutter_test 0.0.0 from sdk flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7985256Z + flutter_web_plugins 0.0.0 from sdk flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7985582Z + frontend_server_client 4.2.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7985898Z + get 4.7.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7986113Z + glob 2.2.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7986324Z + graphs 2.3.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7986517Z + hive 2.2.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7986723Z + hive_flutter 1.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7986978Z + hive_generator 2.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7987211Z + hooks 1.0.3 (2.2.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7987465Z + html_unescape 2.0.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7987711Z + http 1.6.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7987918Z + http_client_helper 3.0.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7988149Z + http_methods 1.1.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7988397Z + http_multi_server 3.2.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7988621Z + http_parser 4.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7988827Z + image 4.12.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7989093Z + image_gallery_saver_plus 4.0.1 (5.1.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7989395Z + intl 0.20.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7989578Z + io 1.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7989780Z + jni 1.1.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7989983Z + jni_flutter 1.0.4+1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7990186Z + jni_util 1.0.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7990403Z + js 0.7.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.7990615Z + json_annotation 4.12.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8000443Z + leak_tracker 11.0.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8000950Z + leak_tracker_flutter_testing 3.0.10
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8001669Z + leak_tracker_testing 3.0.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8002102Z + lints 2.1.1 (6.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8002540Z + logger 2.8.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8002890Z + logging 1.3.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8003232Z + lottie 3.7.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8003597Z + matcher 0.12.20
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8004020Z + material_color_utilities 0.13.0 (0.13.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8004561Z + media_kit 1.2.6
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8004796Z + media_kit_libs_android_video 1.3.8
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8005070Z + media_kit_libs_ios_video 1.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8005356Z + media_kit_libs_linux 1.2.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8005618Z + media_kit_libs_macos_video 1.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8005876Z + media_kit_libs_video 1.0.7
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8006148Z + media_kit_libs_windows_video 1.0.11
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8006425Z + media_kit_video 2.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8006656Z + message_pack_dart 2.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8006930Z + meta 1.19.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8007209Z + mime 2.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8007766Z + native_toolchain_c 0.17.4 from git https://github.com/xiaoyaocz/dart_quickjs at a31682 in packages/native_toolchain_c
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8008561Z + network_info_plus 7.0.0 (8.2.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8008929Z + network_info_plus_platform_interface 2.0.2 (3.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8009268Z + nm 0.5.0 (0.6.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8009515Z + package_config 2.2.0 (3.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8009804Z + package_info_plus 9.0.1 (10.2.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8010146Z + package_info_plus_platform_interface 3.2.1 (4.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8010468Z + path 1.9.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8010677Z + path_provider 2.1.6
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8010910Z + path_provider_android 2.3.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8011408Z + path_provider_foundation 2.5.1 (2.6.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8011957Z + path_provider_linux 2.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8012415Z + path_provider_platform_interface 2.1.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8012903Z + path_provider_windows 2.3.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8013205Z + permission_handler 12.0.3 (13.0.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8013591Z + permission_handler_android 13.0.1 (14.1.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8014100Z + permission_handler_apple 9.6.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8014365Z + permission_handler_html 0.1.4+1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8014677Z + permission_handler_platform_interface 4.4.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8014973Z + permission_handler_windows 0.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8015390Z + petitparser 7.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8015742Z + platform 3.2.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8015985Z + plugin_platform_interface 2.1.8
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8016226Z + pool 1.5.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8016421Z + posix 6.5.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8016623Z + protobuf 3.1.0 (6.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8016866Z + pub_semver 2.2.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8017086Z + pubspec_parse 1.7.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8017307Z + qr 3.0.2 (4.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8017543Z + qr_code_scanner_plus 2.3.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8017774Z + qr_flutter 4.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8017994Z + record_use 0.6.0 (1.1.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8018264Z + remixicon 1.4.1 (4.9.3 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8018519Z + safe_local_storage 2.0.7
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8018769Z + screen_brightness 2.1.11
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8019006Z + screen_brightness_android 2.1.6
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8019261Z + screen_brightness_ios 2.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8019512Z + screen_brightness_macos 2.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8019763Z + screen_brightness_ohos 2.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8020034Z + screen_brightness_platform_interface 2.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8020338Z + screen_brightness_windows 2.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8020603Z + screen_retriever 0.2.2 (0.3.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8020880Z + screen_retriever_linux 0.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8021431Z + screen_retriever_macos 0.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8021760Z + screen_retriever_platform_interface 0.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8022058Z + screen_retriever_windows 0.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8022320Z + share_plus 12.0.2 (13.3.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8022632Z + share_plus_platform_interface 6.1.0 (7.2.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8022944Z + shelf 1.4.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8023139Z + shelf_router 1.1.5
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8023373Z + shelf_web_socket 2.0.1 (3.0.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8023644Z + signalr_netcore 1.4.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8023905Z + simple_live_core 1.0.3 from path ../simple_live_core
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8024223Z + sky_engine 0.0.0 from sdk flutter
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8024482Z + source_gen 1.5.0 (4.3.1 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8024746Z + source_helper 1.3.5 (1.4.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8025006Z + source_span 1.10.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8025209Z + sse 4.2.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8025405Z + sse_channel 0.1.1 (0.2.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8025657Z + stack_trace 1.12.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8025868Z + sticky_headers 0.3.0+2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8026088Z + stream_channel 2.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8026309Z + stream_transform 2.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8026528Z + string_scanner 1.4.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8026742Z + synchronized 3.5.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8027031Z + tars_dart 0.1.0 from path ../simple_live_core/packages/tars_dart
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8027540Z + term_glyph 1.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8027759Z + test_api 0.7.12 (0.7.15 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8028007Z + timing 1.0.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8028204Z + tuple 2.0.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8028396Z + typed_data 1.4.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8028591Z + udp 5.0.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8028796Z + universal_platform 1.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8029022Z + uri_parser 3.0.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8029219Z + url_launcher 6.3.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8029441Z + url_launcher_android 6.3.33
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8029681Z + url_launcher_ios 6.4.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8029920Z + url_launcher_linux 3.2.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8030149Z + url_launcher_macos 3.2.6
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8030398Z + url_launcher_platform_interface 2.3.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8030664Z + url_launcher_web 2.4.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8030889Z + url_launcher_windows 3.1.6
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8031117Z + uuid 4.6.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8031480Z + vector_math 2.4.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8031698Z + vm_service 15.4.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8031935Z + volume_controller 3.7.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8032206Z + wakelock_plus 1.5.2 (1.8.2 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8032760Z + wakelock_plus_platform_interface 1.7.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8033025Z + watcher 1.2.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8033214Z + web 1.1.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8033407Z + web_socket 1.0.1
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8033614Z + web_socket_channel 3.0.3
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8033840Z + webdav_client 1.2.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8034063Z + win32 5.15.0 (6.4.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8034314Z + win32_registry 2.1.0 (3.0.3 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8034572Z + window_manager 0.5.2
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8034796Z + xdg_directories 1.1.0
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8035019Z + xml 6.6.1 (7.1.0 available)
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8035239Z + yaml 3.1.4
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8035469Z Changed 206 dependencies!
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8035729Z 1 package is discontinued.
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8036072Z 52 packages have newer versions incompatible with dependency constraints.
+build-android	编译 App 端 Release APK	2026-10-29T13:09:53.8036495Z Try `flutter pub outdated` for more information.
+build-android	编译 App 端 Release APK	2026-10-29T13:09:54.0444291Z Upgrading analysis_options.yaml to exclude build and platform directories.
+build-android	编译 App 端 Release APK	2026-10-29T13:09:54.8514851Z Upgrading gradle.properties
+build-android	编译 App 端 Release APK	2026-10-29T13:09:54.8526456Z Upgrading gradle.properties
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8582582Z Running Gradle task 'assembleRelease'...                        
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8605559Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8606303Z FAILURE: Build failed with an exception.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8606753Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8606920Z * Where:
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8607731Z Build file '/home/runner/work/Simple_live/Simple_live/simple_live_app/android/app/build.gradle.kts' line: 4
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8608532Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8608704Z * What went wrong:
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8609439Z An exception occurred applying plugin request [id: 'dev.flutter.flutter-gradle-plugin']
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8610442Z > Failed to apply plugin 'dev.flutter.flutter-gradle-plugin'.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8612004Z    > Error: Your project's Gradle version (8.12.0) is lower than Flutter's minimum supported version of 8.14.0. Please upgrade your Gradle version. 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8613658Z      Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8614410Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8615818Z      Potential fix: Your project's gradle version is typically defined in the gradle wrapper file. By default, this can be found at /home/runner/work/Simple_live/Simple_live/simple_live_app/android/gradle/wrapper/gradle-wrapper.properties. 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8618121Z      For more information, see https://docs.gradle.org/current/userguide/gradle_wrapper.html.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8618833Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8618844Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8618982Z * Try:
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8619454Z > Run with --stacktrace option to get the stack trace.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8620159Z > Run with --info or --debug option to get more log output.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8620791Z > Run with --scan to get full insights.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8653883Z > Get more help at https://help.gradle.org.
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8654301Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:27.8654476Z BUILD FAILED in 1m 32s
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3373768Z Running Gradle task 'assembleRelease'...                           93.4s
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3410392Z 
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3416416Z ┌─ Flutter Fix ───────────────────────────────────────────────────────────────────────────┐
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3418057Z │ [!] Starting AGP 9+, only the new DSL interface will be read.                           │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3419772Z │ This results in a build failure when applying the Flutter Gradle plugin at              │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3421701Z │ /home/runner/work/Simple_live/Simple_live/simple_live_app/android/app/build.gradle.kts. │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3423162Z │                                                                                         │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3425022Z │ To resolve this update flutter or opt out of `android.newDsl`.                          │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3426711Z │ For instructions on how to opt out, see:                                                │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3428507Z │ https://developer.android.com/build/releases/agp-9-0-0-release-notes                    │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3430038Z │                                                                                         │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3431940Z │ If you are not upgrading to AGP 9+, run `flutter analyze --suggestions` to check for    │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3433581Z │ incompatible dependencies.                                                              │
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3434940Z └─────────────────────────────────────────────────────────────────────────────────────────┘
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3892760Z Gradle task assembleRelease failed with exit code 1
+build-android	编译 App 端 Release APK	2026-10-29T13:11:28.3996394Z ##[error]Process completed with exit code 1.
