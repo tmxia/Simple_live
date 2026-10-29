@@ -269,8 +269,11 @@ class RemoteSyncWebDAVController extends GetxController {
       isLoading.value = false;
     }
   }
-}
 
   Future<void> doWebDAVLogin(String uri, String user, String pass) async {
     await saveConfig(uri, user, pass);
   }
+
+}
+
+  
