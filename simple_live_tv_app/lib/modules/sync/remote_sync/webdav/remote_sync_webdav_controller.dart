@@ -96,8 +96,7 @@ class RemoteSyncWebDAVController extends GetxController {
           final confirm = await Get.dialog<bool>(
             AlertDialog(
               title: const Text("冲突警告"),
-              content: Text("云端备份时间较新 (${Utils.parseTime(remoteTime)})
-继续上传将覆盖云端备份，是否继续？"),
+              content: Text("云端备份时间较新 (${Utils.parseTime(remoteTime)})\n继续上传将覆盖云端备份，是否继续？"),
               actions: [
                 TextButton(onPressed: () => Get.back(result: false), child: const Text("取消")),
                 TextButton(onPressed: () => Get.back(result: true), child: const Text("覆盖上传", style: TextStyle(color: Colors.red))),
@@ -142,8 +141,7 @@ class RemoteSyncWebDAVController extends GetxController {
           final confirm = await Get.dialog<bool>(
             AlertDialog(
               title: const Text("冲突警告"),
-              content: Text("云端备份时间较旧 (${Utils.parseTime(remoteTime)})
-继续恢复将覆盖本地最新数据，是否继续？"),
+              content: Text("云端备份时间较旧 (${Utils.parseTime(remoteTime)})\n继续恢复将覆盖本地最新数据，是否继续？"),
               actions: [
                 TextButton(onPressed: () => Get.back(result: false), child: const Text("取消")),
                 TextButton(onPressed: () => Get.back(result: true), child: const Text("强制恢复", style: TextStyle(color: Colors.red))),
