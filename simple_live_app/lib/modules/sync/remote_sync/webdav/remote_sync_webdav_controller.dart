@@ -23,6 +23,7 @@ class RemoteSyncWebDAVController extends GetxController {
   static const String kWebDAVLastRecoverTime = "kWebDAVLastRecoverTime";
 
   var passwordVisible = true.obs;
+  void changePasswordVisible() { passwordVisible.value = !passwordVisible.value; }
   var isSyncFollows = true.obs;
   var isSyncHistories = true.obs;
   
@@ -133,7 +134,7 @@ class RemoteSyncWebDAVController extends GetxController {
         final followBytes = utf8.encode(jsonEncode(follows));
         archive.addFile(ArchiveFile('SimpleLive_follows.json', followBytes.length, followBytes));
         
-        final tags = DBService.instance.followTagBox.values.map((e) => e.toJson()).toList();
+        final tags = DBService.instance.tagBox.values.map((e) => e.toJson()).toList();
         final tagBytes = utf8.encode(jsonEncode(tags));
         archive.addFile(ArchiveFile('SimpleLive_tags.json', tagBytes.length, tagBytes));
       }
@@ -242,10 +243,10 @@ class RemoteSyncWebDAVController extends GetxController {
             } catch (e) { Log.e("Import Follow Error: $e", StackTrace.current); }
           }
         } else if (file.name == 'SimpleLive_tags.json') {
-          DBService.instance.followTagBox.clear();
+          DBService.instance.tagBox.clear();
           for (final item in list) {
             try {
-              await DBService.instance.followTagBox.put(item['id'], FollowUserTag.fromJson(item));
+              await DBService.instance.tagBox.put(item['id'], FollowUserTag.fromJson(item));
             } catch (e) { Log.e("Import Tag Error: $e", StackTrace.current); }
           }
         } else if (file.name == 'SimpleLive_histories.json') {
@@ -269,3 +270,7 @@ class RemoteSyncWebDAVController extends GetxController {
     }
   }
 }
+
+  Future<void> doWebDAVLogin(String uri, String user, String pass) async {
+    await saveConfig(uri, user, pass);
+  }
