@@ -16,6 +16,20 @@ class AppColors {
 class AppStyle {
   static ThemeData lightTheme = ThemeData(
     colorScheme: AppColors.lightColorScheme,
+    textTheme: const TextTheme(
+      bodyLarge: TextStyle(fontWeight: FontWeight.normal),
+      bodyMedium: TextStyle(fontWeight: FontWeight.normal),
+      bodySmall: TextStyle(fontWeight: FontWeight.normal),
+      titleLarge: TextStyle(fontWeight: FontWeight.normal),
+      titleMedium: TextStyle(fontWeight: FontWeight.normal),
+      titleSmall: TextStyle(fontWeight: FontWeight.normal),
+      headlineLarge: TextStyle(fontWeight: FontWeight.normal),
+      headlineMedium: TextStyle(fontWeight: FontWeight.normal),
+      headlineSmall: TextStyle(fontWeight: FontWeight.normal),
+      labelLarge: TextStyle(fontWeight: FontWeight.normal),
+      labelMedium: TextStyle(fontWeight: FontWeight.normal),
+      labelSmall: TextStyle(fontWeight: FontWeight.normal),
+    ),
     appBarTheme: const AppBarTheme(
       elevation: 0,
       centerTitle: true,
@@ -27,7 +41,7 @@ class AppStyle {
     checkboxTheme: CheckboxThemeData(
       fillColor: WidgetStateProperty.all(AppColors.lightColorScheme.primary),
     ),
-    fontFamily: Platform.isWindows ? 'Microsoft YaHei' : null,
+    fontFamily: Platform.isWindows ? 'Microsoft YaHei' : 'sans-serif',
   );
 
   static SizedBox get vGap4 => SizedBox(

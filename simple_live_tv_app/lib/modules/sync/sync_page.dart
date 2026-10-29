@@ -9,6 +9,7 @@ import 'package:simple_live_tv_app/services/signalr_service.dart';
 import 'package:simple_live_tv_app/services/sync_service.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
+import 'package:simple_live_tv_app/modules/sync/remote_sync/webdav/remote_sync_webdav_page.dart';
 
 class SyncPage extends GetView<SyncController> {
   const SyncPage({super.key});
@@ -19,6 +20,13 @@ class SyncPage extends GetView<SyncController> {
       child: Column(
         children: [
           AppStyle.vGap24,
+          HighlightButton(
+            focusNode: AppFocusNode(),
+            iconData: Icons.cloud,
+            text: "WebDAV 同步",
+            onTap: () => Get.to(() => RemoteSyncWebDAVPage()),
+          ),
+          AppStyle.vGap16,
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [

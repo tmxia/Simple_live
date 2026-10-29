@@ -7,6 +7,8 @@ environment:
   sdk: ">=3.1.2 <4.0.0"
 
 dependencies:
+  webdav_client: ^1.2.2
+  archive: ^3.6.1
   flutter:
     sdk: flutter
   simple_live_core:
@@ -56,6 +58,8 @@ dependency_overrides:
   fading_edge_scrollview: ^4.1.1
 
 dev_dependencies:
+  webdav_client: ^1.2.2
+  archive: ^3.6.1
   flutter_test:
     sdk: flutter
 
