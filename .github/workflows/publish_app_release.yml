@@ -43,21 +43,19 @@ jobs:
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore.jks
           test -s ${{ github.workspace }}/keystore.jks || { echo "❌ Keystore 为空"; exit 1; }
 
-          # 2. 为 App 写入 key.properties (使用绝对路径防止找不到)
-          cat > simple_live_app/android/key.properties <<EOF
-          storeFile=${{ github.workspace }}/keystore.jks
-          storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
-          keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
-          keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
-          EOF
+          # 2. 用 printf 无缩进生成 App 的 key.properties
+          printf "storeFile=%s\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n" \
+            "${{ github.workspace }}/keystore.jks" \
+            "${{ secrets.RELEASE_STORE_PASSWORD }}" \
+            "${{ secrets.RELEASE_KEY_PASSWORD }}" \
+            "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_app/android/key.properties
 
-          # 3. 为 TV 写入 key.properties
-          cat > simple_live_tv_app/android/key.properties <<EOF
-          storeFile=${{ github.workspace }}/keystore.jks
-          storePassword=${{ secrets.RELEASE_STORE_PASSWORD }}
-          keyPassword=${{ secrets.RELEASE_KEY_PASSWORD }}
-          keyAlias=${{ secrets.RELEASE_KEY_ALIAS }}
-          EOF
+          # 3. 用 printf 无缩进生成 TV 的 key.properties
+          printf "storeFile=%s\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n" \
+            "${{ github.workspace }}/keystore.jks" \
+            "${{ secrets.RELEASE_STORE_PASSWORD }}" \
+            "${{ secrets.RELEASE_KEY_PASSWORD }}" \
+            "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_tv_app/android/key.properties
 
       # ---------------- 编译 App 端 ----------------
       - name: 编译 App 端 Release APK
@@ -89,7 +87,6 @@ jobs:
       - name: 发布至 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          # 推代码触发时，用 build号 作为后缀避免 tag 冲突
           tag_name: v${{ steps.get_ver.outputs.app_ver }}-build${{ github.run_number }}
           name: Release App v${{ steps.get_ver.outputs.app_ver }} & TV v${{ steps.get_ver.outputs.tv_ver }} (Build ${{ github.run_number }})
           body: |
