@@ -52,12 +52,12 @@ class SyncController extends BaseController {
         currentRoomId.value = resp.data!;
         _startTimer();
       } else {
-        SmartDialog.showToast(resp.message);
-        Get.back();
+        SmartDialog.showToast("创建房间失败: ${resp.message}");
+        // 不再强制返回，允许用户继续使用 WebDAV 等功能
       }
     } catch (e) {
-      SmartDialog.showToast("创建房间失败");
-      Get.back();
+      SmartDialog.showToast("创建房间失败，请检查网络");
+      // 不再强制返回
     }
   }
 
@@ -68,7 +68,8 @@ class SyncController extends BaseController {
       countDown--;
       if (countDown <= 0) {
         timer.cancel();
-        Get.back();
+        SmartDialog.showToast("远程同步已自动断开");
+        // 不再强制关闭页面
       }
     });
   }
@@ -79,7 +80,7 @@ class SyncController extends BaseController {
     });
     _roomDestroyedSubscription = signalR.onRoomDestroyedStream.listen((roomId) {
       SmartDialog.showToast("房间已被销毁");
-      Get.back();
+      // 不再强制返回首页，允许用户停留在当前页面
     });
     _roomUserUpdatedSubscription = signalR.onRoomUserUpdatedStream.listen(
       (roomUsers) {
