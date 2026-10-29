@@ -57,6 +57,12 @@ jobs:
             "${{ secrets.RELEASE_KEY_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_tv_app/android/key.properties
 
+      - name: 修复 Gradle 版本兼容性
+        run: |
+          # Flutter 要求 Gradle 至少 8.14.0，强制覆盖两端的 wrapper 配置
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
+
       # ---------------- 编译 App 端 ----------------
       - name: 编译 App 端 Release APK
         working-directory: ./simple_live_app
