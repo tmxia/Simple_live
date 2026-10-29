@@ -62,11 +62,23 @@ class RemoteSyncWebDAVController extends GetxController {
     }
   }
 
-  void saveConfig(String uri, String user, String pass) {
-    LocalStorageService.instance.setValue(kWebDAVUri, uri);
-    LocalStorageService.instance.setValue(kWebDAVUser, user);
-    LocalStorageService.instance.setValue(kWebDAVPassword, pass);
-    doWebDAVInit();
+    void saveConfig(String uri, String user, String pass) {
+    if (uri.trim().isEmpty) {
+      Get.snackbar("提示", "服务器地址不能为空");
+      return;
+    }
+    print("=== 开始保存 WebDAV 配置 ===");
+    print("URI: $uri");
+    print("User: $user");
+    
+    LocalStorageService.instance.setValue(kWebDAVUri, uri.trim());
+    LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
+    LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
+    
+    print("=== 本地存储写入完毕，准备重新初始化 ===");
+    notLogin.value = true; // 先重置状态
+    doWebDAVInit(); // 重新初始化，会触发 checkIsLogin
+    Get.snackbar("提示", "配置已保存，正在尝试连接...");
   }
 
   Future<void> backup() async {

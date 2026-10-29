@@ -96,11 +96,17 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                         focusNode: AppFocusNode(),
                         text: "保存并连接",
                         onTap: () {
-                          controller.saveConfig(
-                            urlController.text.trim(),
-                            userController.text.trim(),
-                            passController.text.trim(),
-                          );
+                          // 强制收起软键盘并移除焦点，防止点击事件被拦截
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          
+                          // 稍微延迟一下，等键盘收起后再执行保存
+                          Future.delayed(const Duration(milliseconds: 200), () {
+                            controller.saveConfig(
+                              urlController.text.trim(),
+                              userController.text.trim(),
+                              passController.text.trim(),
+                            );
+                          });
                         },
                       ),
                     ],
