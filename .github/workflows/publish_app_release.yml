@@ -200,6 +200,7 @@ jobs:
           TAG_NAME="v${{ steps.ver.outputs.app_ver }}"
           gh release delete "$TAG_NAME" --yes || true
           git push --delete origin "$TAG_NAME" || true
+          git tag -d "$TAG_NAME" || true
 
       - name: 创建 GitHub Release
         env:
@@ -212,7 +213,7 @@ jobs:
           if gh release view "$TAG_NAME" >/dev/null 2>&1; then
             echo "Release $TAG_NAME 已存在，跳过创建"
           else
-            gh release create "$TAG_NAME" --title "$RELEASE_TITLE" --notes "App v${APP_VER} / TV v${TV_VER} / Auto-built by GitHub Actions" --latest
+            gh release create "$TAG_NAME" --title "$RELEASE_TITLE" --notes "App v${APP_VER} / TV v${TV_VER} / Auto-built by GitHub Actions" --target master --latest
           fi
 
       - name: 上传 APK 至 Release
