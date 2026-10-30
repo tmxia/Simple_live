@@ -20,7 +20,7 @@ mixin PlayerMixin {
   late final player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
-      bufferSize: 128 * 1024 * 1024, // 64MB 缓存
+      bufferSize: 32 * 1024 * 1024, // 32MB，对齐移动端默认
     ),
   );
 
@@ -31,7 +31,7 @@ mixin PlayerMixin {
       // [终极兼容] 强制使用 OpenGL 渲染，避免部分老电视 Vulkan 崩溃
       await pp.setProperty('gpu-api', 'opengl');
       // [终极兼容] 强制使用 auto-copy 硬解，绕开电视直接绑屏的黑屏坑
-      await pp.setProperty('hwdec', 'auto-safe');
+      await pp.setProperty('hwdec', 'auto-copy');
       // 强制音频同步，防止掉帧
       await pp.setProperty('video-sync', 'audio');
       // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
@@ -39,7 +39,6 @@ mixin PlayerMixin {
       await pp.setProperty('ao', 'audiotrack');
       await pp.setProperty('audio-buffer', '0.5');
       await pp.setProperty('vd-lavc-threads', '4');
-      await pp.setProperty('demuxer-max-bytes', '256MiB');
       // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
       await pp.setProperty('ao', 'audiotrack');
     }
