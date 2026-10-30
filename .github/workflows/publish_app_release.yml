@@ -14,7 +14,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-android:
+  # ==========================================
+  # 并行任务 1：编译 App 端
+  # ==========================================
+  build-app:
+    name: 构建 App 端
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
@@ -33,118 +37,180 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 提取版本号
+      - name: 读取 App 版本号
         id: get_ver
         run: |
           APP_VER=$(grep '^version:' simple_live_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
-          TV_VER=$(grep '^version:' simple_live_tv_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
           echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
-          echo "tv_ver=$TV_VER" >> $GITHUB_OUTPUT
-          echo "App 版本: $APP_VER, TV 版本: $TV_VER"
+          echo "App 版本: $APP_VER"
 
-      - name: 解码 Keystore 并生成签名配置
+      - name: 解码 Keystore 并生成 App 签名
         run: |
-          # 1. 将 Secrets 解码到仓库根目录
           echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore.jks
           test -s ${{ github.workspace }}/keystore.jks || { echo "❌ Keystore 为空"; exit 1; }
-
-          # 2. 用 printf 无缩进生成 App 的 key.properties
           printf "storeFile=%s\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n" \
             "${{ github.workspace }}/keystore.jks" \
             "${{ secrets.RELEASE_STORE_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_app/android/key.properties
 
-          # 3. 用 printf 无缩进生成 TV 的 key.properties
+      - name: 修复 Gradle & AGP & Kotlin 版本
+        run: |
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "8.11.1"/g' simple_live_app/android/settings.gradle.kts || true
+          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.2.20"/g' simple_live_app/android/settings.gradle.kts || true
+          sed -i "s/id 'com.android.application' version '.*'/id 'com.android.application' version '8.11.1'/g" simple_live_app/android/settings.gradle || true
+          sed -i "s/id 'org.jetbrains.kotlin.android' version '.*'/id 'org.jetbrains.kotlin.android' version '2.2.20'/g" simple_live_app/android/settings.gradle || true
+          sed -i "s/ext.kotlin_version = '.*'/ext.kotlin_version = '2.2.20'/g" simple_live_app/android/build.gradle || true
+
+      - name: 编译 App 端 Release APK (分架构)
+        working-directory: ./simple_live_app
+        run: |
+          flutter pub get
+          flutter build apk --release --split-per-abi
+
+      - name: 收集 App 产物
+        run: |
+          mkdir -p output/app
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            SRC="simple_live_app/build/app/outputs/flutter-apk/app-$abi-release.apk"
+            if [ -f "$SRC" ]; then
+              cp "$SRC" "output/app/SimpleLive-App-v${{ steps.get_ver.outputs.app_ver }}-${abi}.apk"
+            fi
+          done
+          ls -lh output/app/
+
+      - name: 上传 App 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-apks
+          path: output/app/*.apk
+          retention-days: 1
+
+  # ==========================================
+  # 并行任务 2：编译 TV 端
+  # ==========================================
+  build-tv:
+    name: 构建 TV 端
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Java 环境
+        uses: actions/setup-java@v4
+        with:
+          distribution: "zulu"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: 设置 Flutter 环境
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: 读取 TV 版本号
+        id: get_ver
+        run: |
+          TV_VER=$(grep '^version:' simple_live_tv_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "tv_ver=$TV_VER" >> $GITHUB_OUTPUT
+          echo "TV 版本: $TV_VER"
+
+      - name: 解码 Keystore 并生成 TV 签名
+        run: |
+          echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > ${{ github.workspace }}/keystore.jks
+          test -s ${{ github.workspace }}/keystore.jks || { echo "❌ Keystore 为空"; exit 1; }
           printf "storeFile=%s\nstorePassword=%s\nkeyPassword=%s\nkeyAlias=%s\n" \
             "${{ github.workspace }}/keystore.jks" \
             "${{ secrets.RELEASE_STORE_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_tv_app/android/key.properties
 
-      - name: 修复 Gradle & AGP & Kotlin 版本兼容性
+      - name: 修复 Gradle & AGP & Kotlin 版本
         run: |
-          # 1. 强制 Gradle 到 8.14
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
-          
-          # 2. 强制 AGP 到 8.11.1
-          for dir in simple_live_app simple_live_tv_app; do
-            sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "8.11.1"/g' $dir/android/settings.gradle.kts || true
-            sed -i "s/id 'com.android.application' version '.*'/id 'com.android.application' version '8.11.1'/g" $dir/android/settings.gradle || true
-            
-            # 3. 强制 Kotlin 到 2.2.20
-            sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.2.20"/g' $dir/android/settings.gradle.kts || true
-            sed -i "s/id 'org.jetbrains.kotlin.android' version '.*'/id 'org.jetbrains.kotlin.android' version '2.2.20'/g" $dir/android/settings.gradle || true
-            sed -i "s/ext.kotlin_version = '.*'/ext.kotlin_version = '2.2.20'/g" $dir/android/build.gradle || true
-            sed -i 's/ext.kotlin_version = ".*"/ext.kotlin_version = "2.2.20"/g' $dir/android/build.gradle.kts || true
-          done
+          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "8.11.1"/g' simple_live_tv_app/android/settings.gradle.kts || true
+          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.2.20"/g' simple_live_tv_app/android/settings.gradle.kts || true
+          sed -i "s/id 'com.android.application' version '.*'/id 'com.android.application' version '8.11.1'/g" simple_live_tv_app/android/settings.gradle || true
+          sed -i "s/id 'org.jetbrains.kotlin.android' version '.*'/id 'org.jetbrains.kotlin.android' version '2.2.20'/g" simple_live_tv_app/android/settings.gradle || true
+          sed -i "s/ext.kotlin_version = '.*'/ext.kotlin_version = '2.2.20'/g" simple_live_tv_app/android/build.gradle || true
 
-      # ---------------- 编译 App 端 ----------------
-      - name: 编译 App 端 Release APK
-        working-directory: ./simple_live_app
-        run: |
-          flutter pub get
-          flutter build apk --release --split-per-abi
-
-      # ---------------- 编译 TV 端 ----------------
-      - name: 编译 TV 端 Release APK
+      - name: 编译 TV 端 Release APK (分架构)
         working-directory: ./simple_live_tv_app
         run: |
           flutter pub get
           flutter build apk --release --split-per-abi
 
-      - name: 收集并重命名产物
+      - name: 收集 TV 产物
         run: |
-          mkdir -p output
-          
-          # App 端
-          APP_VER="${{ steps.get_ver.outputs.app_ver }}"
-          for abi in arm64-v8a armeabi-v7a x86_64; do
-            SRC="simple_live_app/build/app/outputs/flutter-apk/app-$abi-release.apk"
-            if [ -f "$SRC" ]; then
-              cp "$SRC" "output/SimpleLive-App-v${APP_VER}-${abi}.apk"
-            fi
-          done
-
-          # TV 端
-          TV_VER="${{ steps.get_ver.outputs.tv_ver }}"
+          mkdir -p output/tv
           for abi in arm64-v8a armeabi-v7a x86_64; do
             SRC="simple_live_tv_app/build/app/outputs/flutter-apk/app-$abi-release.apk"
             if [ -f "$SRC" ]; then
-              cp "$SRC" "output/SimpleLive-TV-v${TV_VER}-${abi}.apk"
+              cp "$SRC" "output/tv/SimpleLive-TV-v${{ steps.get_ver.outputs.tv_ver }}-${abi}.apk"
             fi
           done
-          
-          ls -lh output/
+          ls -lh output/tv/
 
-      - name: 上传临时 Artifact
+      - name: 上传 TV 产物
         uses: actions/upload-artifact@v4
         with:
-          name: SimpleLive-All-APKs
-          path: output/*.apk
+          name: tv-apks
+          path: output/tv/*.apk
+          retention-days: 1
 
-      - name: 强制清理旧发布与 Tag
+  # ==========================================
+  # 汇总任务：发布 Release (等待 App 和 TV 都完成)
+  # ==========================================
+  release:
+    name: 创建 GitHub Release
+    needs: [build-app, build-tv]
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 下载 App 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: app-apks
+          path: output
+
+      - name: 下载 TV 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: tv-apks
+          path: output
+
+      - name: 读取版本号
+        id: ver
+        run: |
+          APP_VER=$(grep '^version:' simple_live_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          TV_VER=$(grep '^version:' simple_live_tv_app/pubspec.yaml | awk '{print $2}' | cut -d'+' -f1)
+          echo "app_ver=$APP_VER" >> $GITHUB_OUTPUT
+          echo "tv_ver=$TV_VER" >> $GITHUB_OUTPUT
+
+      - name: 清理旧的 Release 与 Tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG_NAME="v${{ steps.get_ver.outputs.app_ver }}"
-          echo "正在检查并删除旧 Release: $TAG_NAME"
+          TAG_NAME="v${{ steps.ver.outputs.app_ver }}"
           gh release delete "$TAG_NAME" --yes || true
-          
-          echo "正在检查并删除旧 Git Tag: $TAG_NAME"
           git push --delete origin "$TAG_NAME" || true
-          echo "✅ 旧版本清理完毕，准备覆盖发布"
 
       - name: 发布至 GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.get_ver.outputs.app_ver }}
-          name: Release App v${{ steps.get_ver.outputs.app_ver }} & TV v${{ steps.get_ver.outputs.tv_ver }}
+          tag_name: v${{ steps.ver.outputs.app_ver }}
+          name: Release App v${{ steps.ver.outputs.app_ver }} & TV v${{ steps.ver.outputs.tv_ver }}
           body: |
             Auto-built APK by GitHub Actions.
-            - **App 版本**: v${{ steps.get_ver.outputs.app_ver }}
-            - **TV 版本**: v${{ steps.get_ver.outputs.tv_ver }}
+            - **App 版本**: v${{ steps.ver.outputs.app_ver }}
+            - **TV 版本**: v${{ steps.ver.outputs.tv_ver }}
+            已按架构拆分打包，请根据设备选择 arm64-v8a 下载。
           files: output/*.apk
           draft: false
           prerelease: false
@@ -152,13 +218,11 @@ jobs:
           make_latest: true
 
   # ==========================================
-  # 阶段：清理当前工作流历史记录 (只保留最新)
+  # 清理任务
   # ==========================================
   cleanup_old_runs:
     name: 清理历史记录
     runs-on: ubuntu-latest
-    # 依赖于 build 完成，或者即使 build 失败/取消也执行
-    needs: build-android
     if: always()
     permissions:
       actions: write
@@ -174,11 +238,8 @@ jobs:
               workflow_id: 'publish_app_release.yml',
               per_page: 100
             });
-            
             for (const run of runs.data.workflow_runs) {
-              // 只要不是当前正在运行的 ID，且状态已经是 completed，就删除
               if (run.id !== context.runId && run.status === 'completed') {
-                console.log(`Deleting run ID: ${run.id}`);
                 try {
                   await github.rest.actions.deleteWorkflowRun({
                     owner: context.repo.owner,
