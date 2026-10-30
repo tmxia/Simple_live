@@ -18,37 +18,40 @@ mixin PlayerMixin {
 
   /// 播放器实例
   late final player = Player(
-    configuration: const PlayerConfiguration(
+    configuration: PlayerConfiguration(
       title: "Simple Live Player",
-      // bufferSize:
-      //     // media-kit #549
-      //     AppSettingsController.instance.playerBufferSize.value * 1024 * 1024,
+      logLevel: AppSettingsController.instance.logEnable.value
+          ? MPVLogLevel.info
+          : MPVLogLevel.error,
     ),
   );
 
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
-    
     var pp = player.platform as NativePlayer;
-
-    // media_kit 仓库更新导致的问题，临时解决办法
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
-      // 终极防黑屏补丁：部分电视芯片硬解无法渲染画面，强制使用 auto-copy 或 no
-      // 这里使用 no (纯软解) 以确保 100% 有画面，或者用 auto-copy 保留部分硬解优势
-      await pp.setProperty('hwdec', 'auto-safe');
     }
   }
 
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: const VideoControllerConfiguration(
-      // 彻底明确指定渲染配置
-      enableHardwareAcceleration: true,
-      androidAttachSurfaceAfterVideoParameters: false,
-      vo: 'gpu', 
-    ),
+    configuration: AppSettingsController.instance.customPlayerOutput.value
+        ? VideoControllerConfiguration(
+            vo: AppSettingsController.instance.videoOutputDriver.value,
+            hwdec: AppSettingsController.instance.videoHardwareDecoder.value,
+          )
+        : AppSettingsController.instance.playerCompatMode.value
+            ? const VideoControllerConfiguration(
+                vo: 'mediacodec_embed',
+                hwdec: 'mediacodec',
+              )
+            : VideoControllerConfiguration(
+                enableHardwareAcceleration:
+                    AppSettingsController.instance.hardwareDecode.value,
+                androidAttachSurfaceAfterVideoParameters: false,
+              ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
@@ -240,11 +243,7 @@ class PlayerController extends BaseController
     _errorSubscription = player.stream.error.listen((event) {
       Log.d("播放器错误：$event");
       
-      // [Auto-Fix] 终极兜底：如果 mediacodec-copy 失败，自动降级为软解防止黑屏
-      if (event.contains('Could not open codec') || event.contains('Failed to open')) {
-        (player.platform as NativePlayer).setProperty('hwdec', 'no');
-        mediaError("硬解失败，已自动降级为软解，画面可能略有卡顿");
-      }
+
       // [Auto-Fix] 把错误直接打在最上层，让你一眼看出为什么黑屏
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
         mediaError("解码失败: 请尝试切换兼容模式");

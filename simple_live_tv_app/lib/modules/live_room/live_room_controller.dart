@@ -232,12 +232,17 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     errorMsg.value = "";
     // 初始化播放器并设置 ao 参数
     await initializePlayer();
-    player.open(
-      Media(
-        playUrls[currentLineIndex],
-        httpHeaders: playHeaders,
-      ),
-    );
+    
+    // [Auto-Fix] 完美对齐移动端：使用 Playlist 传入所有可用线路，实现断线/死链自动切换
+    final mediaList = playUrls.map((url) {
+      var finalUrl = url;
+      if (AppSettingsController.instance.playerForceHttps.value) {
+        finalUrl = finalUrl.replaceAll("http://", "https://");
+      }
+      return Media(finalUrl, httpHeaders: playHeaders);
+    }).toList();
+    
+    await player.open(Playlist(mediaList));
 
     Log.d("播放链接\r\n：${playUrls[currentLineIndex]}");
   }
