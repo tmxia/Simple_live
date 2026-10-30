@@ -236,7 +236,7 @@ class PlayerController extends BaseController
     _errorSubscription = player.stream.error.listen((event) {
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
         // 如果硬解彻底崩溃，无条件降级为纯软解，保证有画面
-        player.setProperty('hwdec', 'no');
+        (player.platform as NativePlayer).setProperty('hwdec', 'no');
       }
     });
 
