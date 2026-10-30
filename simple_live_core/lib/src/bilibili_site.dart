@@ -163,7 +163,7 @@ class BiliBiliSite implements LiveSite {
       queryParameters: {
         "room_id": detail.roomId,
         "protocol": "0,1",
-        "format": "0,2",
+        "format": "0",
         "codec": "0",
         "platform": "web",
         "qn": quality.data,
