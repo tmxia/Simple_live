@@ -149,13 +149,14 @@ class SyncController extends BaseController {
       var jsonBody = json.decode(data);
       int remoteCount = jsonBody.length;
       int localCount = DBService.instance.historyBox.length;
-      
+
       // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
       if (overlay && localCount > remoteCount) {
         bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
             title: const Text("同步确认"),
-            content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
+            content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。
+是否继续覆盖？"),
             actions: [
               TextButton(onPressed: () => SmartDialog.dismiss(result: false), child: const Text("取消")),
               TextButton(onPressed: () => SmartDialog.dismiss(result: true), child: const Text("继续覆盖")),
@@ -168,23 +169,25 @@ class SyncController extends BaseController {
       if (overlay) {
         await DBService.instance.historyBox.clear();
       }
+
       for (var item in jsonBody) {
-      try {
-        var history = History.fromJson(item);
-        if (DBService.instance.historyBox.containsKey(history.id)) {
-          var old = DBService.instance.historyBox.get(history.id);
-          //如果本地的更新时间比较新，就不更新
-          if (old!.updateTime.isAfter(history.updateTime)) {
-            continue;
+        try {
+          var history = History.fromJson(item);
+          if (DBService.instance.historyBox.containsKey(history.id)) {
+            var old = DBService.instance.historyBox.get(history.id);
+            // 如果本地的更新时间比较新，就不更新
+            if (old!.updateTime.isAfter(history.updateTime)) {
+              continue;
+            }
           }
+          await DBService.instance.addOrUpdateHistory(history);
+        } catch (e) {
+          Log.logPrint("解析历史记录失败: $e");
         }
-        await DBService.instance.addOrUpdateHistory(history);
       }
+
       SmartDialog.showToast('已同步历史记录');
       EventBus.instance.emit(Constant.kUpdateHistory, 0);
-      } catch (e) {
-        Log.logPrint("解析历史记录失败: $e");
-      }
     } catch (e) {
       SmartDialog.showToast("同步失败:$e");
       Log.logPrint(e);
