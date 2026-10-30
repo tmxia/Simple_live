@@ -85,20 +85,37 @@ jobs:
         working-directory: ./simple_live_app
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       # ---------------- 编译 TV 端 ----------------
       - name: 编译 TV 端 Release APK
         working-directory: ./simple_live_tv_app
         run: |
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --split-per-abi
 
       - name: 收集并重命名产物
         run: |
           mkdir -p output
-          cp simple_live_app/build/app/outputs/flutter-apk/app-release.apk output/SimpleLive-App-v${{ steps.get_ver.outputs.app_ver }}.apk
-          cp simple_live_tv_app/build/app/outputs/flutter-apk/app-release.apk output/SimpleLive-TV-v${{ steps.get_ver.outputs.tv_ver }}.apk
+          
+          # App 端
+          APP_VER="${{ steps.get_ver.outputs.app_ver }}"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            SRC="simple_live_app/build/app/outputs/flutter-apk/app-$abi-release.apk"
+            if [ -f "$SRC" ]; then
+              cp "$SRC" "output/SimpleLive-App-v${APP_VER}-${abi}.apk"
+            fi
+          done
+
+          # TV 端
+          TV_VER="${{ steps.get_ver.outputs.tv_ver }}"
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            SRC="simple_live_tv_app/build/app/outputs/flutter-apk/app-$abi-release.apk"
+            if [ -f "$SRC" ]; then
+              cp "$SRC" "output/SimpleLive-TV-v${TV_VER}-${abi}.apk"
+            fi
+          done
+          
           ls -lh output/
 
       - name: 上传临时 Artifact
