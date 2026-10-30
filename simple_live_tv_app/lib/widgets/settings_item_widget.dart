@@ -101,21 +101,35 @@ class SettingsItemWidget extends StatelessWidget {
   void showSettingsDialog() {
     Get.dialog(
       AlertDialog(
-        backgroundColor: Get.theme.cardColor,
+        backgroundColor: const Color(0xFF222222), // 强制实心深灰背景，解决底层透字
         surfaceTintColor: Colors.transparent,
         title: Text(title, style: AppStyle.titleStyleWhite),
         scrollable: true,
+        shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: items.keys.map((e) {
+            bool isSelected = e == value;
             return ListTile(
-              title: Text(items[e] ?? '', style: AppStyle.textStyleWhite),
+              title: Text(
+                items[e] ?? '',
+                style: isSelected
+                    ? AppStyle.textStyleWhite.copyWith(
+                        color: Get.theme.primaryColor, // 当前选中的值用主题高亮色
+                        fontWeight: FontWeight.bold,
+                      )
+                    : AppStyle.textStyleWhite.copyWith(
+                        color: Colors.white70, // 未选中用灰色
+                      ),
+              ),
               contentPadding: AppStyle.edgeInsetsH20,
-              autofocus: e == value,
+              autofocus: isSelected,
               shape: RoundedRectangleBorder(
                 borderRadius: AppStyle.radius16,
               ),
-              focusColor: Colors.white54,
+              focusColor: Colors.white24, // 遥控器焦点底色改为半透明白，不再刺眼
+              selected: isSelected,
+              selectedTileColor: Colors.white10, // 当前值的底纹微微发亮
               onTap: () {
                 onChanged(e);
                 Get.back();
