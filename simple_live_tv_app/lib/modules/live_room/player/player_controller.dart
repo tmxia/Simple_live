@@ -244,7 +244,7 @@ class PlayerController extends BaseController
       }
       
       if (event.contains('Could not open codec') || event.contains('Failed to open codec')) {
-        Log.e("检测到硬件解码失败，正在自动切换至软件解码...");
+        Log.e("检测到硬件解码失败，正在自动切换至软件解码...", StackTrace.current);
         (player.platform as NativePlayer).setProperty('hwdec', 'no');
       }
       //SmartDialog.showToast(event);
