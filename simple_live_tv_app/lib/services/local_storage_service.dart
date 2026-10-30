@@ -158,4 +158,8 @@ class LocalStorageService extends GetxService {
     Log.d("Remove LocalStorage：$key");
     return await settingsBox.delete(key);
   }
+  static const String kDouyinCookie = "DouyinCookie";
+  static const String kDouyuCookie = "DouyuCookie";
+  static const String kHuyaCookie = "HuyaCookie";
+  static const String kKuaishouCookie = "KuaishouCookie";
 }

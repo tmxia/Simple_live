@@ -4,6 +4,8 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:simple_live_app/services/bilibili_account_service.dart';
+import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:simple_live_app/app/log.dart';
@@ -155,6 +157,24 @@ class RemoteSyncWebDAVController extends GetxController {
       };
       final metaBytes = utf8.encode(jsonEncode(metaData));
       archive.addFile(ArchiveFile('backup_info.json', metaBytes.length, metaBytes));
+      // ── 备份账号 Cookie ──
+      final accounts = <String, String>{};
+      final bili = LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, "");
+      if (bili.isNotEmpty) accounts["bilibili"] = bili;
+      final douyin = LocalStorageService.instance.getValue(LocalStorageService.kDouyinCookie, "");
+      if (douyin.isNotEmpty) accounts["douyin"] = douyin;
+      final douyu = LocalStorageService.instance.getValue(LocalStorageService.kDouyuCookie, "");
+      if (douyu.isNotEmpty) accounts["douyu"] = douyu;
+      final huya = LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, "");
+      if (huya.isNotEmpty) accounts["huya"] = huya;
+      final ks = LocalStorageService.instance.getValue(LocalStorageService.kKuaishouCookie, "");
+      if (ks.isNotEmpty) accounts["kuaishou"] = ks;
+
+      if (accounts.isNotEmpty) {
+        final accountBytes = utf8.encode(jsonEncode(accounts));
+        archive.addFile(ArchiveFile('SimpleLive_accounts.json', accountBytes.length, accountBytes));
+      }
+
 
       // 3. 打包为真实 ZIP
       final zipData = ZipEncoder().encode(archive);
@@ -233,7 +253,27 @@ class RemoteSyncWebDAVController extends GetxController {
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
-        final List<dynamic> list = jsonDecode(jsonStr);
+        final dynamic decoded = jsonDecode(jsonStr);
+
+        if (file.name == 'SimpleLive_accounts.json') {
+          final accounts = decoded as Map<String, dynamic>;
+          if (accounts['bilibili'] != null) {
+            final cookie = accounts['bilibili'] as String;
+            LocalStorageService.instance.setValue(LocalStorageService.kBilibiliCookie, cookie);
+            try { Get.find<BiliBiliAccountService>().setCookie(cookie); } catch (_) {}
+          }
+          if (accounts['douyin'] != null) {
+            final cookie = accounts['douyin'] as String;
+            LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, cookie);
+            try { Get.find<DouyinAccountService>().setCookie(cookie); } catch (_) {}
+          }
+          if (accounts['douyu'] != null) LocalStorageService.instance.setValue(LocalStorageService.kDouyuCookie, accounts['douyu']);
+          if (accounts['huya'] != null) LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, accounts['huya']);
+          if (accounts['kuaishou'] != null) LocalStorageService.instance.setValue(LocalStorageService.kKuaishouCookie, accounts['kuaishou']);
+          continue;
+        }
+
+        final List<dynamic> list = decoded as List<dynamic>;
         
         if (file.name == 'SimpleLive_follows.json') {
           DBService.instance.followBox.clear();
