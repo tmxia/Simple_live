@@ -188,9 +188,15 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
         //最低
         currentQuality = playQualites.length - 1;
       } else {
-        //中间值
-        int middle = (playQualites.length / 2).floor();
-        currentQuality = middle;
+        // 优先蓝光10M（虎牙高码率档），找不到再走中间档
+        int idx = playQualites.indexWhere((q) =>
+            q.quality.contains("蓝光") && q.quality.contains("10"));
+        if (idx >= 0) {
+          currentQuality = idx;
+        } else {
+          int middle = (playQualites.length / 2).floor();
+          currentQuality = middle;
+        }
       }
 
       getPlayUrl();
