@@ -42,7 +42,7 @@ mixin PlayerMixin {
     configuration: AppSettingsController.instance.playerCompatMode.value
         ? const VideoControllerConfiguration(
             vo: 'mediacodec_embed',
-            hwdec: 'mediacodec',
+            hwdec: 'auto-safe',
           )
         : VideoControllerConfiguration(
             enableHardwareAcceleration:
@@ -241,6 +241,11 @@ class PlayerController extends BaseController
       Log.d("播放器错误：$event");
       if (event.contains('no sound.')) {
         return;
+      }
+      
+      if (event.contains('Could not open codec') || event.contains('Failed to open codec')) {
+        Log.e("检测到硬件解码失败，正在自动切换至软件解码...");
+        (player.platform as NativePlayer).setProperty('hwdec', 'no');
       }
       //SmartDialog.showToast(event);
       mediaError(event);

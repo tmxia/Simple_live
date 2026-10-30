@@ -232,7 +232,16 @@ class RemoteSyncWebDAVController extends GetxController {
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
-        final List<dynamic> list = jsonDecode(jsonStr);
+        final dynamic decoded = jsonDecode(jsonStr);
+        final List<dynamic> list;
+        if (decoded is List) {
+          list = decoded;
+        } else if (decoded is Map<String, dynamic>) {
+          // 兼容旧版/对象包裹的备份格式
+          list = (decoded['data'] ?? decoded['list'] ?? [decoded]) as List<dynamic>;
+        } else {
+          throw Exception('未知的备份格式类型: ${decoded.runtimeType}');
+        }
         
         if (file.name == 'SimpleLive_follows.json') {
           DBService.instance.followBox.clear();
