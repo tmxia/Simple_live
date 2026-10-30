@@ -4,6 +4,14 @@ part 'history.g.dart';
 
 @HiveType(typeId: 2)
 class History {
+
+  static DateTime _parseDate(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+    if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+    return DateTime.now();
+  }
+
   History({
     required this.id,
     required this.roomId,
@@ -33,12 +41,12 @@ class History {
   DateTime updateTime;
 
   factory History.fromJson(Map<String, dynamic> json) => History(
-        id: json["id"],
-        roomId: json["roomId"],
-        siteId: json["siteId"],
-        userName: json["userName"],
-        face: json["face"],
-        updateTime: DateTime.parse(json["updateTime"]),
+        id: json['id']?.toString() ?? '',
+        roomId: json['roomId']?.toString() ?? '',
+        siteId: json['siteId']?.toString() ?? '',
+        userName: json['userName']?.toString() ?? '',
+        face: json['face']?.toString() ?? '',
+        updateTime: _parseDate(json['updateTime']),
       );
 
   Map<String, dynamic> toJson() => {

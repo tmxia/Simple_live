@@ -5,6 +5,14 @@ part 'follow_user.g.dart';
 
 @HiveType(typeId: 1)
 class FollowUser {
+
+  static DateTime _parseDate(dynamic val) {
+    if (val == null) return DateTime.now();
+    if (val is int) return DateTime.fromMillisecondsSinceEpoch(val);
+    if (val is String) return DateTime.tryParse(val) ?? DateTime.now();
+    return DateTime.now();
+  }
+
   FollowUser({
     required this.id,
     required this.roomId,
@@ -45,13 +53,13 @@ class FollowUser {
   String? liveStartTime;
 
   factory FollowUser.fromJson(Map<String, dynamic> json) => FollowUser(
-        id: json['id'],
-        roomId: json['roomId'],
-        siteId: json['siteId'],
-        userName: json['userName'],
-        face: json['face'],
-        addTime: DateTime.parse(json['addTime']),
-        tag: json["tag"]??"全部",
+        id: json['id']?.toString() ?? '',
+        roomId: json['roomId']?.toString() ?? '',
+        siteId: json['siteId']?.toString() ?? '',
+        userName: json['userName']?.toString() ?? '',
+        face: json['face']?.toString() ?? '',
+        addTime: _parseDate(json['addTime']),
+        tag: json['tag']?.toString() ?? '全部',
       );
 
   Map<String, dynamic> toJson() => {
