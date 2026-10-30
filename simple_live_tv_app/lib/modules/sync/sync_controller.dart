@@ -155,8 +155,7 @@ class SyncController extends BaseController {
         bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
             title: const Text("同步确认"),
-            content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。
-是否继续覆盖？"),
+            content: Text("手机端仅发送了 $remoteCount 条历史记录，覆盖将清空本地 $localCount 条。\n是否继续覆盖？"),
             actions: [
               TextButton(onPressed: () => SmartDialog.dismiss(result: false), child: const Text("取消")),
               TextButton(onPressed: () => SmartDialog.dismiss(result: true), child: const Text("继续覆盖")),
