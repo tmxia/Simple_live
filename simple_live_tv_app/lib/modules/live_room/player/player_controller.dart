@@ -37,8 +37,8 @@ mixin PlayerMixin {
       await pp.setProperty('video-sync', 'audio');
       // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
       await pp.setProperty('framedrop', 'decoder+vo');
-      await pp.setProperty('ao', 'audiotrack');
-      await pp.setProperty('audio-buffer', '0.5');
+      await pp.setProperty('ao', 'opensles');
+      await pp.setProperty('audio-buffer', '0.2');
       await pp.setProperty('vd-lavc-threads', '4');
       // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
     }
@@ -245,6 +245,12 @@ class PlayerController extends BaseController
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
         // 如果硬解彻底崩溃，无条件降级为纯软解，保证有画面
         (player.platform as NativePlayer).setProperty('hwdec', 'no');
+      }
+      // 音频设备丢失时尝试重新初始化
+      if (event.contains('Could not open/initialize audio device') ||
+          event.contains('audio device')) {
+        Log.w("音频设备异常，尝试恢复: $event");
+        (player.platform as NativePlayer).setProperty('ao', 'opensles');
       }
     });
 
