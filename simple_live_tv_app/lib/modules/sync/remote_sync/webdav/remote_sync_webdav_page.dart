@@ -142,14 +142,14 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
         Container(
           padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 20.w),
           decoration: BoxDecoration(
-            color: Colors.green.withAlpha(50),
+            color: Colors.black87, // [Auto-Fix] 替换为深色
             borderRadius: BorderRadius.circular(10.w),
-            border: Border.all(color: Colors.green, width: 2.w),
+            border: Border.all(color: Colors.black87, // [Auto-Fix] 替换为深色 width: 2.w),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 40.w),
+              Icon(Icons.check_circle, color: Colors.black87, // [Auto-Fix] 替换为深色 size: 40.w),
               AppStyle.hGap16,
               Text("WebDAV 已连接", style: AppStyle.textStyleWhite.copyWith(fontSize: 28.w)),
             ],
