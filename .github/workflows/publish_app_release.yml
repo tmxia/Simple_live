@@ -201,21 +201,28 @@ jobs:
           gh release delete "$TAG_NAME" --yes || true
           git push --delete origin "$TAG_NAME" || true
 
-      - name: 发布至 GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.ver.outputs.app_ver }}
-          name: Release App v${{ steps.ver.outputs.app_ver }} & TV v${{ steps.ver.outputs.tv_ver }}
-          body: |
-            Auto-built APK by GitHub Actions.
-            - **App 版本**: v${{ steps.ver.outputs.app_ver }}
-            - **TV 版本**: v${{ steps.ver.outputs.tv_ver }}
-            已按架构拆分打包，请根据设备选择 arm64-v8a 下载。
-          files: output/*.apk
-          draft: false
-          prerelease: false
-          overwrite_files: true
-          make_latest: true
+      - name: 创建 GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: v${{ steps.ver.outputs.app_ver }}
+          RELEASE_TITLE: Release App v${{ steps.ver.outputs.app_ver }} & TV v${{ steps.ver.outputs.tv_ver }}
+          APP_VER: ${{ steps.ver.outputs.app_ver }}
+          TV_VER: ${{ steps.ver.outputs.tv_ver }}
+        run: |
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME 已存在，跳过创建"
+          else
+            gh release create "$TAG_NAME" --title "$RELEASE_TITLE" --notes "App v${APP_VER} / TV v${TV_VER} / Auto-built by GitHub Actions" --latest
+          fi
+
+      - name: 上传 APK 至 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: v${{ steps.ver.outputs.app_ver }}
+        run: |
+          ls -lh output/*.apk
+          gh release upload "$TAG_NAME" output/*.apk --clobber
+          echo "已上传 $(ls output/*.apk | wc -l) 个 APK"
 
   # ==========================================
   # 清理任务
