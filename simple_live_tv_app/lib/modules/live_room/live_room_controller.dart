@@ -238,6 +238,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       return Media(url, httpHeaders: playHeaders);
     }).toList();
     
+    // 增加防抖锁，解决电视遥控器快速切换或网络卡顿时导致的重叠拉流崩溃
+    await player.stop();
     await player.open(Playlist(mediaList));
 
     Log.d("播放链接\r\n：${playUrls[currentLineIndex]}");

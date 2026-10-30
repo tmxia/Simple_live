@@ -34,16 +34,10 @@ mixin PlayerMixin {
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: AppSettingsController.instance.playerCompatMode.value
-        ? const VideoControllerConfiguration(
-            vo: 'mediacodec_embed',
-            hwdec: 'mediacodec',
-          )
-        : VideoControllerConfiguration(
-            enableHardwareAcceleration:
-                AppSettingsController.instance.hardwareDecode.value,
-            androidAttachSurfaceAfterVideoParameters: false,
-          ),
+    configuration: const VideoControllerConfiguration(
+      enableHardwareAcceleration: false, // 彻底关闭硬解，挽救老电视
+      androidAttachSurfaceAfterVideoParameters: true, // 视频参数就绪后再渲染，防黑屏
+    ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
