@@ -1,0 +1,15 @@
+检测到潜在崩溃位置：
+文件: /data/data/com.termux/files/home/Simple_live/simple_live_tv_app/lib/modules/sync/remote_sync/webdav/remote_sync_webdav_controller.dart
+
+请将强制 `as List<dynamic>` 的逻辑替换为：
+
+// [Auto-Fix] 兼容旧版备份格式的安全解析
+dynamic decoded = jsonDecode(responseBody);
+List<dynamic> parsedData;
+if (decoded is List) {
+  parsedData = decoded;
+} else if (decoded is Map<String, dynamic>) {
+  parsedData = (decoded['data'] ?? decoded['list'] ?? decoded['history'] ?? decoded['follows'] ?? [decoded]) as List<dynamic>;
+} else {
+  throw Exception('未知的备份格式类型: ${decoded.runtimeType}');
+}
