@@ -77,6 +77,9 @@ class LocalStorageService extends GetxService {
   /// 蜂窝网络下播放清晰度，0=低，1=中，2=高
   static const String kQualityLevelCellular = "QualityLevelCellular";
 
+  /// 上次手动选择的清晰度名称
+  static const String kLastQuality = "LastQuality";
+
   /// 开启定时关闭
   static const String kAutoExitEnable = "AutoExitEnable";
 

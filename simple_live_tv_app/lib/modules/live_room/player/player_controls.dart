@@ -1,4 +1,5 @@
 import 'package:canvas_danmaku/canvas_danmaku.dart';
+import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -412,6 +413,10 @@ void showPlayerSettings(LiveRoomController controller) {
                   onChanged: (e) {
                     Get.back();
                     controller.currentQuality = e;
+                    LocalStorageService.instance.setValue(
+                      LocalStorageService.kLastQuality,
+                      controller.qualites[e].quality,
+                    );
                     controller.getPlayUrl();
                   },
                 ),

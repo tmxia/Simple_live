@@ -180,6 +180,20 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
         return;
       }
       qualites.value = playQualites;
+
+      // 优先读取上次手动选择的清晰度名称（匹配不上则走默认逻辑）
+      var lastQualityName = LocalStorageService.instance.getValue<String>(
+          LocalStorageService.kLastQuality, "");
+      int lastIdx = lastQualityName.isEmpty
+          ? -1
+          : playQualites.indexWhere((q) => q.quality == lastQualityName);
+
+      if (lastIdx >= 0) {
+        currentQuality = lastIdx;
+        getPlayUrl();
+        return;
+      }
+
       var qualityLevel = AppSettingsController.instance.qualityLevel.value;
       if (qualityLevel == 2) {
         //最高
