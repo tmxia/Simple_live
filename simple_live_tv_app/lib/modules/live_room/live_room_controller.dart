@@ -233,12 +233,14 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     // 初始化播放器并设置 ao 参数
     await initializePlayer();
     
-    // 使用 Playlist 自动切源，解决单线路死链导致的黑屏
-    final mediaList = playUrls.map((url) {
-      return Media(url, httpHeaders: playHeaders);
-    }).toList();
-    
-    await player.open(Playlist(mediaList));
+    // 使用单流播放，减轻电视网络和处理压力
+    await player.stop();
+    await player.open(
+      Media(
+        playUrls[currentLineIndex],
+        httpHeaders: playHeaders,
+      ),
+    );
 
     Log.d("播放链接\r\n：${playUrls[currentLineIndex]}");
   }

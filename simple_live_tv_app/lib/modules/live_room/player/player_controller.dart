@@ -20,7 +20,7 @@ mixin PlayerMixin {
   late final player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
-      bufferSize: 64 * 1024 * 1024, // 64MB 超大缓存，硬抗网络波动
+      bufferSize: 64 * 1024 * 1024, // 64MB 缓存
     ),
   );
 
@@ -28,15 +28,16 @@ mixin PlayerMixin {
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
     if (Platform.isAndroid) {
-      await pp.setProperty('force-seekable', 'yes');
-      // [终极优化] 强制使用 auto-copy 硬解，兼顾兼容性与性能
+      // [终极兼容] 强制使用 OpenGL 渲染，避免部分老电视 Vulkan 崩溃
+      await pp.setProperty('gpu-api', 'opengl');
+      // [终极兼容] 强制使用 auto-copy 硬解，绕开电视直接绑屏的黑屏坑
       await pp.setProperty('hwdec', 'auto-copy');
-      // 强制视频时钟跟随音频，防止掉帧和音画不同步
+      // 强制音频同步，防止掉帧
       await pp.setProperty('video-sync', 'audio');
-      // 增加网络超时，防止虎牙部分死链卡住整个播放器
-      await pp.setProperty('network-timeout', '15');
-      // 强制多线程软解兜底，万一硬解失败，用 8 个 CPU 线程抗住
-      await pp.setProperty('vd-lavc-threads', '8');
+      // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
+      await pp.setProperty('framedrop', 'vo');
+      // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
+      await pp.setProperty('ao', 'audiotrack');
     }
   }
 
@@ -44,7 +45,7 @@ mixin PlayerMixin {
   late final videoController = VideoController(
     player,
     configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: true, // 必须开启
+      enableHardwareAcceleration: true, // 强开硬件加速，配合 auto-copy
       androidAttachSurfaceAfterVideoParameters: false,
     ),
   );

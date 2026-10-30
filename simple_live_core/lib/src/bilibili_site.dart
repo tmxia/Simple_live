@@ -131,7 +131,7 @@ class BiliBiliSite implements LiveSite {
         "room_id": detail.roomId,
         "protocol": "0,1",
         "format": "0,1,2",
-        "codec": "0,1",
+        "codec": "0",
         "platform": "web",
       },
       header: await getHeader(),
