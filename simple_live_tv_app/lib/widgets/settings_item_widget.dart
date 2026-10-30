@@ -101,7 +101,7 @@ class SettingsItemWidget extends StatelessWidget {
   void showSettingsDialog() {
     Get.dialog(
       AlertDialog(
-        backgroundColor: const Color(0xFF222222), // 强制实心深灰背景，解决底层透字
+        backgroundColor: const Color(0xFF2C2C2C), // 实心深灰
         surfaceTintColor: Colors.transparent,
         title: Text(title, style: AppStyle.titleStyleWhite),
         scrollable: true,
@@ -113,23 +113,24 @@ class SettingsItemWidget extends StatelessWidget {
             return ListTile(
               title: Text(
                 items[e] ?? '',
-                style: isSelected
-                    ? AppStyle.textStyleWhite.copyWith(
-                        color: Get.theme.primaryColor, // 当前选中的值用主题高亮色
-                        fontWeight: FontWeight.bold,
-                      )
-                    : AppStyle.textStyleWhite.copyWith(
-                        color: Colors.white70, // 未选中用灰色
-                      ),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  // 选中项用亮黄色或纯白，未选中用灰色
+                  color: isSelected ? Colors.amberAccent : Colors.white70,
+                  fontSize: 24.w,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
               contentPadding: AppStyle.edgeInsetsH20,
               autofocus: isSelected,
               shape: RoundedRectangleBorder(
                 borderRadius: AppStyle.radius16,
               ),
-              focusColor: Colors.white24, // 遥控器焦点底色改为半透明白，不再刺眼
+              // 焦点框用稍微深一点的底色，不要纯白，避免和白字糊在一起
+              focusColor: Colors.white24,
               selected: isSelected,
-              selectedTileColor: Colors.white10, // 当前值的底纹微微发亮
+              // 选中项加一个底色
+              selectedTileColor: Colors.white10,
               onTap: () {
                 onChanged(e);
                 Get.back();
@@ -138,6 +139,8 @@ class SettingsItemWidget extends StatelessWidget {
           }).toList(),
         ),
       ),
+      // 关键修复：加深遮罩层，彻底挡住底部的背景干扰
+      barrierColor: Colors.black87,
     );
   }
 }
