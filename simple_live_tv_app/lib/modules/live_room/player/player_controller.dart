@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:simple_live_tv_app/app/controller/base_controller.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:fvp/fvp.dart' as fvp;
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/log.dart';
@@ -29,11 +28,6 @@ mixin PlayerMixin {
 
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
-    // [Auto-Fix] 注册 fvp 插件，使其自动接管 Android TV 的 EXO 引擎
-    fvp.registerWith(options: {
-      'platforms': ['android'],
-      'video.decoders': 'exo', // 强制使用 EXO 解码器
-    });
     
     var pp = player.platform as NativePlayer;
 
@@ -50,8 +44,8 @@ mixin PlayerMixin {
   late final videoController = VideoController(
     player,
     configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: false, // 强制禁用系统硬解，防黑屏
-      androidAttachSurfaceAfterVideoParameters: true, // 必须在视频参数准备完毕后再挂载画面
+      enableHardwareAcceleration: false, // 彻底关硬解
+      androidAttachSurfaceAfterVideoParameters: false, // 官方推荐的基础值
     ),
   );
 }
@@ -243,6 +237,10 @@ class PlayerController extends BaseController
   void initStream() {
     _errorSubscription = player.stream.error.listen((event) {
       Log.d("播放器错误：$event");
+      // [Auto-Fix] 把错误直接打在最上层，让你一眼看出为什么黑屏
+      if (event.contains('Could not open codec') || event.contains('Failed to open')) {
+        mediaError("解码失败: 请尝试切换兼容模式");
+      }
       if (event.contains('no sound.')) {
         return;
       }
