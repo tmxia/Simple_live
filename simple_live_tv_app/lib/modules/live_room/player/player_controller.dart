@@ -35,7 +35,10 @@ mixin PlayerMixin {
       // 强制音频同步，防止掉帧
       await pp.setProperty('video-sync', 'audio');
       // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
-      await pp.setProperty('framedrop', 'vo');
+      await pp.setProperty('framedrop', 'decoder+vo');
+      await pp.setProperty('ao', 'audiotrack');
+      await pp.setProperty('audio-buffer', '0.5');
+      await pp.setProperty('vd-lavc-threads', '4');
       // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
       await pp.setProperty('ao', 'audiotrack');
     }
