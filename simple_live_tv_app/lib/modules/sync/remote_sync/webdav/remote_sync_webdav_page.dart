@@ -139,27 +139,50 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
   Widget _buildSyncPanel() {
     return Column(
       children: [
+        // 绿色状态卡片
         Container(
-          padding: EdgeInsets.symmetric(horizontal: 40.w, vertical: 20.w),
+          padding: EdgeInsets.symmetric(vertical: 24.w, horizontal: 48.w),
           decoration: BoxDecoration(
-            color: Colors.black87,
-            borderRadius: BorderRadius.circular(10.w),
-            border: Border.all(color: Colors.black87, width: 2.w),
+            color: Colors.green.withAlpha(20),
+            borderRadius: BorderRadius.circular(12.w),
+            border: Border.all(color: Colors.green, width: 1.w),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
+          child: Column(
             children: [
-              Icon(Icons.check_circle, color: Colors.black87, size: 40.w),
-              AppStyle.hGap16,
-              Text("WebDAV 已连接", style: AppStyle.textStyleWhite.copyWith(fontSize: 28.w)),
+              Icon(Icons.check_circle, color: Colors.green, size: 48.w),
+              AppStyle.vGap12,
+              Text(
+                "WebDAV 已连接",
+                style: TextStyle(
+                  color: Colors.green,
+                  fontSize: 28.w,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),
         AppStyle.vGap48,
-        Text("最后备份时间: ${controller.lastUploadTime.value}", style: AppStyle.textStyleWhite),
-        AppStyle.vGap12,
-        Text("最后恢复时间: ${controller.lastRecoverTime.value}", style: AppStyle.textStyleWhite),
+        // 带图标的时间记录
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_upload, color: Colors.white70, size: 28.w),
+            AppStyle.hGap12,
+            Text("最后备份时间: ${controller.lastUploadTime.value}", style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w)),
+          ],
+        ),
+        AppStyle.vGap16,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.cloud_download, color: Colors.white70, size: 28.w),
+            AppStyle.hGap12,
+            Text("最后恢复时间: ${controller.lastRecoverTime.value}", style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w)),
+          ],
+        ),
         AppStyle.vGap48,
+        // 操作按钮
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -178,13 +201,13 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
             ),
           ],
         ),
-        AppStyle.vGap24,
+        AppStyle.vGap32,
         HighlightButton(
           focusNode: AppFocusNode(),
           iconData: Icons.settings,
           text: "修改配置",
           onTap: () {
-            controller.notLogin.value = true; // 强制回到登录界面
+            controller.notLogin.value = true;
           },
         ),
       ],
