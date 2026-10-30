@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:simple_live_tv_app/app/controller/base_controller.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:fvp/fvp.dart' as fvp;
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/log.dart';
@@ -28,6 +29,12 @@ mixin PlayerMixin {
 
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
+    // [Auto-Fix] 注册 fvp 插件，使其自动接管 Android TV 的 EXO 引擎
+    fvp.registerWith(options: {
+      'platforms': ['android'],
+      'video.decoders': 'exo', // 强制使用 EXO 解码器
+    });
+    
     var pp = player.platform as NativePlayer;
 
     // media_kit 仓库更新导致的问题，临时解决办法
@@ -35,7 +42,7 @@ mixin PlayerMixin {
       await pp.setProperty('force-seekable', 'yes');
       // 终极防黑屏补丁：部分电视芯片硬解无法渲染画面，强制使用 auto-copy 或 no
       // 这里使用 no (纯软解) 以确保 100% 有画面，或者用 auto-copy 保留部分硬解优势
-      await pp.setProperty('hwdec', 'no');
+      await pp.setProperty('hwdec', 'auto-safe');
     }
   }
 
