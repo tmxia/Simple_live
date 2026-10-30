@@ -9,10 +9,12 @@ class DBService extends GetxService {
   static DBService get instance => Get.find<DBService>();
   late Box<History> historyBox;
   late Box<FollowUser> followBox;
+  late Box<FollowUserTag> followTagBox;
 
   Future init() async {
     historyBox = await Hive.openBox("TVHostiry");
     followBox = await Hive.openBox("TVFollowUser");
+    followTagBox = await Hive.openBox("TVFollowTag");
   }
 
   bool getFollowExist(String id) {

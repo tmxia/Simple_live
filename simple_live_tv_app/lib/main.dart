@@ -1,3 +1,4 @@
+import 'package:simple_live_tv_app/models/db/follow_user_tag.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,6 +64,7 @@ Future initServices() async {
   };
 
   Hive.registerAdapter(FollowUserAdapter());
+  Hive.registerAdapter(FollowUserTagAdapter());
   Hive.registerAdapter(HistoryAdapter());
 
   //包信息
