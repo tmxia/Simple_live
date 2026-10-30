@@ -411,13 +411,14 @@ void showPlayerSettings(LiveRoomController controller) {
                       .cast<int, String>(),
                   value: controller.currentQuality,
                   onChanged: (e) {
-                    Get.back();
-                    controller.currentQuality = e;
+                    final qualityName = controller.qualites[e].quality;
                     LocalStorageService.instance.setValue(
                       LocalStorageService.kLastQuality,
-                      controller.qualites[e].quality,
+                      qualityName,
                     );
+                    controller.currentQuality = e;
                     controller.getPlayUrl();
+                    Get.back();
                   },
                 ),
               ),

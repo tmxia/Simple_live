@@ -185,9 +185,16 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       // 优先读取上次手动选择的清晰度名称（匹配不上则走默认逻辑）
       var lastQualityName = LocalStorageService.instance.getValue<String>(
           LocalStorageService.kLastQuality, "");
-      int lastIdx = lastQualityName.isEmpty
-          ? -1
-          : playQualites.indexWhere((q) => q.quality == lastQualityName);
+      int lastIdx = -1;
+      if (lastQualityName.isNotEmpty) {
+        lastIdx = playQualites.indexWhere((q) => q.quality == lastQualityName);
+        if (lastIdx < 0) {
+          // 名称不完全匹配时，尝试双向 contains 模糊匹配
+          lastIdx = playQualites.indexWhere((q) =>
+              q.quality.contains(lastQualityName) ||
+              lastQualityName.contains(q.quality));
+        }
+      }
 
       if (lastIdx >= 0) {
         currentQuality = lastIdx;
