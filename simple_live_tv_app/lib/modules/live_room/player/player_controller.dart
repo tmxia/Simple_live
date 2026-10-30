@@ -40,11 +40,6 @@ mixin PlayerMixin {
       await pp.setProperty('ao', 'opensles');
       await pp.setProperty('audio-buffer', '0.2');
       await pp.setProperty('vd-lavc-threads', '4');
-      // ─── 极限渲染减负 ───
-      await pp.setProperty('gpu-dumb-mode', 'yes'); // 关闭所有 GPU 复杂渲染特效
-      await pp.setProperty('vd-lavc-skipframe', 'nonref'); // 允许跳过非参考帧
-      await pp.setProperty('hwdec-extra-frames', '4'); // 限制硬解队列，防止显存/内存积压
-      await pp.setProperty('interpolation', 'no'); // 彻底关闭插帧
 
       // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
     }
