@@ -28,8 +28,8 @@ mixin PlayerMixin {
     var pp = player.platform as NativePlayer;
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
-      // 使用 auto-safe 让播放器自己探测最安全的硬解
-      await pp.setProperty('hwdec', 'auto-safe');
+      // [Auto-Fix] 强制使用 Android 专属的高效硬解（内存拷贝渲染，不黑屏且不掉帧）
+      await pp.setProperty('hwdec', 'mediacodec-copy');
     }
   }
 
@@ -38,12 +38,12 @@ mixin PlayerMixin {
     player,
     configuration: AppSettingsController.instance.playerCompatMode.value
         ? const VideoControllerConfiguration(
-            vo: 'mediacodec_embed', // 兼容模式：走 Android 原生渲染
+            vo: 'mediacodec_embed', // 兼容模式：走系统原生渲染
             hwdec: 'mediacodec',
           )
-        : VideoControllerConfiguration(
-            enableHardwareAcceleration: AppSettingsController.instance.hardwareDecode.value,
-            androidAttachSurfaceAfterVideoParameters: false, // 防止老电视黑屏的关键
+        : const VideoControllerConfiguration(
+            enableHardwareAcceleration: true, // 强制开启硬件加速
+            androidAttachSurfaceAfterVideoParameters: false,
           ),
   );
 }
