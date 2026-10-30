@@ -31,8 +31,8 @@ mixin PlayerMixin {
       // [终极兼容] 强制使用 OpenGL 渲染，避免部分老电视 Vulkan 崩溃
       await pp.setProperty('gpu-api', 'opengl');
       // [终极兼容] 强制使用 auto-copy 硬解，绕开电视直接绑屏的黑屏坑
-      await pp.setProperty('hwdec', 'mediacodec');
-      await pp.setProperty('vo', 'mediacodec_embed'); // 直嵌Surface，绕过GPU拷贝
+      await pp.setProperty('hwdec', 'auto-copy');
+       // 直嵌Surface，绕过GPU拷贝
       // 强制音频同步，防止掉帧
       await pp.setProperty('video-sync', 'audio');
       // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
@@ -49,7 +49,7 @@ mixin PlayerMixin {
     player,
     configuration: const VideoControllerConfiguration(
       enableHardwareAcceleration: true, // 强开硬件加速，配合 auto-copy
-      androidAttachSurfaceAfterVideoParameters: true, // 必须为true，防止mediacodec_embed黑屏/闪退,
+      androidAttachSurfaceAfterVideoParameters: false, // 必须为true，防止mediacodec_embed黑屏/闪退,
         width: 1920,
         height: 1080, // 强制缩放到1080p输出，大幅降低2K渲染压力
       ),

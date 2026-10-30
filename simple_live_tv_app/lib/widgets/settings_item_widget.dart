@@ -100,74 +100,51 @@ class SettingsItemWidget extends StatelessWidget {
 
   void showSettingsDialog() {
     Get.dialog(
-      Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Container(
-          width: 400.w,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E), // 绝对不透明的深色背景
-            borderRadius: AppStyle.radius16,
-            border: Border.all(color: Colors.white24, width: 1.w),
-          ),
-          padding: EdgeInsets.symmetric(vertical: 24.w, horizontal: 16.w),
-          child: Column(
+      Theme(
+        // 覆盖全局主题，彻底干掉焦点水波纹和默认大方框
+        data: Theme.of(Get.context!).copyWith(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          hoverColor: Colors.transparent,
+        ),
+        child: AlertDialog(
+          backgroundColor: const Color(0xFF222222), // 实心深灰
+          surfaceTintColor: Colors.transparent,
+          title: Text(title, style: AppStyle.titleStyleWhite),
+          scrollable: true,
+          shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
+          content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: AppStyle.titleStyleWhite.copyWith(
-                  fontSize: 28.w,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              AppStyle.vGap16,
-              ...items.keys.map((e) {
-                bool isSelected = e == value;
-                return Focus(
-                  autofocus: isSelected,
-                  child: Builder(
-                    builder: (context) {
-                      final hasFocus = Focus.of(context).hasFocus;
-                      return GestureDetector(
-                        onTap: () {
-                          onChanged(e);
-                          Get.back();
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          margin: EdgeInsets.symmetric(vertical: 6.w),
-                          padding: EdgeInsets.symmetric(vertical: 12.w),
-                          decoration: BoxDecoration(
-                            // 焦点高亮背景：只给极淡的背景，不要大方框
-                            color: hasFocus ? Colors.white12 : Colors.transparent,
-                            borderRadius: AppStyle.radius8,
-                          ),
-                          child: Center(
-                            child: Text(
-                              items[e] ?? '',
-                              style: TextStyle(
-                                // 当前选中项（黄色加粗），焦点项（白色），普通项（灰色）
-                                color: isSelected
-                                    ? Colors.amberAccent
-                                    : (hasFocus ? Colors.white : Colors.white70),
-                                fontSize: 24.w,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
+            children: items.keys.map((e) {
+              bool isSelected = e == value;
+              return ListTile(
+                title: Text(
+                  items[e] ?? '',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    // 选中用亮黄，未选中用白色/浅灰
+                    color: isSelected ? Colors.amberAccent : Colors.white70,
+                    fontSize: 24.w,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
-                );
-              }).toList(),
-            ],
+                ),
+                contentPadding: AppStyle.edgeInsetsH20,
+                autofocus: isSelected,
+                shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
+                // 遥控器焦点底色：极淡的白色，不再是大白框
+                focusColor: Colors.white10,
+                selected: isSelected,
+                selectedTileColor: Colors.transparent,
+                onTap: () {
+                  onChanged(e);
+                  Get.back();
+                },
+              );
+            }).toList(),
           ),
         ),
       ),
-      // 加深背后的遮罩层，进一步挡住底层文字
-      barrierColor: Colors.black.withOpacity(0.85),
+      barrierColor: Colors.black87, // 遮罩层：彻底挡住底层的蓝字
     );
   }
 }
