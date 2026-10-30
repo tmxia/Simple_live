@@ -410,9 +410,10 @@ void showPlayerSettings(LiveRoomController controller) {
                       .map((i, e) => MapEntry(i, e.quality))
                       .cast<int, String>(),
                   value: controller.currentQuality,
-                  onChanged: (e) {
+                  onChanged: (e) async {
                     final qualityName = controller.qualites[e].quality;
-                    LocalStorageService.instance.setValue(
+                    // 强制等待写入磁盘，防止杀后台丢失
+                    await LocalStorageService.instance.setValue(
                       LocalStorageService.kLastQuality,
                       qualityName,
                     );

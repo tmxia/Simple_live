@@ -1,3 +1,4 @@
+import 'package:simple_live_app/services/local_storage_service.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -752,8 +753,12 @@ void showQualitesInfo(LiveRoomController controller) {
             style: const TextStyle(fontSize: 14),
           ),
           minLeadingWidth: 16,
-          onTap: () {
+          onTap: () async {
             Utils.hideRightDialog();
+            await LocalStorageService.instance.setValue(
+              LocalStorageService.kLastQuality,
+              item.quality,
+            );
             controller.currentQuality = i;
             controller.getPlayUrl();
           },
