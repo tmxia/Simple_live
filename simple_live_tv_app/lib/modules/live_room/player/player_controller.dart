@@ -49,7 +49,9 @@ mixin PlayerMixin {
     configuration: const VideoControllerConfiguration(
       enableHardwareAcceleration: true, // 强开硬件加速，配合 auto-copy
       androidAttachSurfaceAfterVideoParameters: false,
-    ),
+        width: 1920,
+        height: 1080, // 强制缩放到1080p输出，大幅降低2K渲染压力
+      ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
