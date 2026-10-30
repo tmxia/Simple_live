@@ -28,16 +28,23 @@ mixin PlayerMixin {
     var pp = player.platform as NativePlayer;
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
+      // 使用 auto-safe 让播放器自己探测最安全的硬解
+      await pp.setProperty('hwdec', 'auto-safe');
     }
   }
 
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: false, // 彻底关闭硬解，挽救老电视
-      androidAttachSurfaceAfterVideoParameters: true, // 视频参数就绪后再渲染，防黑屏
-    ),
+    configuration: AppSettingsController.instance.playerCompatMode.value
+        ? const VideoControllerConfiguration(
+            vo: 'mediacodec_embed', // 兼容模式：走 Android 原生渲染
+            hwdec: 'mediacodec',
+          )
+        : VideoControllerConfiguration(
+            enableHardwareAcceleration: AppSettingsController.instance.hardwareDecode.value,
+            androidAttachSurfaceAfterVideoParameters: false, // 防止老电视黑屏的关键
+          ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
@@ -227,19 +234,10 @@ class PlayerController extends BaseController
 
   void initStream() {
     _errorSubscription = player.stream.error.listen((event) {
-      Log.d("播放器错误：$event");
-      
-
-      // [Auto-Fix] 把错误直接打在最上层，让你一眼看出为什么黑屏
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
-        mediaError("解码失败: 请尝试切换兼容模式");
+        // 如果硬解彻底崩溃，无条件降级为纯软解，保证有画面
+        player.setProperty('hwdec', 'no');
       }
-      if (event.contains('no sound.')) {
-        return;
-      }
-
-      //SmartDialog.showToast(event);
-      mediaError(event);
     });
 
     _completedSubscription = player.stream.completed.listen((event) {
