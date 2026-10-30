@@ -210,11 +210,6 @@ class HuyaSite implements LiveSite {
   @override
   Future<LivePlayUrl> getPlayUrls(
       {
-    // [Auto-Fix] 虎牙播放流必须携带 Referer 和 UA，否则返回 403
-    Map<String, String> huyaHeaders = {
-      'Referer': 'https://www.huya.com/',
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    };
 required LiveRoomDetail detail,
       required LivePlayQuality quality}) async {
     var ls = <String>[];
@@ -226,8 +221,12 @@ required LiveRoomDetail detail,
     // 最新UA需要额外验证，此方法暂时弃用
     // var ua = await getHuYaUA();
     return LivePlayUrl(
+      headers: {
+        'Referer': 'https://www.huya.com/',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
       urls: ls,
-      headers: {"user-agent": HYSDK_UA},
+      
     );
   }
 
