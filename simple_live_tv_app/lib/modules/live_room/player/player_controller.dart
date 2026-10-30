@@ -43,11 +43,11 @@ mixin PlayerMixin {
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: VideoControllerConfiguration(
-      // 允许硬件加速，配合 auto-copy 解决 B 站高码率卡顿
+    configuration: const VideoControllerConfiguration(
+      // 彻底明确指定渲染配置
       enableHardwareAcceleration: true,
       androidAttachSurfaceAfterVideoParameters: false,
-      vo: 'gpu', // 强制走 GPU 渲染
+      vo: 'gpu', 
     ),
   );
 }
@@ -240,7 +240,7 @@ class PlayerController extends BaseController
     _errorSubscription = player.stream.error.listen((event) {
       Log.d("播放器错误：$event");
       
-      // [Auto-Fix] 终极兜底：如果 auto-copy 硬解依然失败，自动降级为纯软解防止黑屏
+      // [Auto-Fix] 终极兜底：如果 mediacodec-copy 失败，自动降级为软解防止黑屏
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
         (player.platform as NativePlayer).setProperty('hwdec', 'no');
         mediaError("硬解失败，已自动降级为软解，画面可能略有卡顿");
