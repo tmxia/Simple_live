@@ -20,6 +20,7 @@ mixin PlayerMixin {
   late final player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
+      bufferSize: 64 * 1024 * 1024, // 64MB 超大缓存，硬抗网络波动
     ),
   );
 
@@ -28,23 +29,24 @@ mixin PlayerMixin {
     var pp = player.platform as NativePlayer;
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
-      // [Auto-Fix] 强制使用 Android 专属的高效硬解（内存拷贝渲染，不黑屏且不掉帧）
-      await pp.setProperty('hwdec', 'mediacodec-copy');
+      // [终极优化] 强制使用 auto-copy 硬解，兼顾兼容性与性能
+      await pp.setProperty('hwdec', 'auto-copy');
+      // 强制视频时钟跟随音频，防止掉帧和音画不同步
+      await pp.setProperty('video-sync', 'audio');
+      // 增加网络超时，防止虎牙部分死链卡住整个播放器
+      await pp.setProperty('network-timeout', '15');
+      // 强制多线程软解兜底，万一硬解失败，用 8 个 CPU 线程抗住
+      await pp.setProperty('vd-lavc-threads', '8');
     }
   }
 
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: AppSettingsController.instance.playerCompatMode.value
-        ? const VideoControllerConfiguration(
-            vo: 'mediacodec_embed', // 兼容模式：走系统原生渲染
-            hwdec: 'mediacodec',
-          )
-        : const VideoControllerConfiguration(
-            enableHardwareAcceleration: true, // 强制开启硬件加速
-            androidAttachSurfaceAfterVideoParameters: false,
-          ),
+    configuration: const VideoControllerConfiguration(
+      enableHardwareAcceleration: true, // 必须开启
+      androidAttachSurfaceAfterVideoParameters: false,
+    ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
