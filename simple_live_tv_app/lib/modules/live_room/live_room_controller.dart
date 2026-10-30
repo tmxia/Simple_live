@@ -235,11 +235,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     // [Auto-Fix] 完美对齐移动端：使用 Playlist 传入所有可用线路，实现断线/死链自动切换
     final mediaList = playUrls.map((url) {
-      var finalUrl = url;
-      if (AppSettingsController.instance.playerForceHttps.value) {
-        finalUrl = finalUrl.replaceAll("http://", "https://");
-      }
-      return Media(finalUrl, httpHeaders: playHeaders);
+      return Media(url, httpHeaders: playHeaders);
     }).toList();
     
     await player.open(Playlist(mediaList));
