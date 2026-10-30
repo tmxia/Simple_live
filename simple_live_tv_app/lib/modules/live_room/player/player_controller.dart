@@ -33,22 +33,19 @@ mixin PlayerMixin {
     // media_kit 仓库更新导致的问题，临时解决办法
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
+      // 终极防黑屏补丁：部分电视芯片硬解无法渲染画面，强制使用 auto-copy 或 no
+      // 这里使用 no (纯软解) 以确保 100% 有画面，或者用 auto-copy 保留部分硬解优势
+      await pp.setProperty('hwdec', 'no');
     }
   }
 
   /// 视频控制器
   late final videoController = VideoController(
     player,
-    configuration: AppSettingsController.instance.playerCompatMode.value
-        ? const VideoControllerConfiguration(
-            vo: 'mediacodec_embed',
-            hwdec: 'auto-safe',
-          )
-        : VideoControllerConfiguration(
-            enableHardwareAcceleration:
-                AppSettingsController.instance.hardwareDecode.value,
-            androidAttachSurfaceAfterVideoParameters: false,
-          ),
+    configuration: const VideoControllerConfiguration(
+      enableHardwareAcceleration: false, // 强制禁用系统硬解，防黑屏
+      androidAttachSurfaceAfterVideoParameters: true, // 必须在视频参数准备完毕后再挂载画面
+    ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
@@ -242,11 +239,7 @@ class PlayerController extends BaseController
       if (event.contains('no sound.')) {
         return;
       }
-      
-      if (event.contains('Could not open codec') || event.contains('Failed to open codec')) {
-        Log.e("检测到硬件解码失败，正在自动切换至软件解码...", StackTrace.current);
-        (player.platform as NativePlayer).setProperty('hwdec', 'no');
-      }
+
       //SmartDialog.showToast(event);
       mediaError(event);
     });

@@ -209,19 +209,23 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ),
           alignment: Alignment.centerLeft,
           padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: Focus(
-            focusNode: focusNode,
-            child: TextField(
-              controller: ctrl,
-              obscureText: obscure,
-              style: TextStyle(color: Colors.white, fontSize: 26.w),
-              decoration: InputDecoration(
-                hintText: hint,
-                hintStyle: TextStyle(color: Colors.white38, fontSize: 24.w),
-                border: InputBorder.none,
-                isDense: true,
-              ),
+          child: TextField(
+            focusNode: focusNode, // 将焦点直接移交给输入框，确保在 TV 端按确认能调起软键盘
+            controller: ctrl,
+            obscureText: obscure,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            style: TextStyle(color: Colors.white, fontSize: 26.w),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.white38, fontSize: 24.w),
+              border: InputBorder.none,
+              isDense: true,
             ),
+            onSubmitted: (_) {
+              // 输入完成后，让输入框失去焦点，收起键盘
+              focusNode.unfocus();
+            },
           ),
         ),
       ],
