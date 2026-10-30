@@ -100,47 +100,74 @@ class SettingsItemWidget extends StatelessWidget {
 
   void showSettingsDialog() {
     Get.dialog(
-      AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2C), // 实心深灰
-        surfaceTintColor: Colors.transparent,
-        title: Text(title, style: AppStyle.titleStyleWhite),
-        scrollable: true,
-        shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: items.keys.map((e) {
-            bool isSelected = e == value;
-            return ListTile(
-              title: Text(
-                items[e] ?? '',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  // 选中项用亮黄色或纯白，未选中用灰色
-                  color: isSelected ? Colors.amberAccent : Colors.white70,
-                  fontSize: 24.w,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      Dialog(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        child: Container(
+          width: 400.w,
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E), // 绝对不透明的深色背景
+            borderRadius: AppStyle.radius16,
+            border: Border.all(color: Colors.white24, width: 1.w),
+          ),
+          padding: EdgeInsets.symmetric(vertical: 24.w, horizontal: 16.w),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: AppStyle.titleStyleWhite.copyWith(
+                  fontSize: 28.w,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              contentPadding: AppStyle.edgeInsetsH20,
-              autofocus: isSelected,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppStyle.radius16,
-              ),
-              // 焦点框用稍微深一点的底色，不要纯白，避免和白字糊在一起
-              focusColor: Colors.white24,
-              selected: isSelected,
-              // 选中项加一个底色
-              selectedTileColor: Colors.white10,
-              onTap: () {
-                onChanged(e);
-                Get.back();
-              },
-            );
-          }).toList(),
+              AppStyle.vGap16,
+              ...items.keys.map((e) {
+                bool isSelected = e == value;
+                return Focus(
+                  autofocus: isSelected,
+                  child: Builder(
+                    builder: (context) {
+                      final hasFocus = Focus.of(context).hasFocus;
+                      return GestureDetector(
+                        onTap: () {
+                          onChanged(e);
+                          Get.back();
+                        },
+                        child: Container(
+                          width: double.infinity,
+                          margin: EdgeInsets.symmetric(vertical: 6.w),
+                          padding: EdgeInsets.symmetric(vertical: 12.w),
+                          decoration: BoxDecoration(
+                            // 焦点高亮背景：只给极淡的背景，不要大方框
+                            color: hasFocus ? Colors.white12 : Colors.transparent,
+                            borderRadius: AppStyle.radius8,
+                          ),
+                          child: Center(
+                            child: Text(
+                              items[e] ?? '',
+                              style: TextStyle(
+                                // 当前选中项（黄色加粗），焦点项（白色），普通项（灰色）
+                                color: isSelected
+                                    ? Colors.amberAccent
+                                    : (hasFocus ? Colors.white : Colors.white70),
+                                fontSize: 24.w,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
         ),
       ),
-      // 关键修复：加深遮罩层，彻底挡住底部的背景干扰
-      barrierColor: Colors.black87,
+      // 加深背后的遮罩层，进一步挡住底层文字
+      barrierColor: Colors.black.withOpacity(0.85),
     );
   }
 }
