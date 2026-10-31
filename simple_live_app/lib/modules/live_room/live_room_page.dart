@@ -268,7 +268,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
           },
           aspectRatio: aspectRatio,
           fit: boxFit,
-          // 自己实现
+          
           wakelock: false,
         ),
         Obx(
@@ -474,7 +474,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                           controller: controller.scrollController,
                           separatorBuilder: (_, i) => Obx(
                             () => SizedBox(
-                              // *2与原来的EdgeInsets.symmetric(vertical: )做兼容
+                              
                               height: AppSettingsController
                                       .instance.chatTextGap.value *
                                   2,
@@ -541,7 +541,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.blueGrey.withAlpha(25),
-                      //borderRadius: AppStyle.radius8,
+                      
                       borderRadius: const BorderRadius.only(
                         topRight: Radius.circular(12),
                         bottomLeft: Radius.circular(12),
@@ -901,7 +901,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
   }
 
   String parseDuration(int sec) {
-    // 转为时分秒
+    
     var h = sec ~/ 3600;
     var m = (sec % 3600) ~/ 60;
     var s = sec % 60;

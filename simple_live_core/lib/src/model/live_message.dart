@@ -72,7 +72,7 @@ class LiveMessageColor {
       var R = int.parse(obj.substring(2, 4), radix: 16);
       var G = int.parse(obj.substring(4, 6), radix: 16);
       var B = int.parse(obj.substring(6, 8), radix: 16);
-      //var A = int.parse(obj.substring(0, 2), radix: 16);
+      
       color = LiveMessageColor(R, G, B);
     }
 

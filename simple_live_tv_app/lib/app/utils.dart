@@ -190,7 +190,7 @@ class Utils {
     SmartDialog.show(
       alignment: Alignment.topRight,
       animationBuilder: (controller, child, animationParam) {
-        //从右到左
+        
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(1, 0),

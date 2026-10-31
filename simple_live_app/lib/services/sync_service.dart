@@ -57,22 +57,22 @@ class SyncService extends GetxService {
     Log.i("Received: $str from ${datagram.address}:${datagram.port}");
     if (str.startsWith('{') && str.endsWith('}')) {
       var data = json.decode(str);
-      //如果是自己的广播，就不处理
+      
       if (data['id'] == deviceId) {
         return;
       }
-      //处理Hello的广播
+      
       if (data["type"] == "hello") {
-        //如果http服务已经启动，就回复自己的信息
+        
         if (httpRunning.value) {
           sendInfo();
         }
         return;
       }
-      // 处理其他端的广播
-      // 地址直接从datagram中获取，能收到回复说明地址是可以连通的
+      
+      
       var address = datagram.address.address;
-      //检查是否已经存在
+      
       var index =
           scanClients.indexWhere((element) => element.address == address);
       if (index == -1) {
@@ -105,17 +105,17 @@ class SyncService extends GetxService {
 
   /// UDP广播自身信息
   void sendInfo() async {
-    //var ip = await getLocalIP();
+    
 
     var name = await getDeviceName();
 
     var data = {
       "id": deviceId,
       "type": Platform.operatingSystem,
-      //'version': Utils.packageInfo.version,
+      
       "name": name,
-      //"address": ip,
-      //"port": httpPort,
+      
+      
     };
 
     await udp!.send(
@@ -204,7 +204,7 @@ class SyncService extends GetxService {
         httpPort,
       );
 
-      // Enable content compression
+      
       server.autoCompress = true;
 
       httpRunning.value = true;
@@ -319,7 +319,7 @@ class SyncService extends GetxService {
         var history = History.fromJson(item);
         if (DBService.instance.historyBox.containsKey(history.id)) {
           var old = DBService.instance.historyBox.get(history.id);
-          //如果本地的更新时间比较新，就不更新
+          
           if (old!.updateTime.isAfter(history.updateTime)) {
             continue;
           }

@@ -25,12 +25,12 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
     children: [
       Container(),
       buildDanmuView(videoState, controller),
-      // 点击播放器打开设置
+      
       Positioned.fill(
         child: GestureDetector(onTap: () => showPlayerSettings(controller)),
       ),
       Center(
-        child: // 中间
+        child: 
             StreamBuilder(
           stream: videoState.widget.controller.player.stream.buffering,
           initialData: videoState.widget.controller.player.state.buffering,
@@ -48,7 +48,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
         ),
       ),
 
-      // 顶部
+      
       Obx(
         () => AnimatedPositioned(
           left: 0,

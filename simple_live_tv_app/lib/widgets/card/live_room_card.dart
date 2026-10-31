@@ -99,9 +99,9 @@ class LiveRoomCard extends StatelessWidget {
                   ),
                 ],
               ),
-              // child: Container(
-              //   height: 200.w,
-              // ),
+              
+              
+              
             ),
             AppStyle.vGap8,
             Padding(
@@ -115,7 +115,7 @@ class LiveRoomCard extends StatelessWidget {
                         startAfter: const Duration(seconds: 1),
                         velocity: 20,
                         blankSpace: 200.w,
-                        //decelerationDuration: const Duration(seconds: 2),
+                        
                         scrollAxis: Axis.horizontal,
                       )
                     : Container(

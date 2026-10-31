@@ -91,7 +91,7 @@ class FollowUserService extends BasePageController<FollowUser> {
           var start = i * followList.length ~/ threadCount;
           var end = (i + 1) * followList.length ~/ threadCount;
 
-          // 确保 end 不超出列表长度
+          
           if (end > followList.length) {
             end = followList.length;
           }
@@ -110,8 +110,8 @@ class FollowUserService extends BasePageController<FollowUser> {
       var site = Sites.allSites[item.siteId]!;
       item.liveStatus.value =
           (await site.liveSite.getLiveStatus(roomId: item.roomId)) ? 2 : 1;
-      //sortList();
-      //updateLivingList();
+      
+      
     } catch (e) {
       Log.logPrint(e);
     } finally {

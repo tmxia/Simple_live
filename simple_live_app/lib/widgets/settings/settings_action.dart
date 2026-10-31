@@ -21,7 +21,7 @@ class SettingsAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      // visualDensity: VisualDensity.compact,
+      
       leading: leading,
       title: Text(
         title,

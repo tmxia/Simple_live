@@ -54,16 +54,16 @@ class SyncService extends GetxService {
       if (str.startsWith('{') && str.endsWith('}')) {
         var data = json.decode(str);
 
-        //处理Hello的广播
+        
         if (data["type"] == "hello") {
-          //如果http服务已经启动，就回复自己的信息
+          
           if (httpRunning.value) {
             sendInfo();
           }
           return;
         }
       } else if (str == 'Who is SimpleLive?') {
-        //如果http服务已经启动，就回复自己的信息
+        
         if (httpRunning.value) {
           sendInfo();
         }
@@ -73,7 +73,7 @@ class SyncService extends GetxService {
 
   /// 发送自己的信息
   void sendInfo() async {
-    //var ip = await getLocalIP();
+    
 
     var name = await getDeviceName();
 
@@ -81,8 +81,8 @@ class SyncService extends GetxService {
       "id": deviceId,
       "type": "tv",
       "name": name,
-      //"address": ip,
-      //"port": httpPort,
+      
+      
     };
 
     await udp!.send(
@@ -156,7 +156,7 @@ class SyncService extends GetxService {
         httpPort,
       );
 
-      // Enable content compression
+      
       server.autoCompress = true;
 
       httpRunning.value = true;
@@ -240,7 +240,7 @@ class SyncService extends GetxService {
         var history = History.fromJson(item);
         if (DBService.instance.historyBox.containsKey(history.id)) {
           var old = DBService.instance.historyBox.get(history.id);
-          //如果本地的更新时间比较新，就不更新
+          
           if (old!.updateTime.isAfter(history.updateTime)) {
             continue;
           }

@@ -96,8 +96,8 @@ class MyCustomPainter extends BoxPainter {
         strokeWidth < configuration.size!.width / 2 &&
         strokeWidth < configuration.size!.height / 2);
 
-    //offset is the position from where the decoration should be drawn.
-    //configuration.size tells us about the height and width of the tab.
+    
+    
     Size mysize = Size(configuration.size!.width - (horizontalPadding * 2),
         configuration.size!.height - (2 * verticalPadding));
 

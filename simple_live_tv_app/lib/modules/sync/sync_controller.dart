@@ -54,23 +54,23 @@ class SyncController extends BaseController {
         _startTimer();
       } else {
         SmartDialog.showToast("创建房间失败: ${resp.message}");
-        // 不再强制返回，允许用户继续使用 WebDAV 等功能
+        
       }
     } catch (e) {
       SmartDialog.showToast("创建房间失败，请检查网络");
-      // 不再强制返回
+      
     }
   }
 
   void _startTimer() {
-    // 倒计时5分钟，自动关闭页面
+    
     countDown.value = 600;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       countDown--;
       if (countDown <= 0) {
         timer.cancel();
         SmartDialog.showToast("远程同步已自动断开");
-        // 不再强制关闭页面
+        
       }
     });
   }
@@ -81,7 +81,7 @@ class SyncController extends BaseController {
     });
     _roomDestroyedSubscription = signalR.onRoomDestroyedStream.listen((roomId) {
       SmartDialog.showToast("房间已被销毁");
-      // 不再强制返回首页，允许用户停留在当前页面
+      
     });
     _roomUserUpdatedSubscription = signalR.onRoomUserUpdatedStream.listen(
       (roomUsers) {
@@ -108,7 +108,7 @@ class SyncController extends BaseController {
       int remoteCount = jsonBody.length;
       int localCount = DBService.instance.followBox.length;
       
-      // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
+      
       if (overlay && localCount > remoteCount) {
         bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
@@ -128,7 +128,7 @@ class SyncController extends BaseController {
       }
       for (var item in jsonBody) {
         try {
-          // ★ 兼容手机端传来的多余字段（TV 端模型没有 tag）
+          
            
           var user = FollowUser.fromJson(item);
           await DBService.instance.followBox.put(user.id, user);
@@ -150,7 +150,7 @@ class SyncController extends BaseController {
       int remoteCount = jsonBody.length;
       int localCount = DBService.instance.historyBox.length;
 
-      // 如果发送方选择了“覆盖”且本地数据比云端多，弹窗确认
+      
       if (overlay && localCount > remoteCount) {
         bool? confirm = await SmartDialog.show<bool>(
           builder: (_) => AlertDialog(
@@ -174,7 +174,7 @@ class SyncController extends BaseController {
           var history = History.fromJson(item);
           if (DBService.instance.historyBox.containsKey(history.id)) {
             var old = DBService.instance.historyBox.get(history.id);
-            // 如果本地的更新时间比较新，就不更新
+            
             if (old!.updateTime.isAfter(history.updateTime)) {
               continue;
             }

@@ -17,7 +17,7 @@ class AccountController extends GetxController {
         BiliBiliAccountService.instance.logout();
       }
     } else {
-      //AppNavigator.toBiliBiliLogin();
+      
       bilibiliLogin();
     }
   }
@@ -92,11 +92,11 @@ class AccountController extends GetxController {
   }
 
   void doDouyinCookieConfig() {
-    // 初始化文本框时，只显示 ttwid 的值部分
+    
     var savedCookie = DouyinAccountService.instance.cookie;
     var displayText = savedCookie;
     if (savedCookie.startsWith('ttwid=')) {
-      displayText = savedCookie.substring(6); // 去掉 "ttwid="
+      displayText = savedCookie.substring(6); 
     }
     var controller = TextEditingController(text: displayText);
 
@@ -124,10 +124,10 @@ class AccountController extends GetxController {
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () {
-                  // 提取 ttwid 的值部分（去掉 "ttwid=" 前缀）
+                  
                   var defaultValue = DouyinSite.kDefaultCookie;
                   if (defaultValue.startsWith('ttwid=')) {
-                    defaultValue = defaultValue.substring(6); // 去掉 "ttwid="
+                    defaultValue = defaultValue.substring(6); 
                   }
                   controller.text = defaultValue;
                 },
@@ -150,7 +150,7 @@ class AccountController extends GetxController {
                 DouyinAccountService.instance.clearCookie();
                 SmartDialog.showToast("已清除自定义 Cookie，将使用默认 ttwid");
               } else {
-                // 如果用户只输入了 ttwid 值，自动添加 "ttwid=" 前缀
+                
                 var cookie = input;
                 if (!input.startsWith('ttwid=')) {
                   cookie = 'ttwid=$input';

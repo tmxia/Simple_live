@@ -129,7 +129,7 @@ class FollowSettingsPage extends GetView<AppSettingsController> {
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 8),
-            // 快捷选项
+            
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -143,7 +143,7 @@ class FollowSettingsPage extends GetView<AppSettingsController> {
               ],
             ),
             const SizedBox(height: 16),
-            // 自定义输入
+            
             TextField(
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(

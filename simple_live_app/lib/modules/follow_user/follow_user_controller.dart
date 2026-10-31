@@ -1,4 +1,4 @@
-// ignore_for_file: invalid_use_of_protected_member
+
 
 import 'dart:async';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -24,7 +24,7 @@ class FollowUserController extends BasePageController<FollowUser> {
     FollowUserTag(id: "2", tag: "未开播", userId: []),
   ].obs;
 
-  // 用户自定义标签
+  
   RxList<FollowUserTag> userTagList = <FollowUserTag>[].obs;
 
   @override
@@ -102,7 +102,7 @@ class FollowUserController extends BasePageController<FollowUser> {
     if (!result) {
       return;
     }
-    // 取消关注同时删除标签内的 userId
+    
     if(item.tag != "全部"){
       var tag = tagList.firstWhere((tag) => tag.tag == item.tag);
       tag.userId.remove(item.id);
@@ -115,15 +115,15 @@ class FollowUserController extends BasePageController<FollowUser> {
   void updateItem(FollowUser item){
     FollowService.instance.addFollow(item);
   }
-  // 修改item的标签
+  
   void setItemTag(FollowUser item, FollowUserTag targetTag) {
     FollowUserTag tarTag = targetTag;
     FollowUserTag curTag =
     tagList.firstWhere((tag) => tag.tag == item.tag);
-    // 从当前标签（非全部）删除item 向目标标签(全部包含所有item == 非全部)添加item
+    
     curTag.userId.remove(item.id);
     tarTag.userId.addIf(!tarTag.userId.contains(item.id), item.id);
-    // 数据库更新
+    
     item.tag = tarTag.tag;
     updateTag(curTag);
     updateTag(tarTag);
@@ -132,7 +132,7 @@ class FollowUserController extends BasePageController<FollowUser> {
   }
 
   Future<void> removeTag(FollowUserTag tag) async {
-    // 将tag下的所有follow设置为全部
+    
     for(var i in tag.userId){
       var follow = DBService.instance.followBox.get(i);
       if(follow != null){
@@ -159,18 +159,18 @@ class FollowUserController extends BasePageController<FollowUser> {
   }
 
   void updateTagName(FollowUserTag followUserTag, String newTagName) {
-    // 未操作
+    
     if (followUserTag.tag == newTagName) {
       return;
     }
-    // 避免重名
+    
     if (tagList.any((item) => item.tag == newTagName)) {
       SmartDialog.showToast("标签名重复，修改失败");
       return;
     }
     final FollowUserTag newTag = followUserTag.copyWith(tag: newTagName);
     updateTag(newTag);
-    // update item's tag when update tagName
+    
     for(var i in newTag.userId){
       var follow = DBService.instance.followBox.get(i);
       if(follow != null){
@@ -182,9 +182,9 @@ class FollowUserController extends BasePageController<FollowUser> {
     updateTagList();
   }
 
-  // 调整标签顺序
+  
   void updateTagOrder(int oldIndex, int newIndex) {
-    if (newIndex > oldIndex) newIndex -= 1; // 处理索引调整
+    if (newIndex > oldIndex) newIndex -= 1; 
     final item = userTagList.removeAt(oldIndex);
     userTagList.insert(newIndex, item);
     tagList.value = tagList.take(3).toList();

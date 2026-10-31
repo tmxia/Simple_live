@@ -46,10 +46,10 @@ void main() async {
         ? (await getApplicationSupportDirectory()).path
         : null,
   );
-  //初始化服务
+  
   await initServices();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  //设置状态栏为透明
+  
   SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
@@ -66,7 +66,7 @@ Future migrateData() async {
   }
   var hiveFileList = [
     "followuser",
-    //旧版本写错成hostiry了
+    
     "hostiry",
     "followusertag",
     "localstorage",
@@ -121,13 +121,13 @@ Future initServices() async {
   Hive.registerAdapter(HistoryAdapter());
   Hive.registerAdapter(FollowUserTagAdapter());
 
-  //包信息
+  
   Utils.packageInfo = await PackageInfo.fromPlatform();
-  //本地存储
+  
   Log.d("Init LocalStorage Service");
   await Get.put(LocalStorageService()).init();
   await Get.put(DBService()).init();
-  //初始化设置控制器
+  
   Get.put(AppSettingsController());
 
   Get.put(BiliBiliAccountService());
@@ -142,7 +142,7 @@ Future initServices() async {
 }
 
 void initCoreLog() {
-  //日志信息
+  
   CoreLog.enableLog =
       !kReleaseMode || AppSettingsController.instance.logEnable.value;
   CoreLog.requestLogType = RequestLogType.short;
@@ -196,7 +196,7 @@ class MyApp extends StatelessWidget {
             ThemeMode.values[Get.find<AppSettingsController>().themeMode.value],
         initialRoute: RoutePath.kIndex,
         getPages: AppPages.routes,
-        //国际化
+        
         locale: const Locale("zh", "CN"),
         localizationsDelegates: const [
           GlobalMaterialLocalizations.delegate,
@@ -208,17 +208,17 @@ class MyApp extends StatelessWidget {
           Log.addDebugLog(text, (isError ?? false) ? Colors.red : Colors.grey);
           Log.writeLog(text, (isError ?? false) ? Level.error : Level.info);
         },
-        // 升级后Android页面过渡动画似乎有BUG
+        
         defaultTransition: Platform.isAndroid ? Transition.cupertino : null,
-        //debugShowCheckedModeBanner: false,
+        
         navigatorObservers: [FlutterSmartDialog.observer],
         builder: FlutterSmartDialog.init(
           loadingBuilder: ((msg) => const AppLoaddingWidget()),
-          //字体大小不跟随系统变化
+          
           builder: (context, child) {
-            // Fix for HyperOS windowed-mode Flutter bug:
-            // - Values > 50 indicate the bug (windowed mode on HyperOS)
-            // - Values == 0 are valid for fullscreen/immersive mode and must NOT be treated as abnormal
+            
+            
+            
             const fallbackPadding = EdgeInsets.only(top: 25, bottom: 35);
             const maxNormalPadding = 50.0;
 
@@ -237,7 +237,7 @@ class MyApp extends StatelessWidget {
               data: fixedMediaQueryData,
               child: Stack(
               children: [
-                //侧键返回
+                
                 RawGestureDetector(
                   excludeFromSemantics: true,
                   gestures: <Type, GestureRecognizerFactory>{
@@ -247,7 +247,7 @@ class MyApp extends StatelessWidget {
                       () => FourthButtonTapGestureRecognizer(),
                       (FourthButtonTapGestureRecognizer instance) {
                         instance.onTapDown = (TapDownDetails details) async {
-                          //如果处于全屏状态，退出全屏
+                          
                           if (!Platform.isAndroid && !Platform.isIOS) {
                             if (await windowManager.isFullScreen()) {
                               await windowManager.setFullScreen(false);
@@ -264,8 +264,8 @@ class MyApp extends StatelessWidget {
                     onKeyEvent: (KeyEvent event) async {
                       if (event is KeyDownEvent &&
                           event.logicalKey == LogicalKeyboardKey.escape) {
-                        // ESC退出全屏
-                        // 如果处于全屏状态，退出全屏
+                        
+                        
                         if (!Platform.isAndroid && !Platform.isIOS) {
                           if (await windowManager.isFullScreen()) {
                             await windowManager.setFullScreen(false);
@@ -278,8 +278,8 @@ class MyApp extends StatelessWidget {
                   ),
                 ),
 
-                //查看DEBUG日志按钮
-                //只在Debug、Profile模式显示
+                
+                
                 Visibility(
                   visible: !kReleaseMode,
                   child: Positioned(

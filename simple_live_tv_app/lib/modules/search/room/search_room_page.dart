@@ -30,7 +30,7 @@ class SearchRoomPage extends GetView<SearchRoomController> {
                 focusNode: AppFocusNode(),
                 iconData: Icons.arrow_back,
                 text: "返回",
-                //autofocus: true,
+                
                 onTap: () {
                   Get.back();
                 },
@@ -59,14 +59,14 @@ class SearchRoomPage extends GetView<SearchRoomController> {
                 ),
               ),
               AppStyle.hGap24,
-              // HighlightButton(
-              //   focusNode: AppFocusNode(),
-              //   iconData: Icons.refresh,
-              //   text: "刷新",
-              //   onTap: () {
-              //     controller.refreshData();
-              //   },
-              // ),
+              
+              
+              
+              
+              
+              
+              
+              
               AppStyle.hGap48,
             ],
           ),

@@ -108,7 +108,7 @@ class WebScoketUtils {
   }
 
   void receiveMessage(dynamic data) {
-    //接受到一条信息才算重连成功
+    
     reconnectTime = 0;
     onMessage?.call(data);
   }

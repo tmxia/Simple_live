@@ -17,7 +17,7 @@ class IndexedSettingsController extends GetxController {
     }
     final String item = siteSort.removeAt(oldIndex);
     siteSort.insert(newIndex, item);
-    // ignore: invalid_use_of_protected_member
+    
     AppSettingsController.instance.setSiteSort(siteSort.value);
   }
 
@@ -27,7 +27,7 @@ class IndexedSettingsController extends GetxController {
     }
     final String item = homeSort.removeAt(oldIndex);
     homeSort.insert(newIndex, item);
-    // ignore: invalid_use_of_protected_member
+    
     AppSettingsController.instance.setHomeSort(homeSort.value);
   }
 }

@@ -73,7 +73,7 @@ class RemoteSyncRoomController extends BaseController {
   }
 
   void _startTimer() {
-    // 倒计时5分钟，自动关闭页面
+    
     countDown.value = 600;
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       countDown--;
@@ -150,7 +150,7 @@ class RemoteSyncRoomController extends BaseController {
         var history = History.fromJson(item);
         if (DBService.instance.historyBox.containsKey(history.id)) {
           var old = DBService.instance.historyBox.get(history.id);
-          //如果本地的更新时间比较新，就不更新
+          
           if (old!.updateTime.isAfter(history.updateTime)) {
             continue;
           }
@@ -172,7 +172,7 @@ class RemoteSyncRoomController extends BaseController {
         AppSettingsController.instance.clearShieldList();
       }
       for (var item in jsonBody) {
-        // add to Hive
+        
         AppSettingsController.instance.addShieldList(item);
       }
       SmartDialog.showToast('已同步屏蔽词');

@@ -646,7 +646,7 @@ function getMSSDKSignature(msStub, userAgent) {
                 'msHidden',
                 'isView',
                 'toLocaleString',
-                'https://mssdk.bytedance.com',
+                'https:
                 'B4Z6wo',
                 'dispatchException',
                 'msvisibilitychange',
@@ -1689,8 +1689,8 @@ function getMSSDKSignature(msStub, userAgent) {
 
         !(function (_0xe67213, _0x19937e) {
             _0x19937e((window.byted_acrawler = {}))
-            // var _0x40472c = w_0x25f3;
-            // 'object' == typeof exports && _0x40472c(0x384) != typeof module ? _0x19937e(exports) : _0x40472c(0x1ee) == typeof define && define['amd'] ? define([_0x40472c(0x1b8)], _0x19937e) : _0x19937e((_0xe67213 = _0x40472c(0x384) != typeof globalThis ? globalThis : _0xe67213 || self)[_0x40472c(0x1f5)] = {});
+            
+            
         })(this, function (_0x1d18f2) {
             'use strict'
             var _0x5612de = w_0x25f3
@@ -8309,10 +8309,10 @@ function getMSSDKSignature(msStub, userAgent) {
                                         } else _0x4e6ec1(_0x5aac87[_0x18e62e(0x24f)]())
                                     }),
                                     _0xadabb6[_0x5af634(0x1e5)]('')
-                            // setTimeout(function () {
-                            //     var _0x36b72e = _0x5af634;
-                            //     _0x4e6ec1(_0x5aac87[_0x36b72e(0x24f)]());
-                            // }, 0x2205 * 0x1 + 0x1d4 * -0x10 + -0x67 * 0x7);
+                            
+                            
+                            
+                            
                             var _0x38a358 = _0xadabb6[_0x5af634(0x2f5)]()
                             _0x38a358 instanceof Promise
                                 ? _0x38a358[_0x5af634(0x1ed)](function (_0x33e26c) {
@@ -10577,7 +10577,7 @@ function getMSSDKSignature(msStub, userAgent) {
 
             function _0x475194(_0x56e1e3) {
                 ; -0xa7f + -0xb * 0x18a + 0x1b6d === _0x56e1e3
-                // setTimeout(_0x5047d8, 0x1 * -0xb55 + -0x1031 + 0x1bea * 0x1) : -0xef1 + -0xfd3 * -0x1 + -0xe1 === _0x56e1e3 && setTimeout(_0x5c328e, 0x6 * 0x38d + -0x49 * -0x2b + -0x95 * 0x39);
+                
             }
 
             function _0x4a4111(_0x2ba688, _0x1e135c) {
@@ -10609,13 +10609,13 @@ function getMSSDKSignature(msStub, userAgent) {
                 _0xd39ee2 && (window[_0x5612de(0x318)] = _0xd39ee2),
                 (_0x9e520d = _0x5141ac()),
                 _0x9e520d && ((_0x6caf[_0x5612de(0x2b4)] = _0x9e520d), (_0x6caf['msStatus'] = _0x39693d['asgw'])),
-                // setTimeout(function () {
-                //     _0x18a9f7(),
-                //         _0x1dbe74(),
-                //         _0x4de7ef(),
-                //         _0x4c727e(),
-                //         _0x21fa28();
-                // }, -0x1a83 + 0x15ee + -0xd * -0x141),
+                
+                
+                
+                
+                
+                
+                
                 _0x5b850b(),
                 _0x59992f([_0x5612de(0x30c)])
             var _0x1649bc = !(-0xc6b * -0x1 + -0x2315 + 0x16aa)

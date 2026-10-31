@@ -51,7 +51,7 @@ Widget buildFullControls(
         Container(),
         buildDanmuView(videoState, controller),
 
-        // 左下角SC显示
+        
         Obx(
           () => Visibility(
             visible: AppSettingsController.instance.playershowSuperChat.value &&
@@ -66,7 +66,7 @@ Widget buildFullControls(
         ),
 
         Center(
-          child: // 中间
+          child: 
               StreamBuilder(
             stream: videoState.widget.controller.player.stream.buffering,
             initialData: videoState.widget.controller.player.state.buffering,
@@ -99,22 +99,22 @@ Widget buildFullControls(
                 width: double.infinity,
                 height: double.infinity,
                 color: Colors.transparent,
-                // child: Visibility(
-                //   //拖拽区域
-                //   visible: controller.smallWindowState.value,
-                //   child: DragToMoveArea(
-                //       child: Container(
-                //     width: double.infinity,
-                //     height: double.infinity,
-                //     color: Colors.transparent,
-                //   )),
-                // ),
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
               ),
             ),
           ),
         ),
 
-        // 顶部
+        
         Obx(
           () => AnimatedPositioned(
             left: 0,
@@ -215,7 +215,7 @@ Widget buildFullControls(
             ),
           ),
         ),
-        // 底部
+        
         Obx(
           () => AnimatedPositioned(
             left: 0,
@@ -352,7 +352,7 @@ Widget buildFullControls(
           ),
         ),
 
-        // 右侧锁定
+        
         Obx(
           () => AnimatedPositioned(
             top: 0,
@@ -364,7 +364,7 @@ Widget buildFullControls(
             child: buildLockButton(controller),
           ),
         ),
-        // 左侧锁定
+        
         Obx(
           () => AnimatedPositioned(
             top: 0,
@@ -437,7 +437,7 @@ Widget buildControls(
       Container(),
       buildDanmuView(videoState, controller),
 
-      // 左下角SC显示
+      
       Obx(
         () => Visibility(
           visible: AppSettingsController.instance.playershowSuperChat.value &&
@@ -451,7 +451,7 @@ Widget buildControls(
         ),
       ),
 
-      // 中间
+      
       Center(
         child: StreamBuilder(
           stream: videoState.widget.controller.player.stream.buffering,
@@ -471,7 +471,7 @@ Widget buildControls(
           onVerticalDragStart: controller.onVerticalDragStart,
           onVerticalDragUpdate: controller.onVerticalDragUpdate,
           onVerticalDragEnd: controller.onVerticalDragEnd,
-          //onLongPress: controller.showDebugInfo,
+          
           child: MouseRegion(
             onEnter: controller.onEnter,
             child: Container(
@@ -656,7 +656,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
       area: AppSettingsController.instance.danmuArea.value,
       duration: AppSettingsController.instance.danmuSpeed.value.toInt(),
       opacity: AppSettingsController.instance.danmuOpacity.value,
-      //strokeWidth: AppSettingsController.instance.danmuStrokeWidth.value,
+      
       fontWeight: AppSettingsController.instance.danmuFontWeight.value,
     ),
   );
@@ -723,8 +723,8 @@ void showLinesInfo(LiveRoomController controller) {
           minLeadingWidth: 16,
           onTap: () {
             Utils.hideRightDialog();
-            //controller.currentLineIndex = i;
-            //controller.setPlayer();
+            
+            
             controller.changePlayLine(i);
           },
         );
@@ -994,7 +994,7 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
   @override
   void initState() {
     super.initState();
-    // 首次进房时同步已有SC
+    
     final now = DateTime.now().millisecondsSinceEpoch;
     for (var sc in widget.controller.superChats) {
       int remain = (sc.endTime.millisecondsSinceEpoch - now) ~/ 1000;
@@ -1002,16 +1002,16 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
         _addSC(sc, customSeconds: remain < 15 ? remain : 15);
       }
     }
-    // 监听SC列表变化
+    
     _worker =
         ever<List<LiveSuperChatMessage>>(widget.controller.superChats, (list) {
-      // 新增
+      
       for (var sc in list) {
         if (!_displayed.any((e) => e.sc == sc)) {
           _addSC(sc);
         }
       }
-      // 移除
+      
       _displayed.removeWhere((e) => !list.contains(e.sc));
       setState(() {});
     });

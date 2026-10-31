@@ -98,7 +98,7 @@ class RemoteSyncWebDAVController extends GetxController {
   Future<void> backup() async {
     isLoading.value = true;
     try {
-      // 1. 检查冲突
+      
       final remoteTime = await davClient.getRemoteFileMTime();
       if (remoteTime != null) {
         final localUpload = LocalStorageService.instance.getValue(kWebDAVLastUploadTime, 0);
@@ -123,7 +123,7 @@ class RemoteSyncWebDAVController extends GetxController {
         }
       }
 
-      // 2. 组装真实数据
+      
       final archive = Archive();
       int followCount = 0;
       int historyCount = 0;
@@ -146,7 +146,7 @@ class RemoteSyncWebDAVController extends GetxController {
         archive.addFile(ArchiveFile('SimpleLive_histories.json', historyBytes.length, historyBytes));
       }
 
-      // 打包 Meta 文件
+      
       final metaData = {
         "timestamp": DateTime.now().toIso8601String(),
         "device": "simple_live_tv_app",
@@ -155,7 +155,7 @@ class RemoteSyncWebDAVController extends GetxController {
       };
       final metaBytes = utf8.encode(jsonEncode(metaData));
       archive.addFile(ArchiveFile('backup_info.json', metaBytes.length, metaBytes));
-      // ── 备份账号 Cookie ──
+      
       final accounts = <String, String>{};
       final bili = LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, "");
       if (bili.isNotEmpty) accounts["bilibili"] = bili;
@@ -174,7 +174,7 @@ class RemoteSyncWebDAVController extends GetxController {
       }
 
 
-      // 3. 打包为真实 ZIP
+      
       final zipData = ZipEncoder().encode(archive);
       await davClient.backup(Uint8List.fromList(zipData));
       
@@ -192,11 +192,11 @@ class RemoteSyncWebDAVController extends GetxController {
   Future<void> recovery() async {
     isLoading.value = true;
     try {
-      // 1. 下载 ZIP 进行预检
+      
       final zipData = await davClient.recovery();
       final archive = ZipDecoder().decodeBytes(zipData);
       
-      // 2. 解析云端备份的元数据（数量）
+      
       int remoteFollowCount = 0;
       int remoteHistoryCount = 0;
       for (final file in archive) {
@@ -208,7 +208,7 @@ class RemoteSyncWebDAVController extends GetxController {
         }
       }
 
-      // 3. 获取本地数据和云端时间
+      
       int localFollowCount = DBService.instance.followBox.length;
       int localHistoryCount = DBService.instance.historyBox.length;
       
@@ -221,7 +221,7 @@ class RemoteSyncWebDAVController extends GetxController {
         isTimeOlder = remoteTime.millisecondsSinceEpoch < localMax - 60000;
       }
 
-      // 4. 冲突判定：如果时间更旧，或者数据量比本地少，弹窗警告
+      
       if (isTimeOlder || remoteFollowCount < localFollowCount || remoteHistoryCount < localHistoryCount) {
         String msg = "云端备份数据与本地存在差异：\n\n";
         msg += "【关注】云端 ${remoteFollowCount} 条 / 本地 ${localFollowCount} 条\n";
@@ -247,7 +247,7 @@ class RemoteSyncWebDAVController extends GetxController {
         }
       }
 
-      // 5. 执行写入数据库
+      
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
@@ -271,7 +271,7 @@ class RemoteSyncWebDAVController extends GetxController {
         if (decoded is List) {
           list = decoded;
         } else if (decoded is Map<String, dynamic>) {
-          // 兼容旧版/对象包裹的备份格式
+          
           list = (decoded['data'] ?? decoded['list'] ?? [decoded]) as List<dynamic>;
         } else {
           throw Exception('未知的备份格式类型: ${decoded.runtimeType}');

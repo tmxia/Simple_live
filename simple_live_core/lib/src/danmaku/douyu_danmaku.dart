@@ -75,9 +75,9 @@ class DouyuDanmaku implements LiveDanmaku {
       var jsonData = sttToJObject(result);
 
       var type = jsonData["type"]?.toString();
-      //斗鱼好像不会返回人气值
+      
       if (type == "chatmsg") {
-        // 屏蔽阴间弹幕
+        
         if (jsonData["dms"] == null) {
           return;
         }
@@ -123,16 +123,16 @@ class DouyuDanmaku implements LiveDanmaku {
     try {
       var reader = BinaryReader(Uint8List.fromList(buffer));
       int fullMsgLength =
-          reader.readInt32(endian: Endian.little); //fullMsgLength
-      reader.readInt32(endian: Endian.little); //fullMsgLength2
+          reader.readInt32(endian: Endian.little); 
+      reader.readInt32(endian: Endian.little); 
       int bodyLength = fullMsgLength - 9;
-      reader.readShort(endian: Endian.little); //packType
-      reader.readByte(endian: Endian.little); //encrypted
-      reader.readByte(endian: Endian.little); //reserved
+      reader.readShort(endian: Endian.little); 
+      reader.readByte(endian: Endian.little); 
+      reader.readByte(endian: Endian.little); 
 
       var bytes = reader.readBytes(bodyLength);
 
-      reader.readByte(endian: Endian.little); //固定为0
+      reader.readByte(endian: Endian.little); 
       return utf8.decode(bytes);
     } catch (e) {
       CoreLog.error(e);
@@ -140,7 +140,7 @@ class DouyuDanmaku implements LiveDanmaku {
     }
   }
 
-  //辣鸡STT
+  
   dynamic sttToJObject(String str) {
     if (str.contains("//")) {
       var result = [];

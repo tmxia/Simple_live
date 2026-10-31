@@ -7,11 +7,11 @@ import 'package:tars_dart/tars/codec/tars_struct.dart';
 import 'huya_user_id.dart';
 
 class GetCdnTokenExReq extends TarsStruct {
-  String sFlvUrl = ""; //tag 0
-  String sStreamName = ""; //tag 1
-  int iLoopTime = 0; //tag 2
-  HuyaUserId tId = HuyaUserId(); //tag 3
-  int iAppId = 66; //tag 4
+  String sFlvUrl = ""; 
+  String sStreamName = ""; 
+  int iLoopTime = 0; 
+  HuyaUserId tId = HuyaUserId(); 
+  int iAppId = 66; 
 
   @override
   void readFrom(TarsInputStream _is) {

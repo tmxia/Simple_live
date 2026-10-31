@@ -40,7 +40,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     rxSite = pSite.obs;
     rxRoomId = pRoomId.obs;
     liveDanmaku = site.liveSite.getDanmaku();
-    // 抖音应该默认是竖屏的
+    
     if (site.id == "douyin") {
       isVertical.value = true;
     }
@@ -104,7 +104,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   var loadError = false.obs;
   Error? error;
 
-  // 开播时长状态变量
+  
   var liveDuration = "00:00:00".obs;
   Timer? _liveDurationTimer;
 
@@ -174,10 +174,10 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       }
     });
   }
-  // 弹窗逻辑
+  
 
   void refreshRoom() {
-    //messages.clear();
+    
     superChats.clear();
     liveDanmaku.stop();
 
@@ -187,7 +187,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   /// 聊天栏始终滚动到底部
   void chatScrollToBottom() {
     if (scrollController.hasClients) {
-      // 如果手动上拉过，就不自动滚动到底部
+      
       if (disableAutoScroll.value) {
         return;
       }
@@ -209,7 +209,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
         messages.removeAt(0);
       }
 
-      // 关键词屏蔽检查
+      
       for (var keyword in AppSettingsController.instance.shieldList) {
         Pattern? pattern;
         if (Utils.isRegexFormat(keyword)) {
@@ -217,7 +217,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
           try {
             pattern = RegExp(removedSlash);
           } catch (e) {
-            // should avoid this during add keyword
+            
             Log.d("关键词：$keyword 正则格式错误");
           }
         } else {
@@ -289,14 +289,14 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       detail.value = await site.liveSite.getRoomDetail(roomId: roomId);
 
       if (site.id == Constant.kDouyin) {
-        // 1.6.0之前收藏的WebRid
-        // 1.6.0收藏的RoomID
-        // 1.6.0之后改回WebRid
+        
+        
+        
         if (detail.value!.roomId != roomId) {
           var oldId = roomId;
           rxRoomId.value = detail.value!.roomId;
           if (followed.value) {
-            // 更新关注列表
+            
             DBService.instance.deleteFollow("${site.id}_$oldId");
             DBService.instance.addFollow(
               FollowUser(
@@ -318,7 +318,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       getSuperChatMessage();
 
       addHistory();
-      // 确认房间关注状态
+      
       followed.value = DBService.instance.getFollowExist("${site.id}_$roomId");
       online.value = detail.value!.online;
       liveStatus.value = detail.value!.status || detail.value!.isRecord;
@@ -331,10 +331,10 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       addSysMsg("开始连接弹幕服务器");
       initDanmau();
       liveDanmaku.start(detail.value?.danmakuData);
-      startLiveDurationTimer(); // 启动开播时长定时器
+      startLiveDurationTimer(); 
     } catch (e) {
       Log.logPrint(e);
-      //SmartDialog.showToast(e.toString());
+      
       loadError.value = true;
       error = e as Error;
     } finally {
@@ -357,7 +357,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       }
       qualites.value = playQualites;
 
-      // 优先读取上次手动选择的清晰度名称
+      
       var lastQualityName = LocalStorageService.instance.getValue<String>(
           LocalStorageService.kLastQuality, "");
       Log.d("历史清晰度读取: $lastQualityName");
@@ -381,13 +381,13 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
       var qualityLevel = await getQualityLevel();
       if (qualityLevel == 2) {
-        //最高
+        
         currentQuality = 0;
       } else if (qualityLevel == 0) {
-        //最低
+        
         currentQuality = playQualites.length - 1;
       } else {
-        //中间值
+        
         int middle = (playQualites.length / 2).floor();
         currentQuality = middle;
       }
@@ -428,14 +428,14 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     playHeaders = playUrl.headers;
     currentLineIndex = 0;
     currentLineInfo.value = "线路${currentLineIndex + 1}";
-    //重置错误次数
+    
     mediaErrorRetryCount = 0;
     initPlaylist();
   }
 
   void changePlayLine(int index) {
     currentLineIndex = index;
-    //重置错误次数
+    
     mediaErrorRetryCount = 0;
     setPlayer();
   }
@@ -452,7 +452,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       return Media(finalUrl, httpHeaders: playHeaders);
     }).toList();
 
-    // 初始化播放器并设置 ao 参数
+    
     await initializePlayer();
 
     await player.open(Playlist(mediaList));
@@ -471,23 +471,23 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     if (mediaErrorRetryCount < 2) {
       Log.d("播放结束，尝试第${mediaErrorRetryCount + 1}次刷新");
       if (mediaErrorRetryCount == 1) {
-        //延迟一秒再刷新
+        
         await Future.delayed(const Duration(seconds: 1));
       }
       mediaErrorRetryCount += 1;
-      //刷新一次
+      
       setPlayer();
       return;
     }
 
     Log.d("播放结束");
-    // 遍历线路，如果全部链接都断开就是直播结束了
+    
     if (playUrls.length - 1 == currentLineIndex) {
       liveStatus.value = false;
     } else {
       changePlayLine(currentLineIndex + 1);
 
-      //setPlayer();
+      
     }
   }
 
@@ -498,11 +498,11 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     if (mediaErrorRetryCount < 2) {
       Log.d("播放失败，尝试第${mediaErrorRetryCount + 1}次刷新");
       if (mediaErrorRetryCount == 1) {
-        //延迟一秒再刷新
+        
         await Future.delayed(const Duration(seconds: 1));
       }
       mediaErrorRetryCount += 1;
-      //刷新一次
+      
       setPlayer();
       return;
     }
@@ -511,8 +511,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       errorMsg.value = "播放失败";
       SmartDialog.showToast("播放失败:$error");
     } else {
-      //currentLineIndex += 1;
-      //setPlayer();
+      
+      
       changePlayLine(currentLineIndex + 1);
     }
   }
@@ -611,7 +611,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   /// 复制新生成的直播流
   void copyPlayUrl() async {
-    // 未开播不复制
+    
     if (!liveStatus.value) {
       return;
     }
@@ -707,8 +707,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
         groupValue: currentLineIndex,
         onChanged: (e) {
           Get.back();
-          //currentLineIndex = i;
-          //setPlayer();
+          
+          
           changePlayLine(e ?? 0);
         },
         child: ListView.builder(
@@ -917,7 +917,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
                 autoExitEnable.value = e;
 
                 setAutoExit();
-                //controller.setAutoExitEnable(e);
+                
               },
             ),
           ),
@@ -954,7 +954,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
                 autoExitMinutes.value = duration.inMinutes;
                 AppSettingsController.instance
                     .setRoomAutoExitDuration(autoExitMinutes.value);
-                //setAutoExitDuration(duration.inMinutes);
+                
                 setAutoExit();
               },
             ),
@@ -1001,19 +1001,19 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     rxSite.value = site;
     rxRoomId.value = roomId;
 
-    // 清除全部消息
+    
     liveDanmaku.stop();
     messages.clear();
     superChats.clear();
     danmakuController?.clear();
 
-    // 重新设置LiveDanmaku
+    
     liveDanmaku = site.liveSite.getDanmaku();
 
-    // 停止播放
+    
     await player.stop();
 
-    // 刷新信息
+    
     loadData();
   }
 
@@ -1033,31 +1033,31 @@ ${error?.stackTrace}''');
 
     if (state == AppLifecycleState.paused) {
       Log.d("进入后台");
-      //进入后台，关闭弹幕
+      
       danmakuController?.clear();
       isBackground = true;
     } else
-    //返回前台
+    
     if (state == AppLifecycleState.resumed) {
       Log.d("返回前台");
       isBackground = false;
     }
   }
 
-  // 用于启动开播时长计算和更新的函数
+  
   void startLiveDurationTimer() {
-    // 如果不是直播状态或者 showTime 为空，则不启动定时器
+    
     if (!(detail.value?.status ?? false) || detail.value?.showTime == null) {
-      liveDuration.value = "00:00:00"; // 未开播时显示 00:00:00
+      liveDuration.value = "00:00:00"; 
       _liveDurationTimer?.cancel();
       return;
     }
 
     try {
       int startTimeStamp = int.parse(detail.value!.showTime!);
-      // 取消之前的定时器
+      
       _liveDurationTimer?.cancel();
-      // 创建新的定时器，每秒更新一次
+      
       _liveDurationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         int currentTimeStamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;
         int durationInSeconds = currentTimeStamp - startTimeStamp;
@@ -1071,7 +1071,7 @@ ${error?.stackTrace}''');
         liveDuration.value = formattedDuration;
       });
     } catch (e) {
-      liveDuration.value = "--:--:--"; // 错误时显示 --:--:--
+      liveDuration.value = "--:--:--"; 
     }
   }
 
@@ -1083,7 +1083,7 @@ ${error?.stackTrace}''');
 
     liveDanmaku.stop();
     danmakuController = null;
-    _liveDurationTimer?.cancel(); // 页面关闭时取消定时器
+    _liveDurationTimer?.cancel(); 
     super.onClose();
   }
 }

@@ -68,7 +68,7 @@ class SearchPage extends GetView<AppSearchController> {
           tabs: Sites.supportSites
               .map(
                 (e) => Tab(
-                  //text: e.name,
+                  
                   child: Row(
                     children: [
                       Image.asset(
@@ -94,11 +94,11 @@ class SearchPage extends GetView<AppSearchController> {
             .map((e) => SearchListView(
                       e.id,
                     )
-                // (e) => e.id == Constant.kDouyin
-                //     ? const DouyinSearchView()
-                //     : SearchListView(
-                //         e.id,
-                //       ),
+                
+                
+                
+                
+                
                 )
             .toList(),
       ),

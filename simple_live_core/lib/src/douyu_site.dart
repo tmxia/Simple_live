@@ -57,7 +57,7 @@ class DouyuSite implements LiveSite {
         ),
       );
     }
-    // 根据ID排序
+    
     categories.sort((a, b) => int.parse(a.id).compareTo(int.parse(b.id)));
 
     return categories;
@@ -109,7 +109,7 @@ class DouyuSite implements LiveSite {
       cdns.add(item["cdn"].toString());
     }
 
-    // 如果cdn以scdn开头，将其放到最后
+    
     cdns.sort((a, b) {
       if (a.startsWith("scdn") && !b.startsWith("scdn")) {
         return 1;

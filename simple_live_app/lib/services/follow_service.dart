@@ -57,9 +57,9 @@ class FollowService extends GetxService {
     super.onInit();
   }
 
-  // 添加标签
+  
   Future<void> addFollowUserTag(String tag) async {
-    // 判断待添加tag是否已存在，存在则return
+    
     if (followTagList.any((item) => item.tag == tag)) {
       SmartDialog.showToast("标签名重复，修改失败");
       return;
@@ -68,54 +68,54 @@ class FollowService extends GetxService {
     followTagList.add(item);
   }
 
-  // 删除标签
+  
   Future<void> delFollowUserTag(FollowUserTag tag) async {
     followTagList.remove(tag);
     await DBService.instance.deleteFollowTag(tag.id);
   }
 
-  // 获取用户自定义标签列表
+  
   void getAllTagList() {
     var list = DBService.instance.getFollowTagList();
     followTagList.assignAll(list);
   }
 
-  // 修改标签
+  
   void updateFollowUserTag(FollowUserTag tag) {
     DBService.instance.updateFollowTag(tag);
-    // 查找并修改
+    
     var index = followTagList.indexWhere((oTag) => oTag.id == tag.id);
     followTagList[index] = tag;
   }
 
-  // 根据标签筛选数据
+  
   void filterDataByTag(FollowUserTag tag) {
     curTagFollowList.clear();
-    // 用一个新的列表来存储需要删除的 userId
+    
     List<String> toRemove = [];
     for (var id in tag.userId) {
       if (followList.any((x) => x.id == id)) {
-        // 找到对应的 followUser 添加到 curTagFollowList
+        
         curTagFollowList.add(followList.firstWhere((x) => x.id == id));
       } else {
-        // 标记要删除的 id
+        
         toRemove.add(id);
       }
     }
-    // 双向确认用户取消关注后标签内是否还有该用户
-    // 在遍历结束后统一移除不在 followList 中的 id
+    
+    
     tag.userId.removeWhere((id) => toRemove.contains(id));
-    // 更新数据库
+    
     if (toRemove.isNotEmpty) {
       DBService.instance.updateFollowTag(tag);
     }
-    // 标签内排序
+    
     curTagFollowList.sort(
       (a, b) => b.liveStatus.value.compareTo(a.liveStatus.value),
     );
   }
 
-  // 添加关注
+  
   Future<void> addFollow(FollowUser follow) async {
     await DBService.instance.addFollow(follow);
   }
@@ -156,12 +156,12 @@ class FollowService extends GetxService {
   int getOptimalConcurrency() {
     var userSetting = AppSettingsController.instance.updateFollowThreadCount.value;
 
-    // 如果用户设置为 0，则自动根据 CPU 核心数计算
+    
     if (userSetting == 0) {
       var cpuCount = Platform.numberOfProcessors;
-      // 网络 I/O 密集型任务，并发数可以是 CPU 核心数的 2-3 倍
+      
       var optimal = (cpuCount * 2.5).round();
-      // 限制在合理范围内（最少 4，最多 20）
+      
       return optimal.clamp(4, 20);
     }
 
@@ -170,13 +170,13 @@ class FollowService extends GetxService {
 
   /// 按平台交错排列，避免单一平台阻塞
   List<FollowUser> interleaveByPlatform(List<FollowUser> list) {
-    // 按平台分组
+    
     var grouped = <String, Queue<FollowUser>>{};
     for (var item in list) {
       grouped.putIfAbsent(item.siteId, () => Queue<FollowUser>()).add(item);
     }
 
-    // 交错处理
+    
     var result = <FollowUser>[];
     while (grouped.values.any((queue) => queue.isNotEmpty)) {
       for (var queue in grouped.values) {
@@ -197,13 +197,13 @@ class FollowService extends GetxService {
 
     Log.logPrint("开始更新关注状态，并发数: $concurrency，总数: ${followList.length}");
 
-    // 按平台交错排列，避免单一平台阻塞
+    
     var interleavedList = interleaveByPlatform(followList);
 
-    // 创建任务队列
+    
     var taskQueue = Queue<FollowUser>.from(interleavedList);
 
-    // 工作函数 - 持续从队列中取任务执行
+    
     Future<void> worker(int workerId) async {
       while (taskQueue.isNotEmpty) {
         var item = taskQueue.removeFirst();
@@ -211,7 +211,7 @@ class FollowService extends GetxService {
       }
     }
 
-    // 启动固定数量的并发 worker
+    
     var workers = <Future>[];
     for (var i = 0; i < concurrency; i++) {
       workers.add(worker(i));
@@ -225,11 +225,11 @@ class FollowService extends GetxService {
   Future updateLiveStatus(FollowUser item) async {
     try {
       var site = Sites.allSites[item.siteId]!;
-      // 先只查状态
+      
       var isLiving = await site.liveSite.getLiveStatus(roomId: item.roomId);
       item.liveStatus.value = isLiving ? 2 : 1;
       if (item.liveStatus.value == 2) {
-        // 只有正在直播时才查详细信息
+        
         var detail = await site.liveSite.getRoomDetail(roomId: item.roomId);
         item.liveStartTime = detail.showTime;
       } else {
@@ -424,11 +424,11 @@ class FollowService extends GetxService {
 
     for (var item in data) {
       var follow = FollowUser.fromJson(item);
-      // 导入关注列表同时导入标签列表 此方法可优化为所有导入逻辑
+      
       if (follow.tag != "全部") {
-        // logic: 尝试添加，存在则返回已存在的对象
+        
         var tag = await DBService.instance.addFollowTag(follow.tag);
-        // 更新tag
+        
         tag.userId.addIf(!tag.userId.contains(follow.id), follow.id);
         await DBService.instance.updateFollowTag(tag);
       }

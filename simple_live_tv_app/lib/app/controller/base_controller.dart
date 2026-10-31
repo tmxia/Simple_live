@@ -82,7 +82,7 @@ class BasePageController<T> extends BaseController {
       pageLoadding.value = currentPage == 1;
 
       var result = await getData(currentPage, pageSize);
-      //是否可以加载更多
+      
       if (result.isNotEmpty) {
         currentPage++;
         canLoadMore.value = true;
@@ -93,7 +93,7 @@ class BasePageController<T> extends BaseController {
           pageEmpty.value = true;
         }
       }
-      // 赋值数据
+      
       if (currentPage == 1) {
         list.value = result;
       } else {

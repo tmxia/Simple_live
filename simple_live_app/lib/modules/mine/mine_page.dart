@@ -218,7 +218,7 @@ class MinePage extends StatelessWidget {
                     onTap: () async {
                       SignalRService signalRService = SignalRService();
                       await signalRService.connect();
-                      //Get.toNamed(RoutePath.kTest);
+                      
                       var room = await signalRService.createRoom();
                       Log.logPrint(room);
                     },

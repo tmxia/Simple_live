@@ -36,7 +36,7 @@ class SyncDeviceController extends BaseController {
       var data = json.encode(users.map((e) => e.toJson()).toList());
       var dataT = json.encode(tags.map((e) => e.toJson()).toList());
       await request.syncFollow(client, data, overlay: overlay);
-      // 标签和关注必须同时同步
+      
       await request.syncTag(client, dataT, overlay: overlay);
       SmartDialog.showToast("已同步关注列表和标签");
     } catch (e) {

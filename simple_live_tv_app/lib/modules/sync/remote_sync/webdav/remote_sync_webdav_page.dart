@@ -77,7 +77,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           Expanded(
             child: SingleChildScrollView(
               child: Obx(() {
-                // 如果正在连接，显示全屏 Loading
+                
                 if (controller.isLoading.value) {
                   return SizedBox(
                     height: 400.w,
@@ -94,12 +94,12 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                   );
                 }
 
-                // 如果已经连接成功，显示同步面板
+                
                 if (!controller.notLogin.value) {
                   return _buildSyncPanel();
                 }
 
-                // 否则显示登录表单
+                
                 return _buildLoginForm();
               }),
             ),
@@ -139,7 +139,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
   Widget _buildSyncPanel() {
     return Column(
       children: [
-        // 绿色状态卡片
+        
         Container(
           padding: EdgeInsets.symmetric(vertical: 24.w, horizontal: 48.w),
           decoration: BoxDecoration(
@@ -163,7 +163,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ),
         ),
         AppStyle.vGap48,
-        // 带图标的时间记录
+        
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -182,7 +182,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ],
         ),
         AppStyle.vGap48,
-        // 操作按钮
+        
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -235,7 +235,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           padding: EdgeInsets.symmetric(horizontal: 20.w),
           child: Focus(
             onKeyEvent: (node, event) {
-              // [Auto-Fix] 拦截遥控器上下方向键，实现焦点快速切换
+              
               if (event is KeyDownEvent) {
                 if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
                   node.nextFocus();
@@ -253,7 +253,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
               controller: ctrl,
               obscureText: obscure,
               keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.next, // 改为 next，允许跳下一个
+              textInputAction: TextInputAction.next, 
               style: TextStyle(color: Colors.white, fontSize: 26.w),
               decoration: InputDecoration(
                 hintText: hint,
@@ -262,7 +262,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                 isDense: true,
               ),
               onSubmitted: (_) {
-                // [Auto-Fix] 改为跳到下一个输入框，而不是收起键盘
+                
                 focusNode.nextFocus();
               },
             ),

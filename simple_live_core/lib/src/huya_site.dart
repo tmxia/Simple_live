@@ -140,41 +140,41 @@ class HuyaSite implements LiveSite {
         HuyaBitRateModel(name: "高清", bitRate: 2000),
       ];
     }
-    // if (urlData.lines.isEmpty) {
-    //   urlData.lines = [
-    //     HuyaLineModel(line: "tx.flv.huya.com", lineType: HuyaLineType.flv,),
-    //     HuyaLineModel(line: "bd.flv.huya.com", lineType: HuyaLineType.flv),
-    //     HuyaLineModel(line: "al.flv.huya.com", lineType: HuyaLineType.flv),
-    //     HuyaLineModel(line: "hw.flv.huya.com", lineType: HuyaLineType.flv),
-    //   ];
-    // }
-    //var url = getRealUrl(urlData.url);
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     for (var item in urlData.bitRates) {
-      // var urls = <String>[];
-      // for (var line in urlData.lines) {
-      //   var src = line.line;
-      //   src += "/${line.streamName}";
-      //   if (line.lineType == HuyaLineType.flv) {
-      //     //src = src.replaceAll(".m3u8", ".flv");
-      //     src += ".flv";
-      //   }
-      //   if (line.lineType == HuyaLineType.hls) {
-      //     src += ".m3u8";
-      //   }
-      //   var parms = processAnticode(
-      //     line.lineType == HuyaLineType.flv
-      //         ? line.flvAntiCode
-      //         : line.hlsAntiCode,
-      //     urlData.uid,
-      //     line.streamName,
-      //   );
-      //   src += "?$parms";
-      //   if (item.bitRate > 0) {
-      //     src += "&ratio=${item.bitRate}";
-      //   }
-      //   urls.add(src);
-      // }
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
 
       qualities.add(LivePlayQuality(
         data: {
@@ -188,7 +188,7 @@ class HuyaSite implements LiveSite {
     return Future.value(qualities);
   }
 
-  // 每次访问播放虎牙都需要获取一次，不太合理，倾向于在客户端获取保存替换
+  
   Future<String> getHuYaUA() async {
     if (playUserAgent != null) {
       return playUserAgent!;
@@ -218,8 +218,8 @@ required LiveRoomDetail detail,
       var url = await getPlayUrl(line, quality.data["bitRate"]);
       ls.add(url);
     }
-    // 最新UA需要额外验证，此方法暂时弃用
-    // var ua = await getHuYaUA();
+    
+    
     return LivePlayUrl(
       headers: {
         'Referer': 'https://www.huya.com/',
@@ -240,7 +240,7 @@ required LiveRoomDetail detail,
     return url;
   }
 
-  // 构造 anticode, python转写
+  
   /// [stream] streamname [presenterUid] 用户id [antiCode] 页面anti
   ///
   /// return ture anticode
@@ -361,7 +361,7 @@ required LiveRoomDetail detail,
     }
     var huyaLines = <HuyaLineModel>[];
     var huyaBiterates = <HuyaBitRateModel>[];
-    //读取可用线路
+    
     var lines = tLiveInfo["tLiveStreamInfo"]["vStreamInfo"]["value"];
     for (var item in lines) {
       if ((item["sFlvUrl"]?.toString() ?? "").isNotEmpty) {
@@ -377,7 +377,7 @@ required LiveRoomDetail detail,
       }
     }
 
-    //清晰度
+    
     var biterates = tLiveInfo["tLiveStreamInfo"]["vBitRateInfo"]["value"];
     for (var item in biterates) {
       var name = item["sDisplayName"].toString();

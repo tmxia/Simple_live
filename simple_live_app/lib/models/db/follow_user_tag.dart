@@ -7,11 +7,11 @@ class FollowUserTag {
   @HiveField(1)
   String id;
 
-  // 用户自定义tag
+  
   @HiveField(2)
   String tag;
 
-  // followUserId
+  
   @HiveField(3)
   List<String> userId;
 

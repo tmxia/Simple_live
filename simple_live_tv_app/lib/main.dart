@@ -28,20 +28,20 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   MediaKit.ensureInitialized();
   await Hive.initFlutter();
-  //初始化服务
+  
   await initServices();
-  // 强制横屏
+  
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.landscapeRight,
     DeviceOrientation.landscapeLeft,
   ]);
-  // 全屏
+  
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   runApp(const MyApp());
 }
 
 Future initServices() async {
-  //日志信息
+  
   CoreLog.enableLog = !kReleaseMode;
   CoreLog.requestLogType = RequestLogType.short;
   CoreLog.onPrintLog = (level, msg) {
@@ -67,13 +67,13 @@ Future initServices() async {
   Hive.registerAdapter(FollowUserTagAdapter());
   Hive.registerAdapter(HistoryAdapter());
 
-  //包信息
+  
   Utils.packageInfo = await PackageInfo.fromPlatform();
-  //本地存储
+  
   Log.d("Init LocalStorage Service");
   await Get.put(LocalStorageService()).init();
   await Get.put(DBService()).init();
-  //初始化设置控制器
+  
   Get.put(AppSettingsController());
 
   Get.put(BiliBiliAccountService());
@@ -112,7 +112,7 @@ class MyApp extends StatelessWidget {
                 ),
               ),
             ),
-            //字体大小不跟随系统变化
+            
             builder: (context, child) => MediaQuery(
               data: MediaQuery.of(context).copyWith(
                 textScaler: const TextScaler.linear(1.0),

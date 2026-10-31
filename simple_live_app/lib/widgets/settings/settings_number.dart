@@ -106,7 +106,7 @@ class SettingsNumber extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      useSafeArea: true, //useSafeArea似乎无效
+      useSafeArea: true, 
       builder: (_) => SafeArea(
         top: false,
         child: Column(

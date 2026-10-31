@@ -1,7 +1,7 @@
 ﻿import 'dart:io';
 
-// 需要所有字段有 //tag n 注释方便定位-多行编辑生成
-// 可以自动生成这个tag,懒得弄了
+
+
 final fieldRegex = RegExp(
   r'^\s*(\w+(?:<[^>]+>)?)\s+(\w+)\s*=\s*[^;]+;\s*//\s*tag\s*(\d+)',
 );
@@ -46,7 +46,7 @@ void main(List<String> args) {
 String generate(List<Field> fields) {
   final sb = StringBuffer();
 
-  // readFrom
+  
   sb.writeln('@override');
   sb.writeln('void readFrom(TarsInputStream _is) {');
   for (final f in fields) {
@@ -56,7 +56,7 @@ String generate(List<Field> fields) {
   }
   sb.writeln('}\n');
 
-  // writeTo
+  
   sb.writeln('@override');
   sb.writeln('void writeTo(TarsOutputStream _os) {');
   for (final f in fields) {
@@ -64,7 +64,7 @@ String generate(List<Field> fields) {
   }
   sb.writeln('}\n');
 
-  // deepCopy
+  
   sb.writeln('@override');
   sb.writeln('TarsStruct deepCopy() {');
   sb.writeln('  return $className()');
@@ -74,7 +74,7 @@ String generate(List<Field> fields) {
   sb.writeln('  ;');
   sb.writeln('}\n');
 
-  // display
+  
   sb.writeln('@override');
   sb.writeln('displayAsString(StringBuffer sb, int level) {');
   sb.writeln('  TarsDisplayer _ds = TarsDisplayer(sb, level: level);');

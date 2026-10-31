@@ -35,7 +35,7 @@ class HighlightButton extends StatelessWidget {
         selected: selected,
         child: Container(
           height: 64.w,
-          //width: 64.w,
+          
           padding: AppStyle.edgeInsetsH24,
           decoration: BoxDecoration(
             borderRadius: AppStyle.radius32,

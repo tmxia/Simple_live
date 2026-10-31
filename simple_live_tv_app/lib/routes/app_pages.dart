@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_inlined_adds
+
 
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/modules/account/bilibili/qr_login_controller.dart';
@@ -35,7 +35,7 @@ class AppPages {
       name: RoutePath.kAgreement,
       page: () => const AgreementPage(),
     ),
-    // 首页
+    
     GetPage(
       name: RoutePath.kHome,
       page: () => const HomePage(),
@@ -43,7 +43,7 @@ class AppPages {
         BindingsBuilder.put(() => HomeController()),
       ],
     ),
-    // 数据同步
+    
     GetPage(
       name: RoutePath.kSync,
       page: () => const SyncPage(),
@@ -52,13 +52,13 @@ class AppPages {
       ],
     ),
 
-    // 关注
+    
     GetPage(
       name: RoutePath.kFollow,
       page: () => const FollowUserPage(),
     ),
 
-    //直播间
+    
     GetPage(
       name: RoutePath.kLiveRoomDetail,
       page: () => const LiveRoomPage(),
@@ -69,7 +69,7 @@ class AppPages {
         ),
       ),
     ),
-    //哔哩哔哩二维码登录
+    
     GetPage(
       name: RoutePath.kBiliBiliQRLogin,
       page: () => const BiliBiliQRLoginPage(),
@@ -77,7 +77,7 @@ class AppPages {
         BindingsBuilder.put(() => BiliBiliQRLoginController()),
       ],
     ),
-    // 设置
+    
     GetPage(
       name: RoutePath.kSettings,
       page: () => const SettingsPage(),
@@ -85,7 +85,7 @@ class AppPages {
         BindingsBuilder.put(() => SettingsController()),
       ],
     ),
-    // 历史记录
+    
     GetPage(
       name: RoutePath.kHistory,
       page: () => const HistoryPage(),
@@ -93,7 +93,7 @@ class AppPages {
         BindingsBuilder.put(() => HistoryController()),
       ],
     ),
-    //热门直播
+    
     GetPage(
       name: RoutePath.kHotLive,
       page: () => const HotLivePage(),
@@ -101,7 +101,7 @@ class AppPages {
         BindingsBuilder.put(() => HotliveController()),
       ],
     ),
-    //分类
+    
     GetPage(
       name: RoutePath.kCategory,
       page: () => const CategoryPage(),
@@ -109,7 +109,7 @@ class AppPages {
         BindingsBuilder.put(() => CategoryController()),
       ],
     ),
-    //分类
+    
     GetPage(
       name: RoutePath.kCategoryDetail,
       page: () => const CategoryDetailPage(),
@@ -120,7 +120,7 @@ class AppPages {
         ),
       ),
     ),
-    // 搜索房间
+    
     GetPage(
       name: RoutePath.kSearchRoom,
       page: () => const SearchRoomPage(),
@@ -132,7 +132,7 @@ class AppPages {
         ),
       ],
     ),
-    // 搜索主播
+    
     GetPage(
       name: RoutePath.kSearchAnchor,
       page: () => const SearchAnchorPage(),

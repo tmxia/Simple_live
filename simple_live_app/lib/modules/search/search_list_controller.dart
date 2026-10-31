@@ -26,7 +26,7 @@ class SearchListController extends BasePageController {
       return [];
     }
     if (searchMode.value == 1) {
-      // 搜索主播
+      
       var result = await site.liveSite.searchAnchors(keyword, page: page);
       return result.items;
     }

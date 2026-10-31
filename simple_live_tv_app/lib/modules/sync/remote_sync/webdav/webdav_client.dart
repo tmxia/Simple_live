@@ -27,7 +27,7 @@ class DAVClient {
   get root => "/simple_live_app";
   get backupFile => "$root/backup.zip";
 
-  // 获取云端备份文件的最后修改时间
+  
   Future<DateTime?> getRemoteFileMTime() async {
     try {
       final file = await client.readProps(backupFile);
@@ -35,7 +35,7 @@ class DAVClient {
         return file.mTime;
       }
     } catch (_) {
-      // 文件不存在或网络错误
+      
     }
     return null;
   }

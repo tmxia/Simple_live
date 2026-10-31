@@ -22,7 +22,7 @@ class HomePage extends GetView<HomeController> {
           tabs: Sites.supportSites
               .map(
                 (e) => Tab(
-                  //text: e.name,
+                  
 
                   child: Row(
                     children: [

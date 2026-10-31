@@ -28,7 +28,7 @@ class HotLivePage extends GetView<HotliveController> {
                 focusNode: AppFocusNode(),
                 iconData: Icons.arrow_back,
                 text: "返回",
-                //autofocus: true,
+                
                 onTap: () {
                   Get.back();
                 },
@@ -57,14 +57,14 @@ class HotLivePage extends GetView<HotliveController> {
                 ),
               ),
               AppStyle.hGap24,
-              // HighlightButton(
-              //   focusNode: AppFocusNode(),
-              //   iconData: Icons.refresh,
-              //   text: "刷新",
-              //   onTap: () {
-              //     controller.refreshData();
-              //   },
-              // ),
+              
+              
+              
+              
+              
+              
+              
+              
               AppStyle.hGap48,
             ],
           ),

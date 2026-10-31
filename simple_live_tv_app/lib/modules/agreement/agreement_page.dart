@@ -76,7 +76,7 @@ class AgreementPage extends StatelessWidget {
                     text: "退出应用",
                     focusNode: AppFocusNode(),
                     onTap: () {
-                      //退出软件
+                      
                       exit(0);
                     },
                   ),

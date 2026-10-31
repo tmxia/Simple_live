@@ -92,15 +92,15 @@ class HomePage extends GetView<HomeController> {
                           onTap: showSearchDialog,
                         ),
                       ),
-                      // AppStyle.hGap40,
-                      // Expanded(
-                      //   child: HomeBigButton(
-                      //     focusNode: AppFocusNode(),
-                      //     text: "我的关注",
-                      //     iconData: Icons.favorite_border,
-                      //     onTap: controller.toFollow,
-                      //   ),
-                      // ),
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
+                      
                       AppStyle.hGap48,
                       Expanded(
                         child: HomeBigButton(
@@ -252,7 +252,7 @@ class HomePage extends GetView<HomeController> {
 
   void showManageDialog() {
     Utils.showSystemRightDialog(
-      //useSystem: true,
+      
       width: 700.w,
       child: Column(
         children: [
@@ -266,7 +266,7 @@ class HomePage extends GetView<HomeController> {
                 iconData: Icons.arrow_back,
                 text: "返回",
                 onTap: () {
-                  //Utils.hideRightDialog();
+                  
                   Get.back();
                 },
               ),

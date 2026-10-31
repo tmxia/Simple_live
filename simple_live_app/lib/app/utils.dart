@@ -118,7 +118,7 @@ class Utils {
     SmartDialog.show(
       alignment: Alignment.topRight,
       animationBuilder: (controller, child, animationParam) {
-        //从右到左
+        
         return SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(1, 0),
@@ -243,13 +243,13 @@ class Utils {
             controller: textEditingController,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
-              //prefixText: title,
+              
               contentPadding: AppStyle.edgeInsetsA12,
               hintText: hintText ?? title,
             ),
-            // style: TextStyle(
-            //     height: 1.0,
-            //     color: Get.isDarkMode ? Colors.white : Colors.black),
+            
+            
+            
             autofocus: true,
           ),
         ),
@@ -270,8 +270,8 @@ class Utils {
           ),
         ],
       ),
-      // barrierColor:
-      //     Get.isDarkMode ? Colors.grey.withOpacity(.3) : Colors.black38,
+      
+      
     );
     return result;
   }

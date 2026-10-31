@@ -23,24 +23,24 @@ class SyncScanQRControlelr extends BaseController {
         return;
       }
       pause = true;
-      // 扫码成功后暂停摄像头
+      
       await controller.pauseCamera();
       var code = scanData.code ?? "";
-      // 处理扫码结果
+      
       if (code.isEmpty) {
         pause = false;
         await controller.resumeCamera();
         return;
       }
 
-      // 如果是5位字符串，为房间号
+      
       if (code.length == 5) {
         Get.offAndToNamed(RoutePath.kRemoteSyncRoom, arguments: code);
         return;
       } else {
         var addressList = code.split(";");
         if (addressList.length >= 2) {
-          //弹窗选择
+          
           showPickerAddress(addressList);
         } else {
           Get.back(result: code);

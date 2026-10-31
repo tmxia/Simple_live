@@ -39,7 +39,7 @@ mixin PlayerMixin {
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
-    // 设置音频输出驱动
+    
     if (AppSettingsController.instance.customPlayerOutput.value) {
       if (player.platform is NativePlayer) {
         await (player.platform as dynamic).setProperty(
@@ -48,7 +48,7 @@ mixin PlayerMixin {
         );
       }
     }
-    // media_kit 仓库更新导致的问题，临时解决办法
+    
     if(Platform.isAndroid){
       await pp.setProperty('force-seekable', 'yes');
     }
@@ -192,17 +192,17 @@ mixin PlayerDanmakuMixin on PlayerStateMixin {
 
   void initDanmakuController(DanmakuController e) {
     danmakuController = e;
-    // danmakuController?.updateOption(
-    //   DanmakuOption(
-    //     fontSize: AppSettingsController.instance.danmuSize.value,
-    //     area: AppSettingsController.instance.danmuArea.value,
-    //     duration: AppSettingsController.instance.danmuSpeed.value,
-    //     opacity: AppSettingsController.instance.danmuOpacity.value,
-    //     strokeWidth: AppSettingsController.instance.danmuStrokeWidth.value,
-    //     fontWeight: FontWeight
-    //         .values[AppSettingsController.instance.danmuFontWeight.value],
-    //   ),
-    // );
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
   }
 
   void updateDanmuOption(DanmakuOption? option) {
@@ -229,7 +229,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
   final pip = Floating();
   StreamSubscription<PiPStatus>? _pipSubscription;
 
-  //final VolumeController volumeController = VolumeController();
+  
 
   /// 初始化一些系统状态
   void initSystem() async {
@@ -237,13 +237,13 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       VolumeController.instance.showSystemUI = false;
     }
 
-    // 屏幕常亮
-    //WakelockPlus.enable();
+    
+    
 
-    // 开始隐藏计时
+    
     resetHideControlsTimer();
 
-    // 进入全屏模式
+    
     if (AppSettingsController.instance.autoFullScreen.value) {
       enterFullScreen();
     }
@@ -252,7 +252,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
   /// 释放一些系统状态
   Future resetSystem() async {
     _pipSubscription?.cancel();
-    //pip.dispose();
+    
     await SystemChrome.setEnabledSystemUIMode(
       SystemUiMode.edgeToEdge,
       overlays: SystemUiOverlay.values,
@@ -260,7 +260,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
 
     await setPortraitOrientation();
     if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) {
-      // 亮度重置,桌面平台可能会报错,暂时不处理桌面平台的亮度
+      
       try {
         await ScreenBrightness.instance.resetApplicationScreenBrightness();
       } catch (e) {
@@ -275,16 +275,16 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
   void enterFullScreen() {
     fullScreenState.value = true;
     if (Platform.isAndroid || Platform.isIOS) {
-      //全屏
+      
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
       if (!isVertical.value) {
-        //横屏
+        
         setLandscapeOrientation();
       }
     } else {
       windowManager.setFullScreen(true);
     }
-    //danmakuController?.clear();
+    
   }
 
   /// 退出全屏
@@ -298,7 +298,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
     }
     fullScreenState.value = false;
 
-    //danmakuController?.clear();
+    
   }
 
   Size? _lastWindowSize;
@@ -310,16 +310,16 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       fullScreenState.value = true;
       smallWindowState.value = true;
 
-      // 读取窗口大小
+      
       _lastWindowSize = await windowManager.getSize();
       _lastWindowPosition = await windowManager.getPosition();
 
       windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      // 获取视频窗口大小
+      
       var width = player.state.width ?? 16;
       var height = player.state.height ?? 9;
 
-      // 横屏还是竖屏
+      
       if (height > width) {
         var aspectRatio = width / height;
         windowManager.setSize(Size(400, 400 / aspectRatio));
@@ -341,7 +341,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       windowManager.setSize(_lastWindowSize!);
       windowManager.setPosition(_lastWindowPosition!);
       windowManager.setAlwaysOnTop(false);
-      //windowManager.setAlignment(Alignment.center);
+      
     }
   }
 
@@ -381,7 +381,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
   Future saveScreenshot() async {
     try {
       SmartDialog.showLoading(msg: "正在保存截图");
-      //检查相册权限,仅iOS需要
+      
       var permission = await Utils.checkPhotoPermission();
       if (!permission) {
         SmartDialog.showToast("没有相册权限");
@@ -402,7 +402,7 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
         );
         SmartDialog.showToast("已保存截图至相册");
       } else {
-        //选择保存文件夹
+        
         var path = await FilePicker.platform.saveFile(
           allowedExtensions: ["jpg"],
           type: FileType.image,
@@ -437,16 +437,16 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       return;
     }
     danmakuStateBeforePIP = showDanmakuState.value;
-    //关闭并清除弹幕
+    
     if (AppSettingsController.instance.pipHideDanmu.value &&
         danmakuStateBeforePIP) {
       showDanmakuState.value = false;
     }
     danmakuController?.clear();
-    //关闭控制器
+    
     showControlsState.value = false;
 
-    //监听事件
+    
     var width = player.state.width ?? 0;
     var height = player.state.height ?? 0;
     Rational ratio = const Rational.landscape();
@@ -481,7 +481,7 @@ mixin PlayerGestureControlMixin
     }
   }
 
-  //桌面端操控
+  
   void onEnter(PointerEnterEvent event) {
     if (!showControlsState.value) {
       showControls();
@@ -496,7 +496,7 @@ mixin PlayerGestureControlMixin
 
   void onHover(PointerHoverEvent event, BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
-    final targetPosition = screenHeight * 0.25; // 计算屏幕顶部25%的位置
+    final targetPosition = screenHeight * 0.25; 
     if (event.position.dy <= targetPosition ||
         event.position.dy >= targetPosition * 3) {
       if (!showControlsState.value) {
@@ -532,7 +532,7 @@ mixin PlayerGestureControlMixin
     }
 
     final dy = details.globalPosition.dy;
-    // 开始位置必须是中间2/4的位置
+    
     if (dy < Get.height * 0.25 || dy > Get.height * 0.75) {
       return;
     }
@@ -563,8 +563,8 @@ mixin PlayerGestureControlMixin
     if (!Platform.isAndroid && !Platform.isIOS) {
       return;
     }
-    //String text = "";
-    //double value = 0.0;
+    
+    
 
     Log.logPrint("$verStartPosition/${e.globalPosition.dy}");
 
@@ -575,7 +575,7 @@ mixin PlayerGestureControlMixin
     }
   }
 
-  int lastVolume = -1; // it's ok to be -1
+  int lastVolume = -1; 
 
   void setGestureVolume(double dy) {
     double value = 0.0;
@@ -599,12 +599,12 @@ mixin PlayerGestureControlMixin
       return;
     }
     lastVolume = volume;
-    // update UI outside throttle to make it more fluent
+    
     gestureTipText.value = "音量 $volume%";
     throttle?.invoke(() async => await _realSetVolume(volume));
   }
 
-  // 0 to 100, 5 step each
+  
   int _convertVolume(int volume) {
     return (volume / 5).round() * 5;
   }
@@ -663,7 +663,7 @@ class PlayerController extends BaseController
   void onInit() {
     initSystem();
     initStream();
-    //设置音量
+    
     player.setVolume(AppSettingsController.instance.playerVolume.value);
     super.onInit();
   }
@@ -678,12 +678,12 @@ class PlayerController extends BaseController
   void initStream() {
     _errorSubscription = player.stream.error.listen((event) {
       Log.d("播放器错误：$event");
-      // 跳过无音频输出的错误
-      // Could not open/initialize audio device -> no sound.
+      
+      
       if (event.contains('no sound.')) {
         return;
       }
-      //SmartDialog.showToast(event);
+      
       mediaError(event);
     });
 

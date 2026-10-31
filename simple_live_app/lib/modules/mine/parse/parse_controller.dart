@@ -17,7 +17,7 @@ class ParseController extends GetxController {
       SmartDialog.showToast("链接不能为空");
       return;
     }
-    // 隐藏键盘
+    
     FocusManager.instance.primaryFocus?.unfocus();
 
     var parseResult = await parse(e);
@@ -26,7 +26,7 @@ class ParseController extends GetxController {
       return;
     }
 
-    // 延迟200ms跳转，等待键盘隐藏
+    
     Future.delayed(const Duration(milliseconds: 200), () {
       Site site = parseResult[1];
       AppNavigator.toLiveRoomDetail(site: site, roomId: parseResult.first);
@@ -124,7 +124,7 @@ class ParseController extends GetxController {
 
     if (url.contains("douyu.com")) {
       var regExp = RegExp(r"douyu\.com/([\d|\w]+)");
-      // 适配 topic_url
+      
       if(url.contains("topic")){
         regExp = RegExp(r"[?&]rid=([\d]+)");
       }

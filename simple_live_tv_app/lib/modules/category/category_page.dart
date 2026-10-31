@@ -56,15 +56,15 @@ class CategoryPage extends GetView<CategoryController> {
                   ),
                 ),
               ),
-              //  AppStyle.hGap24,
-              // HighlightButton(
-              //   focusNode: AppFocusNode(),
-              //   iconData: Icons.refresh,
-              //   text: "刷新",
-              //   onTap: () {
-              //     controller.refreshData();
-              //   },
-              // ),
+              
+              
+              
+              
+              
+              
+              
+              
+              
               AppStyle.hGap48,
             ],
           ),

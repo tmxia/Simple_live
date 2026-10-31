@@ -68,7 +68,7 @@ class AppSettingsController extends GetxController {
     autoFullScreen.value = LocalStorageService.instance
         .getValue(LocalStorageService.kAutoFullScreen, false);
 
-    // ignore: invalid_use_of_protected_member
+    
     shieldList.value = LocalStorageService.instance.shieldBox.values.toSet();
 
     scaleMode.value = LocalStorageService.instance.getValue(

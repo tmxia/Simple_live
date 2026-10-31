@@ -83,7 +83,7 @@ class AppSettingsController extends GetxController {
     autoFullScreen.value = LocalStorageService.instance
         .getValue(LocalStorageService.kAutoFullScreen, false);
 
-    // ignore: invalid_use_of_protected_member
+    
     shieldList.value = LocalStorageService.instance.shieldBox.values.toSet();
 
     scaleMode.value = LocalStorageService.instance.getValue(
@@ -151,7 +151,7 @@ class AppSettingsController extends GetxController {
         .getValue(LocalStorageService.kUpdateFollowDuration, 10);
 
     updateFollowThreadCount.value = LocalStorageService.instance
-        .getValue(LocalStorageService.kUpdateFollowThreadCount, 0);  // 默认 0 = 自动
+        .getValue(LocalStorageService.kUpdateFollowThreadCount, 0);  
 
     initSiteSort();
     initHomeSort();
@@ -166,7 +166,7 @@ class AppSettingsController extends GetxController {
           Sites.allSites.keys.join(","),
         )
         .split(",");
-    //如果数量与allSites的数量不一致，将缺失的添加上
+    
     if (sort.length != Sites.allSites.length) {
       var keys = Sites.allSites.keys.toList();
       for (var i = 0; i < keys.length; i++) {
@@ -186,7 +186,7 @@ class AppSettingsController extends GetxController {
           Constant.allHomePages.keys.join(","),
         )
         .split(",");
-    //如果数量与allSites的数量不一致，将缺失的添加上
+    
     if (sort.length != Constant.allHomePages.length) {
       var keys = Constant.allHomePages.keys.toList();
       for (var i = 0; i < keys.length; i++) {

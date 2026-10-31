@@ -47,7 +47,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
         centerTitle: true,
       ),
       body: Obx(() {
-        // 1. 全屏 Loading 状态
+        
         if (controller.isLoading.value) {
           return const Center(
             child: Column(
@@ -61,18 +61,18 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           );
         }
 
-        // 2. 已连接的面板
+        
         if (!controller.notLogin.value) {
           return _buildSyncPanel();
         }
 
-        // 3. 未连接（显示登录表单）
+        
         return _buildLoginForm();
       }),
     );
   }
 
-  // 登录表单
+  
   Widget _buildLoginForm() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -129,14 +129,14 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
     );
   }
 
-  // 已连接面板
+  
   Widget _buildSyncPanel() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // 状态卡片
+          
           Container(
             padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
             decoration: BoxDecoration(
@@ -154,7 +154,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ),
           const SizedBox(height: 24),
           
-          // 时间记录
+          
           ListTile(
             leading: const Icon(Icons.cloud_upload),
             title: const Text("最后备份时间"),
@@ -169,7 +169,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           const Divider(),
           const SizedBox(height: 24),
           
-          // 操作按钮
+          
           OutlinedButton.icon(
             onPressed: () => controller.backup(),
             icon: const Icon(Icons.upload),
@@ -185,7 +185,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ),
           const SizedBox(height: 32),
           
-          // 修改配置按钮
+          
           TextButton.icon(
             onPressed: () {
               controller.notLogin.value = true;

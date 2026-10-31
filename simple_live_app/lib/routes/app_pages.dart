@@ -1,4 +1,4 @@
-// ignore_for_file: prefer_inlined_adds
+
 
 import 'package:get/get.dart';
 import 'package:simple_live_app/modules/category/detail/category_detail_controller.dart';
@@ -50,16 +50,16 @@ import 'route_path.dart';
 class AppPages {
   AppPages._();
   static final routes = [
-    // 首页
+    
     GetPage(
       name: RoutePath.kIndex,
       page: () => const IndexedPage(),
       bindings: [
         BindingsBuilder.put(() => IndexedController()),
-        //BindingsBuilder.put(() => HomeController()),
+        
       ],
     ),
-    // 观看记录
+    
     GetPage(
       name: RoutePath.kHistory,
       page: () => const HistoryPage(),
@@ -67,7 +67,7 @@ class AppPages {
         BindingsBuilder.put(() => HistoryController()),
       ],
     ),
-    // 关注用户
+    
     GetPage(
       name: RoutePath.kFollowUser,
       page: () => const FollowUserPage(),
@@ -75,7 +75,7 @@ class AppPages {
         BindingsBuilder.put(() => FollowUserController()),
       ],
     ),
-    // 搜索
+    
     GetPage(
       name: RoutePath.kSearch,
       page: () => const SearchPage(),
@@ -83,7 +83,7 @@ class AppPages {
         BindingsBuilder.put(() => AppSearchController()),
       ],
     ),
-    //分类详情
+    
     GetPage(
       name: RoutePath.kCategoryDetail,
       page: () => const CategoryDetailPage(),
@@ -94,7 +94,7 @@ class AppPages {
         ),
       ),
     ),
-    //直播间
+    
     GetPage(
       name: RoutePath.kLiveRoomDetail,
       page: () => const LiveRoomPage(),
@@ -105,26 +105,26 @@ class AppPages {
         ),
       ),
     ),
-    //弹幕设置
+    
     GetPage(
       name: RoutePath.kSettingsDanmu,
       page: () => const DanmuSettingsPage(),
     ),
-    //外观设置
+    
     GetPage(
         name: RoutePath.kAppstyleSetting,
         page: () => const AppstyleSettingPage()),
-    //播放设置
+    
     GetPage(
       name: RoutePath.kSettingsPlay,
       page: () => const PlaySettingsPage(),
     ),
-    //自动关闭
+    
     GetPage(
       name: RoutePath.kSettingsAutoExit,
       page: () => const AutoExitSettingsPage(),
     ),
-    //工具箱
+    
     GetPage(
       name: RoutePath.kTools,
       page: () => const ParsePage(),
@@ -132,7 +132,7 @@ class AppPages {
         BindingsBuilder.put(() => ParseController()),
       ],
     ),
-    //关键词屏蔽
+    
     GetPage(
       name: RoutePath.kSettingsDanmuShield,
       page: () => const DanmuShieldPage(),
@@ -140,7 +140,7 @@ class AppPages {
         BindingsBuilder.put(() => DanmuShieldController()),
       ],
     ),
-    //主页设置
+    
     GetPage(
       name: RoutePath.kSettingsIndexed,
       page: () => const IndexedSettingsPage(),
@@ -148,7 +148,7 @@ class AppPages {
         BindingsBuilder.put(() => IndexedSettingsController()),
       ],
     ),
-    //账号设置
+    
     GetPage(
       name: RoutePath.kSettingsAccount,
       page: () => const AccountPage(),
@@ -156,7 +156,7 @@ class AppPages {
         BindingsBuilder.put(() => AccountController()),
       ],
     ),
-    //哔哩哔哩Web登录
+    
     GetPage(
       name: RoutePath.kBiliBiliWebLogin,
       page: () => const BiliBiliWebLoginPage(),
@@ -164,7 +164,7 @@ class AppPages {
         BindingsBuilder.put(() => BiliBiliWebLoginController()),
       ],
     ),
-    //哔哩哔哩二维码登录
+    
     GetPage(
       name: RoutePath.kBiliBiliQRLogin,
       page: () => const BiliBiliQRLoginPage(),
@@ -172,12 +172,12 @@ class AppPages {
         BindingsBuilder.put(() => BiliBiliQRLoginController()),
       ],
     ),
-    // 数据同步
+    
     GetPage(
       name: RoutePath.kSync,
       page: () => const SyncPage(),
     ),
-    // 本地同步
+    
     GetPage(
       name: RoutePath.kLocalSync,
       page: () => const LocalSyncPage(),
@@ -189,7 +189,7 @@ class AppPages {
         ),
       ],
     ),
-    //扫码
+    
     GetPage(
       name: RoutePath.kSyncScan,
       page: () => const SyncScanQRPage(),
@@ -197,7 +197,7 @@ class AppPages {
         BindingsBuilder.put(() => SyncScanQRControlelr()),
       ],
     ),
-    //同步设备
+    
     GetPage(
       name: RoutePath.kLocalSyncDevice,
       page: () => const SyncDevicePage(),
@@ -210,7 +210,7 @@ class AppPages {
         ),
       ],
     ),
-    //远程同步-房间
+    
     GetPage(
       name: RoutePath.kRemoteSyncRoom,
       page: () => const RemoteSyncRoomPage(),
@@ -220,7 +220,7 @@ class AppPages {
         ),
       ],
     ),
-    //远程同步-WebDAV
+    
     GetPage(
       name: RoutePath.kRemoteSyncWebDav,
       page: () => const RemoteSyncWebDAVPage(),
@@ -230,12 +230,12 @@ class AppPages {
         ),
       ],
     ),
-    //远程同步-WebDAVConfig
+    
     GetPage(
       name: RoutePath.kRemoteSyncWebDavConfig,
       page: () => const RemoteSyncWebDAVConfigPage(),
     ),
-    //其他设置
+    
     GetPage(
       name: RoutePath.kSettingsOther,
       page: () => const OtherSettingsPage(),
@@ -243,7 +243,7 @@ class AppPages {
         BindingsBuilder.put(() => OtherSettingsController()),
       ],
     ),
-    //关注设置
+    
     GetPage(
       name: RoutePath.kSettingsFollow,
       page: () => const FollowSettingsPage(),

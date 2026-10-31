@@ -80,11 +80,11 @@ class LocalSyncController extends BaseController {
     }
     var addressList = (result as String).split(";");
     if (addressList.length >= 2) {
-      //弹窗选择
+      
       showPickerAddress(addressList);
     } else {
       addressController.text = result;
-      //connect();
+      
     }
   }
 
@@ -99,7 +99,7 @@ class LocalSyncController extends BaseController {
             onTap: () {
               Get.back();
               addressController.text = addressList[i];
-              // connect();
+              
             },
           );
         },

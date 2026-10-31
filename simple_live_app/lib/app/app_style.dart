@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 
 class AppColors {
   static ColorScheme lightColorScheme = ColorScheme.fromSeed(
-    // primarySwatch: Colors.blue,
+    
     seedColor: const Color(0xff3498db),
     brightness: Brightness.light,
   );
@@ -25,7 +25,7 @@ class AppStyle {
     fontFamily: Platform.isWindows ? "Microsoft YaHei" : null,
     visualDensity: VisualDensity.standard,
     appBarTheme: AppBarTheme(
-      //elevation: 0,
+      
       centerTitle: true,
       titleTextStyle: const TextStyle(
         fontSize: 16,
@@ -37,26 +37,26 @@ class AppStyle {
       ),
     ),
 
-    // radioTheme: RadioThemeData(
-    //   fillColor: MaterialStateProperty.all(AppColors.lightColorScheme.primary),
-    // ),
-    // checkboxTheme: CheckboxThemeData(
-    //   fillColor: MaterialStateProperty.all(AppColors.lightColorScheme.primary),
-    // ),
-    // tabBarTheme: TabBarTheme(
-    //   labelColor: AppColors.lightColorScheme.primary,
-    //   unselectedLabelColor: Colors.white70,
-    //   indicatorSize: TabBarIndicatorSize.tab,
-    //   indicator: RectangularIndicator(
-    //     color: Colors.white.withOpacity(.8),
-    //     topLeftRadius: 24,
-    //     bottomLeftRadius: 24,
-    //     topRightRadius: 24,
-    //     bottomRightRadius: 24,
-    //     verticalPadding: 8,
-    //     horizontalPadding: 0,
-    //   ),
-    // ),
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
   );
 
   static ThemeData darkTheme = ThemeData.dark().copyWith(
@@ -69,7 +69,7 @@ class AppStyle {
           fontFamily: Platform.isWindows ? "Microsoft YaHei" : null,
         ),
     appBarTheme: AppBarTheme(
-      //elevation: 0,
+      
 
       centerTitle: true,
       titleTextStyle: const TextStyle(
@@ -81,25 +81,25 @@ class AppStyle {
         systemNavigationBarColor: Colors.transparent,
       ),
     ),
-    // radioTheme: RadioThemeData(
-    //   fillColor: MaterialStateProperty.all(AppColors.darkColorScheme.primary),
-    // ),
-    // checkboxTheme: CheckboxThemeData(
-    //   fillColor: MaterialStateProperty.all(AppColors.darkColorScheme.primary),
-    // ),
-    // tabBarTheme: TabBarTheme(
-    //   labelColor: AppColors.darkColorScheme.primary,
-    //   unselectedLabelColor: Colors.white70,
-    //   indicator: RectangularIndicator(
-    //     color: Colors.white.withAlpha(50),
-    //     topLeftRadius: 24,
-    //     bottomLeftRadius: 24,
-    //     topRightRadius: 24,
-    //     bottomRightRadius: 24,
-    //     verticalPadding: 8,
-    //     horizontalPadding: 0,
-    //   ),
-    // ),
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
   );
   static const vGap4 = SizedBox(
     height: 4,

@@ -20,7 +20,7 @@ mixin PlayerMixin {
   late final player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
-      bufferSize: 64 * 1024 * 1024, // 32MB，对齐移动端默认
+      bufferSize: 64 * 1024 * 1024, 
     ),
   );
 
@@ -28,23 +28,23 @@ mixin PlayerMixin {
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
     if (Platform.isAndroid) {
-      // [终极兼容] 强制使用 OpenGL 渲染，避免部分老电视 Vulkan 崩溃
+      
       await pp.setProperty('gpu-api', 'opengl');
-      // [终极兼容] 强制使用 auto-copy 硬解，绕开电视直接绑屏的黑屏坑
+      
       await pp.setProperty('hwdec', 'auto-copy');
-       // 直嵌Surface，绕过GPU拷贝
-      // 强制音频同步，防止掉帧
+       
+      
       await pp.setProperty('video-sync', 'desync');
-      // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
+      
       await pp.setProperty('framedrop', 'decoder+vo');
       await pp.setProperty('ao', 'opensles');
       await pp.setProperty('audio-buffer', '0.2');
       await pp.setProperty('vd-lavc-threads', '0');
-      await pp.setProperty('demuxer-max-bytes', '64MiB'); // 网络缓冲
-      await pp.setProperty('demuxer-readahead-secs', '5'); // 预读5秒
+      await pp.setProperty('demuxer-max-bytes', '64MiB'); 
+      await pp.setProperty('demuxer-readahead-secs', '5'); 
 
 
-      // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
+      
     }
   }
 
@@ -52,10 +52,10 @@ mixin PlayerMixin {
   late final videoController = VideoController(
     player,
     configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: true, // 强开硬件加速，配合 auto-copy
-      androidAttachSurfaceAfterVideoParameters: false, // 必须为true，防止mediacodec_embed黑屏/闪退,
+      enableHardwareAcceleration: true, 
+      androidAttachSurfaceAfterVideoParameters: false, 
         width: 1920,
-        height: 1080, // 强制缩放到1080p输出，大幅降低2K渲染压力
+        height: 1080, 
       ),
   );
 }
@@ -167,15 +167,15 @@ mixin PlayerDanmakuMixin on PlayerStateMixin {
 
   void initDanmakuController(DanmakuController e) {
     danmakuController = e;
-    // danmakuController?.updateOption(
-    //   DanmakuOption(
-    //     fontSize: AppSettingsController.instance.danmuSize.value.w,
-    //     area: AppSettingsController.instance.danmuArea.value,
-    //     duration: AppSettingsController.instance.danmuSpeed.value,
-    //     opacity: AppSettingsController.instance.danmuOpacity.value,
-    //     strokeWidth: AppSettingsController.instance.danmuStrokeWidth.value.w,
-    //   ),
-    // );
+    
+    
+    
+    
+    
+    
+    
+    
+    
   }
 
   void updateDanmuOption(DanmakuOption? option) {
@@ -201,10 +201,10 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
 
   /// 初始化一些系统状态
   void initSystem() async {
-    // 屏幕常亮
+    
     WakelockPlus.enable();
 
-    // 开始隐藏计时
+    
     resetHideControlsTimer();
   }
 
@@ -247,10 +247,10 @@ class PlayerController extends BaseController
   void initStream() {
     _errorSubscription = player.stream.error.listen((event) {
       if (event.contains('Could not open codec') || event.contains('Failed to open')) {
-        // 如果硬解彻底崩溃，无条件降级为纯软解，保证有画面
+        
         (player.platform as NativePlayer).setProperty('hwdec', 'no');
       }
-      // 音频设备丢失时尝试重新初始化
+      
       if (event.contains('Could not open/initialize audio device') ||
           event.contains('audio device')) {
         Log.w("音频设备异常，尝试恢复: $event");
@@ -270,15 +270,15 @@ class PlayerController extends BaseController
       Log.w(
           'width:$event  W:${(player.state.width)}  H:${(player.state.height)}');
       width.value = event ?? 0;
-      // isVertical.value =
-      //     (player.state.height ?? 9) > (player.state.width ?? 16);
+      
+      
     });
     _heightSubscription = player.stream.height.listen((event) {
       Log.w(
           'height:$event  W:${(player.state.width)}  H:${(player.state.height)}');
       height.value = event ?? 0;
-      // isVertical.value =
-      //     (player.state.height ?? 9) > (player.state.width ?? 16);
+      
+      
     });
   }
 

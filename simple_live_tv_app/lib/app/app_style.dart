@@ -8,7 +8,7 @@ class AppColors {
   static ColorScheme lightColorScheme = ColorScheme.fromSwatch(
     primarySwatch: Colors.pink,
     brightness: Brightness.dark,
-    //primaryColorDark: const Color(0xfff06595),
+    
     accentColor: const Color(0xfff06595),
   );
 }
@@ -197,7 +197,7 @@ class AppStyle {
           blurRadius: 6.w,
           spreadRadius: 2.w,
           color: Colors.pink.shade400,
-          //color: Color.fromARGB(255, 255, 120, 167),
+          
         )
       ];
 }

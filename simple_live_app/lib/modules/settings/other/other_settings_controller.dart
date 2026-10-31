@@ -115,7 +115,7 @@ class OtherSettingsController extends BaseController {
       var size = file.lengthSync();
       logFiles.add(LogFileModel(name, file.path, time, size));
     });
-    //logFiles 名称倒序
+    
     logFiles.sort((a, b) => b.time.compareTo(a.time));
   }
 
@@ -155,7 +155,7 @@ class OtherSettingsController extends BaseController {
 
   void exportConfig() async {
     try {
-      // 组装数据
+      
       var data = {
         "type": "simple_live",
         "platform": Platform.operatingSystem,
@@ -167,7 +167,7 @@ class OtherSettingsController extends BaseController {
 
       var bytes = Uint8List.fromList(utf8.encode(jsonEncode(data)));
 
-      // FilePicker 直接写入
+      
       var inlineSave = Platform.isAndroid || Platform.isIOS || kIsWeb;
 
       var path = await FilePicker.platform.saveFile(
@@ -182,7 +182,7 @@ class OtherSettingsController extends BaseController {
         return;
       }
 
-      // 桌面平台需要手动写入
+      
       if (!inlineSave && path != null) {
         await File(path).writeAsBytes(bytes);
       }
@@ -209,7 +209,7 @@ class OtherSettingsController extends BaseController {
         SmartDialog.showToast("不支持的配置文件");
         return;
       }
-      // 检查platform
+      
       if (data["platform"] != Platform.operatingSystem &&
           !await Utils.showAlertDialog("导入配置文件平台不匹配,是否继续导入?", title: "平台不匹配")) {
         return;

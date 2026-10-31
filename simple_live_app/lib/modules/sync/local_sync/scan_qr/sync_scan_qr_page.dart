@@ -18,7 +18,7 @@ class SyncScanQRPage extends GetView<SyncScanQRControlelr> {
             },
             icon: const Icon(Icons.flash_on),
           ),
-          // 反转摄像头
+          
           IconButton(
             onPressed: () {
               controller.qrController?.flipCamera();

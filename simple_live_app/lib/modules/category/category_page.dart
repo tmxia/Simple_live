@@ -20,7 +20,7 @@ class CategoryPage extends GetView<CategoryController> {
           tabs: Sites.supportSites
               .map(
                 (e) => Tab(
-                  //text: e.name,
+                  
                   child: Row(
                     children: [
                       Image.asset(

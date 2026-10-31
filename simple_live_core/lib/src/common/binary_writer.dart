@@ -15,7 +15,7 @@ class BinaryWriter {
     var b = Uint8List(len).buffer;
     var bytes = ByteData.view(b);
     if (len == 1) {
-      //写入byte
+      
       bytes.setUint8(0, value.toUnsigned(8));
     }
     if (len == 2) {
@@ -68,11 +68,11 @@ class BinaryReader {
   /// 返回整数
   int readInt(int len, {Endian endian = Endian.big}) {
     var result = 0;
-    // if (len == 1) {
-    //   result = buffer[position];
-    //   position += len;
-    //   return result;
-    // }
+    
+    
+    
+    
+    
     var bytes =
         Uint8List.fromList(buffer.getRange(position, position + len).toList());
     var byteBuffer = bytes.buffer;

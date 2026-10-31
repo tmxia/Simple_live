@@ -19,12 +19,12 @@ class DBService extends GetxService {
     tagBox = await Hive.openBox("FollowUserTag");
   }
 
-  // follow_user_tag 相关逻辑
+  
   bool getFollowTagExist(String id) {
     return tagBox.containsKey(id);
   }
 
-  // 删除标签
+  
   Future deleteFollowTag(String id) async {
     await tagBox.delete(id);
   }
@@ -33,24 +33,24 @@ class DBService extends GetxService {
     return tagBox.values.firstWhereOrNull((item) => item.tag == tag);
   }
 
-  // 判断标签名称是否重复
+  
   bool getFollowTagExistByTag(String tag) {
     return tagBox.values.any((item) => item.tag == tag);
   }
 
-  // 获取标签列表
+  
   List<FollowUserTag> getFollowTagList() {
     return tagBox.values.toList();
   }
 
-  // 修改标签
+  
   Future updateFollowTag(FollowUserTag followTag) async {
     await tagBox.put(followTag.id, followTag);
   }
 
-  // 添加标签
+  
   Future<FollowUserTag> addFollowTag(String tag) async {
-    // 限制标签唯一且长度不超过8个字符
+    
     if (getFollowTagExistByTag(tag) && tag.length > 8) {
       return getFollowTag(tag)!;
     }
@@ -60,7 +60,7 @@ class DBService extends GetxService {
     return followUserTag;
   }
 
-  // 调整标签顺序
+  
   Future updateFollowTagOrder(List<FollowUserTag> userTagList) async {
     final Map<int, FollowUserTag> updatedMap = {
       for (int i = 0; i < userTagList.length; i++) i: userTagList[i]

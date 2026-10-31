@@ -49,7 +49,7 @@ class BiliBiliDanmaku implements LiveDanmaku {
   @override
   Function()? onReady;
 
-  //String serverUrl = "wss://broadcastlv.chat.bilibili.com/sub";
+  
 
   WebScoketUtils? webScoketUtils;
   late BiliBiliDanmakuArgs danmakuArgs;
@@ -117,24 +117,24 @@ class BiliBiliDanmaku implements LiveDanmaku {
 
   List<int> encodeData(String msg, int action) {
     var data = utf8.encode(msg);
-    //头部长度固定16
+    
     var length = data.length + 16;
     var buffer = Uint8List(length);
 
     var writer = BinaryWriter([]);
 
-    //数据包长度
+    
     writer.writeInt(buffer.length, 4);
-    //数据包头部长度,固定16
+    
     writer.writeInt(16, 2);
 
-    //协议版本，0=JSON,1=Int32,2=Buffer
+    
     writer.writeInt(0, 2);
 
-    //操作类型
+    
     writer.writeInt(action, 4);
 
-    //数据包头部长度,固定1
+    
 
     writer.writeInt(1, 4);
 
@@ -145,11 +145,11 @@ class BiliBiliDanmaku implements LiveDanmaku {
 
   void decodeMessage(List<int> data) {
     try {
-      //协议版本。0为JSON，可以直接解析；1为房间人气值,Body为4位Int32；2为压缩过Buffer，需要解压再处理
+      
       int protocolVersion = readInt(data, 6, 2);
-      //操作类型。3=心跳回应，内容为房间人气值；5=通知，弹幕、广播等全部信息；8=进房回应，空
+      
       int operation = readInt(data, 8, 4);
-      //内容
+      
       var body = data.skip(16).toList();
       if (operation == 3) {
         var online = readInt(body, 0, 4);

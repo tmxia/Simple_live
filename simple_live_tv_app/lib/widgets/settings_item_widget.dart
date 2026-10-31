@@ -101,14 +101,14 @@ class SettingsItemWidget extends StatelessWidget {
   void showSettingsDialog() {
     Get.dialog(
       Theme(
-        // 覆盖全局主题，彻底干掉焦点水波纹和默认大方框
+        
         data: Theme.of(Get.context!).copyWith(
           splashColor: Colors.transparent,
           highlightColor: Colors.transparent,
           hoverColor: Colors.transparent,
         ),
         child: AlertDialog(
-          backgroundColor: const Color(0xFF222222), // 实心深灰
+          backgroundColor: const Color(0xFF222222), 
           surfaceTintColor: Colors.transparent,
           title: Text(title, style: AppStyle.titleStyleWhite),
           scrollable: true,
@@ -122,7 +122,7 @@ class SettingsItemWidget extends StatelessWidget {
                   items[e] ?? '',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    // 选中用亮黄，未选中用白色/浅灰
+                    
                     color: isSelected ? Colors.amberAccent : Colors.white70,
                     fontSize: 24.w,
                     fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
@@ -131,7 +131,7 @@ class SettingsItemWidget extends StatelessWidget {
                 contentPadding: AppStyle.edgeInsetsH20,
                 autofocus: isSelected,
                 shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
-                // 遥控器焦点底色：极淡的白色，不再是大白框
+                
                 focusColor: Colors.white10,
                 selected: isSelected,
                 selectedTileColor: Colors.transparent,
@@ -144,7 +144,7 @@ class SettingsItemWidget extends StatelessWidget {
           ),
         ),
       ),
-      barrierColor: Colors.black87, // 遮罩层：彻底挡住底层的蓝字
+      barrierColor: Colors.black87, 
     );
   }
 }

@@ -93,7 +93,7 @@ class Log {
     if (writeFile) {
       writeLog(obj, Level.info);
     }
-    //logger.e(obj.toString(), obj, obj?.stackTrace);
+    
     if (kDebugMode) {
       print(obj);
     }

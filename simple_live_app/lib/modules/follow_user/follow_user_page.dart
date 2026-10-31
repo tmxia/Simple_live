@@ -198,7 +198,7 @@ class FollowUserPage extends GetView<FollowUserController> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 标题栏
+            
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -226,7 +226,7 @@ class FollowUserPage extends GetView<FollowUserController> {
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (selectedIndex >= 0) {
                     scrollController.animateTo(
-                      selectedIndex * 60.0, // 假设每项高度为 60
+                      selectedIndex * 60.0, 
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                     );
@@ -285,13 +285,13 @@ class FollowUserPage extends GetView<FollowUserController> {
               },
             ),
             AppStyle.divider,
-            // 列表内容
+            
             Expanded(
               child: Obx(
                 () => ReorderableListView.builder(
                   itemCount: controller.userTagList.length,
                   itemBuilder: (context, index) {
-                    // 偏移
+                    
                     FollowUserTag item = controller.userTagList[index];
                     return ListTile(
                       key: ValueKey(item.id),
