@@ -38,7 +38,7 @@ class AppPages {
     
     GetPage(
       name: RoutePath.kHome,
-      page: () => const HomePage(),
+      page: () => HomePage(),
       bindings: [
         BindingsBuilder.put(() => HomeController()),
       ],
