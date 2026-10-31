@@ -428,7 +428,7 @@ class HomePage extends GetView<HomeController> {
               ),
             ),
             ),
-            AppStyle.hGap32,
+            SizedBox(width: 64.w), // 增大搜索按钮与输入框的间距
             HighlightButton(
               focusNode: searchBtnFocusNode,
               text: "搜索",
