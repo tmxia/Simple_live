@@ -21,7 +21,7 @@ import 'package:simple_live_tv_app/widgets/status/app_empty_widget.dart';
 class HomePage extends GetView<HomeController> {
   final AppFocusNode searchBtnFocusNode = AppFocusNode();
 
-  const HomePage({super.key});
+  HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
