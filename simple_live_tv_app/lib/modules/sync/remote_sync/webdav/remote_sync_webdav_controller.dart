@@ -283,11 +283,6 @@ class RemoteSyncWebDAVController extends GetxController {
             LocalStorageService.instance.setValue(LocalStorageService.kBilibiliCookie, cookie);
             try { Get.find<BiliBiliAccountService>().setCookie(cookie); } catch (_) {}
           }
-          if (accounts['douyin'] != null) {
-            final cookie = accounts['douyin'] as String;
-            LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, cookie);
-            try { Get.find<DouyinAccountService>().setCookie(cookie); } catch (_) {}
-          }
           if (accounts['douyu'] != null) LocalStorageService.instance.setValue(LocalStorageService.kDouyuCookie, accounts['douyu']);
           if (accounts['huya'] != null) LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, accounts['huya']);
           if (accounts['kuaishou'] != null) LocalStorageService.instance.setValue(LocalStorageService.kKuaishouCookie, accounts['kuaishou']);
@@ -304,10 +299,10 @@ class RemoteSyncWebDAVController extends GetxController {
             } catch (e) { Log.e("Import Follow Error: $e", StackTrace.current); }
           }
         } else if (file.name == 'SimpleLive_tags.json') {
-          DBService.instance.tagBox.clear();
+          DBService.instance.followTagBox.clear();
           for (final item in list) {
             try {
-              await DBService.instance.tagBox.put(item['id'], FollowUserTag.fromJson(item));
+              await DBService.instance.followTagBox.put(item['id'], FollowUserTag.fromJson(item));
             } catch (e) { Log.e("Import Tag Error: $e", StackTrace.current); }
           }
         } else if (file.name == 'SimpleLive_histories.json') {
