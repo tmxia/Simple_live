@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
@@ -18,6 +19,8 @@ import 'package:simple_live_tv_app/widgets/net_image.dart';
 import 'package:simple_live_tv_app/widgets/status/app_empty_widget.dart';
 
 class HomePage extends GetView<HomeController> {
+  final AppFocusNode searchBtnFocusNode = AppFocusNode();
+
   const HomePage({super.key});
 
   @override
@@ -384,14 +387,23 @@ class HomePage extends GetView<HomeController> {
               ],
             ),
             AppStyle.vGap48,
-            SizedBox(
+            Focus(
+              onKeyEvent: (node, event) {
+                if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                  FocusManager.instance.primaryFocus?.unfocus();
+                  searchBtnFocusNode.requestFocus();
+                  return KeyEventResult.handled;
+                }
+                return KeyEventResult.ignored;
+              },
+              child: SizedBox(
               width: 700.w,
               child: TextField(
                 controller: textController,
                 style: AppStyle.textStyleWhite,
                 textInputAction: TextInputAction.search,
                 onSubmitted: (e) {
-                  Get.back();
+                  FocusManager.instance.primaryFocus?.unfocus();
                   if (e.isEmpty) {
                     return;
                   }
@@ -414,6 +426,22 @@ class HomePage extends GetView<HomeController> {
                   contentPadding: AppStyle.edgeInsetsA32,
                 ),
               ),
+            ),
+            ),
+            AppStyle.hGap32,
+            HighlightButton(
+              focusNode: searchBtnFocusNode,
+              text: "搜索",
+              iconData: Icons.search,
+              onTap: () {
+                FocusManager.instance.primaryFocus?.unfocus();
+                if (textController.text.isEmpty) return;
+                if (mode.value == 0) {
+                  controller.toSearchRoom(textController.text);
+                } else {
+                  controller.toSearchAnchor(textController.text);
+                }
+              },
             ),
           ],
         ),
