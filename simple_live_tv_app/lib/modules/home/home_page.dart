@@ -387,61 +387,65 @@ class HomePage extends GetView<HomeController> {
               ],
             ),
             AppStyle.vGap48,
-            Focus(
-              onKeyEvent: (node, event) {
-                if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                  searchBtnFocusNode.requestFocus();
-                  return KeyEventResult.handled;
-                }
-                return KeyEventResult.ignored;
-              },
-              child: SizedBox(
-              width: 700.w,
-              child: TextField(
-                controller: textController,
-                style: AppStyle.textStyleWhite,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (e) {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                  if (e.isEmpty) {
-                    return;
-                  }
-                  if (mode.value == 0) {
-                    controller.toSearchRoom(textController.text);
-                  } else {
-                    controller.toSearchAnchor(textController.text);
-                  }
-                },
-                decoration: InputDecoration(
-                  hintText: mode.value == 0 ? "点击输入关键字搜索" : "点击主播昵称搜索",
-                  hintStyle: AppStyle.textStyleWhite,
-                  border: OutlineInputBorder(
-                    borderRadius: AppStyle.radius16,
-                    borderSide: BorderSide(width: 4.w),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Focus(
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      searchBtnFocusNode.requestFocus();
+                      return KeyEventResult.handled;
+                    }
+                    return KeyEventResult.ignored;
+                  },
+                  child: SizedBox(
+                    width: 500.w, // 缩短输入框，给按钮留出空间
+                    child: TextField(
+                      controller: textController,
+                      style: AppStyle.textStyleWhite,
+                      textInputAction: TextInputAction.search,
+                      onSubmitted: (e) {
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        if (e.isEmpty) return;
+                        if (mode.value == 0) {
+                          controller.toSearchRoom(textController.text);
+                        } else {
+                          controller.toSearchAnchor(textController.text);
+                        }
+                      },
+                      decoration: InputDecoration(
+                        hintText: mode.value == 0 ? "点击输入关键字搜索" : "点击主播昵称搜索",
+                        hintStyle: AppStyle.textStyleWhite,
+                        border: OutlineInputBorder(
+                          borderRadius: AppStyle.radius16,
+                          borderSide: BorderSide(width: 4.w),
+                        ),
+                        filled: true,
+                        isDense: true,
+                        fillColor: Get.theme.primaryColor,
+                        contentPadding: AppStyle.edgeInsetsA32,
+                      ),
+                    ),
                   ),
-                  filled: true,
-                  isDense: true,
-                  fillColor: Get.theme.primaryColor,
-                  contentPadding: AppStyle.edgeInsetsA32,
                 ),
-              ),
-            ),
-            ),
-            SizedBox(width: 64.w), // 增大搜索按钮与输入框的间距
-            HighlightButton(
-              focusNode: searchBtnFocusNode,
-              text: "搜索",
-              iconData: Icons.search,
-              onTap: () {
-                FocusManager.instance.primaryFocus?.unfocus();
-                if (textController.text.isEmpty) return;
-                if (mode.value == 0) {
-                  controller.toSearchRoom(textController.text);
-                } else {
-                  controller.toSearchAnchor(textController.text);
-                }
-              },
+                SizedBox(width: 48.w), // 输入框与按钮的间距
+                HighlightButton(
+                  focusNode: searchBtnFocusNode,
+                  text: "搜索",
+                  iconData: Icons.search,
+                  onTap: () {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    if (textController.text.isEmpty) return;
+                    if (mode.value == 0) {
+                      controller.toSearchRoom(textController.text);
+                    } else {
+                      controller.toSearchAnchor(textController.text);
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),
