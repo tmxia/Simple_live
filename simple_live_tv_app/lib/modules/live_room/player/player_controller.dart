@@ -20,7 +20,7 @@ mixin PlayerMixin {
   late final player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
-      bufferSize: 32 * 1024 * 1024, // 32MB，对齐移动端默认
+      bufferSize: 64 * 1024 * 1024, // 32MB，对齐移动端默认
     ),
   );
 
@@ -34,12 +34,15 @@ mixin PlayerMixin {
       await pp.setProperty('hwdec', 'auto-copy');
        // 直嵌Surface，绕过GPU拷贝
       // 强制音频同步，防止掉帧
-      await pp.setProperty('video-sync', 'audio');
+      await pp.setProperty('video-sync', 'desync');
       // 增加丢帧保护，如果实在卡顿，丢弃画面保声音，不让整个 UI 卡死
       await pp.setProperty('framedrop', 'decoder+vo');
       await pp.setProperty('ao', 'opensles');
       await pp.setProperty('audio-buffer', '0.2');
-      await pp.setProperty('vd-lavc-threads', '4');
+      await pp.setProperty('vd-lavc-threads', '0');
+      await pp.setProperty('demuxer-max-bytes', '64MiB'); // 网络缓冲
+      await pp.setProperty('demuxer-readahead-secs', '5'); // 预读5秒
+
 
       // 强制使用 Android 原生音频输出，防止某些电视声音卡顿
     }
