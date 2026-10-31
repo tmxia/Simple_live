@@ -211,11 +211,27 @@ class RemoteSyncWebDAVController extends GetxController {
           remoteFollowCount = metaJson['followCount'] ?? 0;
           remoteHistoryCount = metaJson['historyCount'] ?? 0;
         } else if (file.name == 'SimpleLive_follows.json') {
-          final list = jsonDecode(fileContent) as List;
+          final dynamic decodedData = jsonDecode(fileContent);
+          final List<dynamic> list;
+          if (decodedData is List) {
+            list = decodedData;
+          } else if (decodedData is Map<String, dynamic>) {
+            list = (decodedData['data'] ?? decodedData['list'] ?? [decodedData]) as List<dynamic>;
+          } else {
+            list = [];
+          }
           remoteFollowIds.addAll(list.map((e) => e['id'].toString()));
           remoteFollowCount = remoteFollowIds.length;
         } else if (file.name == 'SimpleLive_histories.json') {
-          final list = jsonDecode(fileContent) as List;
+          final dynamic decodedData = jsonDecode(fileContent);
+          final List<dynamic> list;
+          if (decodedData is List) {
+            list = decodedData;
+          } else if (decodedData is Map<String, dynamic>) {
+            list = (decodedData['data'] ?? decodedData['list'] ?? [decodedData]) as List<dynamic>;
+          } else {
+            list = [];
+          }
           remoteHistoryIds.addAll(list.map((e) => e['id'].toString()));
           remoteHistoryCount = remoteHistoryIds.length;
         }
@@ -276,10 +292,10 @@ class RemoteSyncWebDAVController extends GetxController {
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
-        final dynamic decoded = jsonDecode(jsonStr);
+        final dynamic decodedRaw = jsonDecode(jsonStr);
 
         if (file.name == 'SimpleLive_accounts.json') {
-          final accounts = decoded as Map<String, dynamic>;
+          final accounts = decodedRaw as Map<String, dynamic>;
           if (accounts['bilibili'] != null) {
             final cookie = accounts['bilibili'] as String;
             LocalStorageService.instance.setValue(LocalStorageService.kBilibiliCookie, cookie);
@@ -296,7 +312,14 @@ class RemoteSyncWebDAVController extends GetxController {
           continue;
         }
 
-        final List<dynamic> list = decoded as List<dynamic>;
+        final List<dynamic> list;
+        if (decodedRaw is List) {
+          list = decodedRaw;
+        } else if (decodedRaw is Map<String, dynamic>) {
+          list = (decodedRaw['data'] ?? decodedRaw['list'] ?? [decodedRaw]) as List<dynamic>;
+        } else {
+          list = [];
+        }
 
         if (file.name == 'SimpleLive_follows.json') {
           DBService.instance.followBox.clear();
