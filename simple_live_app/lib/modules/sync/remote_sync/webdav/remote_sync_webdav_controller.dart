@@ -194,26 +194,45 @@ class RemoteSyncWebDAVController extends GetxController {
   Future<void> recovery() async {
     isLoading.value = true;
     try {
-      
+      // 1. 下载 ZIP 进行预检
       final zipData = await davClient.recovery();
       final archive = ZipDecoder().decodeBytes(zipData);
-      
-      
+
+      // 2. 解析云端真实数据 ID 集合（核心差集检测）
       int remoteFollowCount = 0;
       int remoteHistoryCount = 0;
+      final Set<String> remoteFollowIds = {};
+      final Set<String> remoteHistoryIds = {};
+
       for (final file in archive) {
+        final fileContent = utf8.decode(file.content as List<int>);
         if (file.name == 'backup_info.json') {
-          final metaJson = jsonDecode(utf8.decode(file.content as List<int>));
+          final metaJson = jsonDecode(fileContent);
           remoteFollowCount = metaJson['followCount'] ?? 0;
           remoteHistoryCount = metaJson['historyCount'] ?? 0;
-          break;
+        } else if (file.name == 'SimpleLive_follows.json') {
+          final list = jsonDecode(fileContent) as List;
+          remoteFollowIds.addAll(list.map((e) => e['id'].toString()));
+          remoteFollowCount = remoteFollowIds.length;
+        } else if (file.name == 'SimpleLive_histories.json') {
+          final list = jsonDecode(fileContent) as List;
+          remoteHistoryIds.addAll(list.map((e) => e['id'].toString()));
+          remoteHistoryCount = remoteHistoryIds.length;
         }
       }
 
-      
-      int localFollowCount = DBService.instance.followBox.length;
-      int localHistoryCount = DBService.instance.historyBox.length;
-      
+      // 3. 获取本地真实数据 ID 集合
+      final localFollowIds = DBService.instance.followBox.keys.map((e) => e.toString()).toSet();
+      final localHistoryIds = DBService.instance.historyBox.keys.map((e) => e.toString()).toSet();
+      final localFollowCount = localFollowIds.length;
+      final localHistoryCount = localHistoryIds.length;
+
+      // 4. 计算本地独有和云端独有的数据（求差集）
+      final onlyLocalFollows = localFollowIds.difference(remoteFollowIds).length;
+      final onlyRemoteFollows = remoteFollowIds.difference(localFollowIds).length;
+      final onlyLocalHistories = localHistoryIds.difference(remoteHistoryIds).length;
+      final onlyRemoteHistories = remoteHistoryIds.difference(localHistoryIds).length;
+
       final remoteTime = await davClient.getRemoteFileMTime();
       bool isTimeOlder = false;
       if (remoteTime != null) {
@@ -223,33 +242,37 @@ class RemoteSyncWebDAVController extends GetxController {
         isTimeOlder = remoteTime.millisecondsSinceEpoch < localMax - 60000;
       }
 
-      
-      if (isTimeOlder || remoteFollowCount < localFollowCount || remoteHistoryCount < localHistoryCount) {
-        String msg = "云端备份数据与本地存在差异：\n\n";
-        msg += "【关注】云端 ${remoteFollowCount} 条 / 本地 ${localFollowCount} 条\n";
-        msg += "【历史】云端 ${remoteHistoryCount} 条 / 本地 ${localHistoryCount} 条\n\n";
-        if (isTimeOlder) msg += "⚠️ 云端时间较旧！\n";
-        if (remoteFollowCount < localFollowCount) msg += "⚠️ 云端关注数少于本地！\n";
-        if (remoteHistoryCount < localHistoryCount) msg += "⚠️ 云端历史数少于本地！\n";
-        msg += "\n继续恢复将覆盖本地数据，是否继续？";
+      // 5. 基于实际数据差异判定冲突
+      if (isTimeOlder || onlyLocalFollows > 0 || onlyLocalHistories > 0 || onlyRemoteFollows > 0 || onlyRemoteHistories > 0) {
+        String msg = "⚠️ 云端备份与本地实际数据存在差异：\n\n";
+        if (onlyLocalFollows > 0) msg += "【关注】本地独有 ${onlyLocalFollows} 个（恢复将丢失）\n";
+        if (onlyRemoteFollows > 0) msg += "【关注】云端独有 ${onlyRemoteFollows} 个（恢复将增加）\n";
+        if (onlyLocalHistories > 0) msg += "【历史】本地独有 ${onlyLocalHistories} 条（恢复将丢失）\n";
+        if (onlyRemoteHistories > 0) msg += "【历史】云端独有 ${onlyRemoteHistories} 条（恢复将增加）\n";
         
+        msg += "\n💡 汇总：\n本地共 ${localFollowCount} 个关注 / ${localHistoryCount} 条历史。\n云端共 ${remoteFollowCount} 个关注 / ${remoteHistoryCount} 条历史。\n\n继续恢复将完全覆盖本地数据，是否继续？";
+
         final confirm = await Get.dialog<bool>(
           AlertDialog(
-            title: const Text("冲突警告"),
+            title: const Text("数据差异警告"),
             content: Text(msg),
             actions: [
               TextButton(onPressed: () => Get.back(result: false), child: const Text("取消")),
-              TextButton(onPressed: () => Get.back(result: true), child: const Text("强制恢复", style: TextStyle(color: Colors.red))),
+              TextButton(
+                onPressed: () => Get.back(result: true),
+                child: const Text("强制覆盖", style: TextStyle(color: Colors.red)),
+              ),
             ],
           ),
         );
+
         if (confirm != true) {
           isLoading.value = false;
           return;
         }
       }
 
-      
+      // 6. 执行写入数据库
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
@@ -274,7 +297,7 @@ class RemoteSyncWebDAVController extends GetxController {
         }
 
         final List<dynamic> list = decoded as List<dynamic>;
-        
+
         if (file.name == 'SimpleLive_follows.json') {
           DBService.instance.followBox.clear();
           for (final item in list) {
