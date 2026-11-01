@@ -46,7 +46,7 @@ class FollowUserAdapter extends TypeAdapter<FollowUser> {
       ..write(obj.addTime)
       ..writeByte(6)
       ..write(obj.tag)
-      ..writeByte(8)
+      ..writeByte(7)
       ..write(obj.isPinned);
   }
 
