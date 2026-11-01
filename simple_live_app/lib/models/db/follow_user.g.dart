@@ -31,7 +31,7 @@ class FollowUserAdapter extends TypeAdapter<FollowUser> {
   @override
   void write(BinaryWriter writer, FollowUser obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -46,7 +46,7 @@ class FollowUserAdapter extends TypeAdapter<FollowUser> {
       ..write(obj.addTime)
       ..writeByte(6)
       ..write(obj.tag)
-      ..writeByte(7)
+      ..writeByte(8)
       ..write(obj.isPinned);
   }
 
