@@ -306,7 +306,7 @@ class HomePage extends GetView<HomeController> {
                           height: 64.w,
                           borderRadius: 64.w,
                         ),
-                        title: item.userName,
+                        title: "${item.isPinned ? "❤️ " : ""}${item.userName}",
                         focusNode: foucsNode,
                         trailing: Obx(
                           () => Icon(
