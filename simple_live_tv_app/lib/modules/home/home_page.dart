@@ -307,33 +307,33 @@ class HomePage extends GetView<HomeController> {
                           borderRadius: 64.w,
                         ),
                         title: item.userName, 
-                        titleWidget: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (item.isPinned)
-                              Padding(
-                                padding: EdgeInsets.only(right: 8.w),
-                                child: Icon(
-                                  Icons.favorite,
-                                  color: Colors.red,
-                                  size: 32.w, 
+                        titleWidget: Obx(
+                          () => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (item.isPinned)
+                                Padding(
+                                  padding: EdgeInsets.only(right: 8.w),
+                                  child: Icon(
+                                    Icons.favorite,
+                                    color: Colors.red,
+                                    size: 32.w,
+                                  ),
                                 ),
-                              ),
-                            Flexible(
-                              child: DefaultTextStyle(
-                                style: TextStyle(
-                                  fontSize: 32.w,
-                                  color: foucsNode.isFoucsed.value
-                                      ? Colors.black
-                                      : Colors.white,
-                                ),
+                              Flexible(
                                 child: Text(
                                   item.userName,
                                   overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 32.w,
+                                    color: foucsNode.isFoucsed.value
+                                        ? Colors.black
+                                        : Colors.white,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         focusNode: foucsNode,
                         trailing: Obx(
