@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -6,8 +7,8 @@ import 'package:simple_live_tv_app/app/app_style.dart';
 
 typedef FocusOnKeyDownCallback = KeyEventResult Function();
 
-/// 高亮组件
-class HighlightWidget extends StatelessWidget {
+/// 高亮组件（支持长按）
+class HighlightWidget extends StatefulWidget {
   final AppFocusNode focusNode;
   final Widget child;
   final FocusOnKeyDownCallback? onUpKey;
@@ -16,12 +17,14 @@ class HighlightWidget extends StatelessWidget {
   final FocusOnKeyDownCallback? onRightKey;
   final Function(bool)? onFocusChange;
   final Function()? onTap;
+  final Function()? onLongPress;
   final Color foucsedColor;
   final Color color;
   final bool autofocus;
   final BorderRadius? borderRadius;
   final double order;
   final bool selected;
+
   const HighlightWidget({
     required this.focusNode,
     required this.child,
@@ -31,6 +34,7 @@ class HighlightWidget extends StatelessWidget {
     this.onRightKey,
     this.onFocusChange,
     this.onTap,
+    this.onLongPress,
     this.autofocus = false,
     this.selected = false,
     this.borderRadius,
@@ -41,55 +45,102 @@ class HighlightWidget extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<HighlightWidget> createState() => _HighlightWidgetState();
+}
+
+class _HighlightWidgetState extends State<HighlightWidget> {
+  Timer? _longPressTimer;
+  bool _longPressTriggered = false;
+
+  void _handleKeyEvent(KeyEvent e) {
+    if (e is KeyDownEvent) {
+      if (e.logicalKey == LogicalKeyboardKey.enter ||
+          e.logicalKey == LogicalKeyboardKey.select ||
+          e.logicalKey == LogicalKeyboardKey.space) {
+        _longPressTriggered = false;
+        _longPressTimer?.cancel();
+        _longPressTimer = Timer(const Duration(milliseconds: 600), () {
+          _longPressTriggered = true;
+          widget.onLongPress?.call();
+        });
+      }
+    } else if (e is KeyUpEvent) {
+      if (e.logicalKey == LogicalKeyboardKey.enter ||
+          e.logicalKey == LogicalKeyboardKey.select ||
+          e.logicalKey == LogicalKeyboardKey.space) {
+        _longPressTimer?.cancel();
+        if (!_longPressTriggered) {
+          widget.onTap?.call();
+        }
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _longPressTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return FocusTraversalOrder(
-      order: NumericFocusOrder(order),
+      order: NumericFocusOrder(widget.order),
       child: Focus(
-        focusNode: focusNode,
-        autofocus: autofocus,
-        onFocusChange: onFocusChange,
+        focusNode: widget.focusNode,
+        autofocus: widget.autofocus,
+        onFocusChange: widget.onFocusChange,
         onKeyEvent: (node, e) {
           if (e is KeyDownEvent) {
             if (e.logicalKey == LogicalKeyboardKey.arrowRight) {
-              return onRightKey?.call() ?? KeyEventResult.ignored;
+              return widget.onRightKey?.call() ?? KeyEventResult.ignored;
             }
             if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
-              return onLeftKey?.call() ?? KeyEventResult.ignored;
+              return widget.onLeftKey?.call() ?? KeyEventResult.ignored;
             }
             if (e.logicalKey == LogicalKeyboardKey.arrowUp) {
-              return onUpKey?.call() ?? KeyEventResult.ignored;
+              return widget.onUpKey?.call() ?? KeyEventResult.ignored;
             }
             if (e.logicalKey == LogicalKeyboardKey.arrowDown) {
-              return onDownKey?.call() ?? KeyEventResult.ignored;
+              return widget.onDownKey?.call() ?? KeyEventResult.ignored;
             }
             if (e.logicalKey == LogicalKeyboardKey.enter ||
                 e.logicalKey == LogicalKeyboardKey.select ||
                 e.logicalKey == LogicalKeyboardKey.space) {
-              return onTap?.call() ?? KeyEventResult.ignored;
+              _handleKeyEvent(e);
+              return KeyEventResult.handled; // 拦截事件，交由 Timer 处理
+            }
+          } else if (e is KeyUpEvent) {
+            if (e.logicalKey == LogicalKeyboardKey.enter ||
+                e.logicalKey == LogicalKeyboardKey.select ||
+                e.logicalKey == LogicalKeyboardKey.space) {
+              _handleKeyEvent(e);
+              return KeyEventResult.handled;
             }
           }
-
           return KeyEventResult.ignored;
         },
         child: GestureDetector(
-          onTap: onTap,
+          onTap: widget.onTap,
+          onLongPress: widget.onLongPress,
           child: Obx(
             () => AnimatedScale(
-              scale: focusNode.isFoucsed.value ? 1.1 : 1,
+              scale: widget.focusNode.isFoucsed.value ? 1.1 : 1,
               duration: const Duration(milliseconds: 200),
               child: GestureDetector(
-                onTap: onTap,
+                onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: borderRadius,
-                    boxShadow: focusNode.isFoucsed.value
+                    borderRadius: widget.borderRadius,
+                    boxShadow: widget.focusNode.isFoucsed.value
                         ? AppStyle.highlightShadow
                         : null,
-                    color: (focusNode.isFoucsed.value || selected)
-                        ? foucsedColor
-                        : color,
+                    color: (widget.focusNode.isFoucsed.value || widget.selected)
+                        ? widget.foucsedColor
+                        : widget.color,
                   ),
-                  child: child,
+                  child: widget.child,
                 ),
               ),
             ),
