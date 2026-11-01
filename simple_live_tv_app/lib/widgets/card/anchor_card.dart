@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_tv_app/routes/app_navigation.dart';
-import 'package:simple_live_tv_app/widgets/highlight_widget.dart';
 import 'package:simple_live_tv_app/widgets/net_image.dart';
 
 class AnchorCard extends StatefulWidget {
@@ -17,12 +16,13 @@ class AnchorCard extends StatefulWidget {
   final String roomId;
   final int liveStatus;
   final bool autofocus;
-  final bool isPinned; 
+  final bool isPinned;
   final Function()? onTap;
   final Function()? onLongPress;
   final AppFocusNode? focusNode;
 
   const AnchorCard({
+    super.key,
     required this.face,
     required this.siteId,
     required this.name,
@@ -33,7 +33,6 @@ class AnchorCard extends StatefulWidget {
     this.focusNode,
     this.onTap,
     this.onLongPress,
-    super.key,
   });
 
   @override
@@ -43,6 +42,13 @@ class AnchorCard extends StatefulWidget {
 class _AnchorCardState extends State<AnchorCard> {
   Timer? _timer;
   bool _isLongPressTriggered = false;
+  late AppFocusNode _localFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _localFocusNode = widget.focusNode ?? AppFocusNode();
+  }
 
   void _startTimer() {
     _isLongPressTriggered = false;
@@ -66,11 +72,9 @@ class _AnchorCardState extends State<AnchorCard> {
   @override
   Widget build(BuildContext context) {
     var site = Sites.allSites[widget.siteId]!;
-    var localFocusNode = widget.focusNode ?? AppFocusNode();
 
-    
     return Focus(
-      focusNode: localFocusNode,
+      focusNode: _localFocusNode,
       autofocus: widget.autofocus,
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent && 
@@ -81,9 +85,9 @@ class _AnchorCardState extends State<AnchorCard> {
                   (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
           _cancelTimer();
           if (_isLongPressTriggered) {
-            return KeyEventResult.handled; 
+            _isLongPressTriggered = false;
+            return KeyEventResult.handled; // 拦截点击
           }
-          
           if (widget.onTap != null) {
             widget.onTap!();
           } else {
@@ -93,15 +97,19 @@ class _AnchorCardState extends State<AnchorCard> {
         }
         return KeyEventResult.ignored;
       },
-      child: Obx(
-        () => GestureDetector(
-          onTap: () { 
-            if (widget.onTap != null) widget.onTap!();
-            else AppNavigator.toLiveRoomDetail(site: site, roomId: widget.roomId);
-          },
-          child: Container(
+      child: GestureDetector(
+        onTap: () {
+          if (widget.onTap != null) {
+            widget.onTap!();
+          } else {
+            AppNavigator.toLiveRoomDetail(site: site, roomId: widget.roomId);
+          }
+        },
+        child: Obx(
+          () => AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
             decoration: BoxDecoration(
-              color: localFocusNode.isFoucsed.value ? Colors.white : Colors.white10,
+              color: _localFocusNode.isFoucsed.value ? Colors.white : Colors.white10,
               borderRadius: AppStyle.radius16,
             ),
             child: Stack(
@@ -128,7 +136,7 @@ class _AnchorCardState extends State<AnchorCard> {
                               style: TextStyle(
                                 fontSize: 36.w,
                                 overflow: TextOverflow.ellipsis,
-                                color: localFocusNode.isFoucsed.value ? Colors.black : Colors.white,
+                                color: _localFocusNode.isFoucsed.value ? Colors.black : Colors.white,
                               ),
                             ),
                             Text.rich(
@@ -142,7 +150,7 @@ class _AnchorCardState extends State<AnchorCard> {
                               ),
                               style: TextStyle(
                                 fontSize: 24.w,
-                                color: localFocusNode.isFoucsed.value ? Colors.black : Colors.white,
+                                color: _localFocusNode.isFoucsed.value ? Colors.black : Colors.white,
                               ),
                             ),
                           ],
@@ -157,20 +165,16 @@ class _AnchorCardState extends State<AnchorCard> {
                     top: 0,
                     child: Container(
                       padding: AppStyle.edgeInsetsH16.copyWith(top: 4.w, bottom: 4.w),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.green,
-                        borderRadius: const BorderRadius.only(
+                        borderRadius: BorderRadius.only(
                           topRight: Radius.circular(12),
-                          bottomLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
                         ),
                       ),
-                      child: Text(
-                        "直播中",
-                        style: TextStyle(fontSize: 24.w, color: Colors.white),
-                      ),
+                      child: Text("直播中", style: TextStyle(fontSize: 24.w, color: Colors.white)),
                     ),
                   ),
-                
                 if (widget.isPinned)
                   Positioned(
                     top: 12.w,
