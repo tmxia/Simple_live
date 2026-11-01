@@ -86,7 +86,7 @@ class _AnchorCardState extends State<AnchorCard> {
           _cancelTimer();
           if (_isLongPressTriggered) {
             _isLongPressTriggered = false;
-            return KeyEventResult.handled; // 拦截点击
+            return KeyEventResult.handled;
           }
           if (widget.onTap != null) {
             widget.onTap!();
