@@ -50,7 +50,7 @@ class HighlightListTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
+                      titleWidget ?? Text(
                         title,
                         style: focusNode.isFoucsed.value
                             ? AppStyle.textStyleBlack
