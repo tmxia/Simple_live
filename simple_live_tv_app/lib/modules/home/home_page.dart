@@ -306,7 +306,7 @@ class HomePage extends GetView<HomeController> {
                           height: 64.w,
                           borderRadius: 64.w,
                         ),
-                        title: item.userName, // 保留原始 String 防报错
+                        title: item.userName, 
                         titleWidget: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -316,7 +316,7 @@ class HomePage extends GetView<HomeController> {
                                 child: Icon(
                                   Icons.favorite,
                                   color: Colors.red,
-                                  size: 32.w, // 尺寸与首页卡片保持一致
+                                  size: 32.w, 
                                 ),
                               ),
                             Flexible(

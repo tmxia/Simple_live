@@ -108,7 +108,7 @@ class _HighlightWidgetState extends State<HighlightWidget> {
                 e.logicalKey == LogicalKeyboardKey.select ||
                 e.logicalKey == LogicalKeyboardKey.space) {
               _handleKeyEvent(e);
-              return KeyEventResult.handled; // 拦截事件，交由 Timer 处理
+              return KeyEventResult.handled; 
             }
           } else if (e is KeyUpEvent) {
             if (e.logicalKey == LogicalKeyboardKey.enter ||

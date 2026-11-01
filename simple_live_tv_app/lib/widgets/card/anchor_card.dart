@@ -79,7 +79,7 @@ class _AnchorCardState extends State<AnchorCard> {
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent && 
            (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
-          // 核心修复：拦截遥控器长按时的重复按键，防止定时器被重置
+          
           if (event is! KeyRepeatEvent) {
             _startTimer();
           }
@@ -89,7 +89,7 @@ class _AnchorCardState extends State<AnchorCard> {
           _cancelTimer();
           if (_isLongPressTriggered) {
             _isLongPressTriggered = false;
-            return KeyEventResult.handled; // 长按触发后拦截点击
+            return KeyEventResult.handled; 
           }
           if (widget.onTap != null) {
             widget.onTap!();
@@ -109,7 +109,7 @@ class _AnchorCardState extends State<AnchorCard> {
           }
         },
         onLongPress: () {
-          // 手机触控长按触发：提供触觉反馈，并执行置顶逻辑
+          
           HapticFeedback.mediumImpact();
           widget.onLongPress?.call();
         },
