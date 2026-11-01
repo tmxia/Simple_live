@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
@@ -141,21 +142,10 @@ class FollowUserService extends BasePageController<FollowUser> {
     
     sortList();
     updateLivingList();
-    Get.rawSnackbar(
-      message: item.isPinned ? "已置顶" : "已取消置顶",
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black87,
-      margin: const EdgeInsets.only(bottom: 48, left: 600, right: 600),
-      borderRadius: 12,
-      duration: const Duration(seconds: 1),
-      isDismissible: false,
-      dismissDirection: DismissDirection.none,
-      forwardAnimationCurve: Curves.easeOutBack,
-      messageText: Text(
-        item.isPinned ? "已置顶" : "已取消置顶",
-        textAlign: TextAlign.center,
-        style: const TextStyle(color: Colors.white, fontSize: 24),
-      ),
+    SmartDialog.showToast(
+      item.isPinned ? "已置顶" : "已取消置顶",
+      alignment: Alignment.topCenter,
+      displayTime: const Duration(seconds: 1),
     );
   }
 
