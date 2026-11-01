@@ -209,6 +209,8 @@ class HomePage extends GetView<HomeController> {
                           siteId: item.siteId,
                           liveStatus: item.liveStatus.value,
                           roomId: item.roomId,
+                          isPinned: item.isPinned,
+                          onLongPress: () => FollowUserService.instance.togglePin(item),
                         ),
                       );
                     },
