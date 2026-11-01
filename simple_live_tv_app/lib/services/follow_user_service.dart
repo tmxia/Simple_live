@@ -126,6 +126,15 @@ class FollowUserService extends BasePageController<FollowUser> {
     }
   }
 
+
+  void togglePin(FollowUser item) async {
+    item.isPinned = !item.isPinned;
+    await DBService.instance.followBox.put(item.id, item);
+    needUpdate = false;
+    refreshData();
+    Get.snackbar("提示", item.isPinned ? "已置顶" : "已取消置顶", snackPosition: SnackPosition.BOTTOM);
+  }
+
   void removeItem(FollowUser item, {bool refresh = true}) async {
     var result =
         await Utils.showAlertDialog("确定要取消关注${item.userName}吗?", title: "取消关注");
