@@ -69,7 +69,10 @@ class FollowUserService extends BasePageController<FollowUser> {
   }
 
   void sortList() {
-    list.sort((a, b) => b.liveStatus.value.compareTo(a.liveStatus.value));
+    list.sort((a, b) {
+      if (a.isPinned != b.isPinned) return a.isPinned ? -1 : 1;
+      return b.liveStatus.value.compareTo(a.liveStatus.value);
+    });
     updateLivingList();
   }
 
