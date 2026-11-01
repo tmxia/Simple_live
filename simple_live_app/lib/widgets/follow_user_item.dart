@@ -42,7 +42,7 @@ class FollowUserItem extends StatelessWidget {
                 alignment: ui.PlaceholderAlignment.middle,
                 child: Padding(
                   padding: EdgeInsets.only(right: 4),
-                  child: Icon(Icons.star, color: Colors.red, size: 16),
+                  child: Icon(Icons.favorite, color: Colors.red, size: 18),
                 ),
               ),
             TextSpan(text: item.userName),
