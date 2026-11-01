@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:get/get.dart';
+import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/controller/base_controller.dart';
@@ -139,7 +140,22 @@ class FollowUserService extends BasePageController<FollowUser> {
     
     sortList();
     updateLivingList();
-    Get.snackbar("提示", item.isPinned ? "已置顶" : "已取消置顶", snackPosition: SnackPosition.BOTTOM);
+    Get.rawSnackbar(
+      message: item.isPinned ? "已置顶" : "已取消置顶",
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.black54,
+      margin: AppStyle.edgeInsetsB48.copyWith(left: 600, right: 600),
+      borderRadius: 8,
+      duration: const Duration(seconds: 1),
+      isDismissible: false,
+      dismissDirection: DismissDirection.none,
+      forwardAnimationCurve: Curves.easeOutBack,
+      messageText: Text(
+        item.isPinned ? "已置顶" : "已取消置顶",
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white, fontSize: 24),
+      ),
+    );
   }
 
   void removeItem(FollowUser item, {bool refresh = true}) async {
