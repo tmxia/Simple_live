@@ -108,6 +108,11 @@ class _AnchorCardState extends State<AnchorCard> {
             AppNavigator.toLiveRoomDetail(site: site, roomId: widget.roomId);
           }
         },
+        onLongPress: () {
+          // 手机触控长按触发：提供触觉反馈，并执行置顶逻辑
+          HapticFeedback.mediumImpact();
+          widget.onLongPress?.call();
+        },
         child: Obx(
           () => AnimatedContainer(
             duration: const Duration(milliseconds: 150),
