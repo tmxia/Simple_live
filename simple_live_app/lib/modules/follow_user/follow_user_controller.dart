@@ -97,11 +97,32 @@ class FollowUserController extends BasePageController<FollowUser> {
   }
 
 
-  void togglePin(FollowUser item) async {
+    void togglePin(FollowUser item) async {
     item.isPinned = !item.isPinned;
+    // 直接写库
     await DBService.instance.followBox.put(item.id, item);
-    await FollowService.instance.loadData();
-    filterData();
+    
+    // 强制在内存中更新
+    var index = FollowService.instance.followList.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      FollowService.instance.followList[index] = item;
+    }
+    index = FollowService.instance.liveList.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      FollowService.instance.liveList[index] = item;
+    }
+    index = FollowService.instance.notLiveList.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      FollowService.instance.notLiveList[index] = item;
+    }
+    index = FollowService.instance.curTagFollowList.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      FollowService.instance.curTagFollowList[index] = item;
+    }
+
+    // 重新排序并通知刷新
+    FollowService.instance.filterData();
+    filterData(); 
     SmartDialog.showToast(item.isPinned ? "已置顶" : "已取消置顶");
   }
 

@@ -68,6 +68,29 @@ class FollowUser {
         isPinned: json['isPinned'] as bool? ?? false,
       );
 
+
+  FollowUser copyWith({
+    String? id,
+    String? roomId,
+    String? siteId,
+    String? userName,
+    String? face,
+    DateTime? addTime,
+    String? tag,
+    bool? isPinned,
+  }) {
+    return FollowUser(
+      id: id ?? this.id,
+      roomId: roomId ?? this.roomId,
+      siteId: siteId ?? this.siteId,
+      userName: userName ?? this.userName,
+      face: face ?? this.face,
+      addTime: addTime ?? this.addTime,
+      tag: tag ?? this.tag,
+      isPinned: isPinned ?? this.isPinned,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'roomId': roomId,

@@ -127,11 +127,18 @@ class FollowUserService extends BasePageController<FollowUser> {
   }
 
 
-  void togglePin(FollowUser item) async {
+    void togglePin(FollowUser item) async {
     item.isPinned = !item.isPinned;
     await DBService.instance.followBox.put(item.id, item);
-    needUpdate = false;
-    refreshData();
+    
+    // TV端只有单一列表
+    var index = list.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      list[index] = item;
+    }
+    
+    sortList();
+    updateLivingList();
     Get.snackbar("提示", item.isPinned ? "已置顶" : "已取消置顶", snackPosition: SnackPosition.BOTTOM);
   }
 
