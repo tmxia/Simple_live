@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
@@ -143,9 +144,9 @@ class FollowUserService extends BasePageController<FollowUser> {
     Get.rawSnackbar(
       message: item.isPinned ? "已置顶" : "已取消置顶",
       snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.black54,
-      margin: AppStyle.edgeInsetsB48.copyWith(left: 600, right: 600),
-      borderRadius: 8,
+      backgroundColor: Colors.black87,
+      margin: const EdgeInsets.only(bottom: 48, left: 600, right: 600),
+      borderRadius: 12,
       duration: const Duration(seconds: 1),
       isDismissible: false,
       dismissDirection: DismissDirection.none,
