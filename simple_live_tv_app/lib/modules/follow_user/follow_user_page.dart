@@ -67,13 +67,7 @@ class FollowUserPage extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 itemBuilder: (_, i) {
                   var item = FollowUserService.instance.list[i];
-                  return AnchorCard(
-                    face: item.face,
-                    name: item.userName,
-                    siteId: item.siteId,
-                    liveStatus: item.liveStatus.value,
-                    roomId: item.roomId,
-                  );
+                  return _LongPressCard(item: item);
                 },
               ),
             ),
@@ -85,12 +79,6 @@ class FollowUserPage extends StatelessWidget {
 }
 
 
-class _LongPressCard extends StatefulWidget {
-  final dynamic item;
-  const _LongPressCard({required this.item});
-  @override
-  State<_LongPressCard> createState() => _LongPressCardState();
-}
 
 class _LongPressCardState extends State<_LongPressCard> {
   Timer? _timer;
@@ -148,6 +136,77 @@ class _LongPressCardState extends State<_LongPressCard> {
               top: 10.w,
               right: 10.w,
               child: const Icon(Icons.favorite, color: Colors.red), // 应用了红心图标
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+
+class _LongPressCard extends StatefulWidget {
+  final dynamic item;
+  const _LongPressCard({required this.item});
+  @override
+  State<_LongPressCard> createState() => _LongPressCardState();
+}
+
+class _LongPressCardState extends State<_LongPressCard> {
+  Timer? _timer;
+  bool _isLongPress = false;
+
+  void _startTimer() {
+    _isLongPress = false;
+    _timer = Timer(const Duration(milliseconds: 600), () {
+      _isLongPress = true;
+      FollowUserService.instance.togglePin(widget.item);
+    });
+  }
+
+  void _cancelTimer() {
+    _timer?.cancel();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent && 
+           (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
+          _startTimer();
+          return KeyEventResult.ignored;
+        } else if (event is KeyUpEvent && 
+                  (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
+          _cancelTimer();
+          if (_isLongPress) {
+            _isLongPress = false;
+            return KeyEventResult.handled; // 拦截长按后的点击事件
+          }
+          return KeyEventResult.ignored;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Stack(
+        children: [
+          AnchorCard(
+            face: widget.item.face,
+            name: widget.item.userName,
+            siteId: widget.item.siteId,
+            liveStatus: widget.item.liveStatus.value,
+            roomId: widget.item.roomId,
+          ),
+          if (widget.item.isPinned)
+            Positioned(
+              top: 12.w,
+              right: 12.w,
+              child: const Icon(Icons.favorite, color: Colors.red), // 红心图标
             ),
         ],
       ),
