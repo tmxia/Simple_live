@@ -131,7 +131,7 @@ class FollowUserService extends BasePageController<FollowUser> {
     item.isPinned = !item.isPinned;
     await DBService.instance.followBox.put(item.id, item);
     
-    // TV端只有单一列表
+    
     var index = list.indexWhere((e) => e.id == item.id);
     if (index != -1) {
       list[index] = item;

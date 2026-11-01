@@ -17,7 +17,7 @@ class AnchorCard extends StatefulWidget {
   final String roomId;
   final int liveStatus;
   final bool autofocus;
-  final bool isPinned; // 新增置顶参数
+  final bool isPinned; 
   final Function()? onTap;
   final Function()? onLongPress;
   final AppFocusNode? focusNode;
@@ -68,7 +68,7 @@ class _AnchorCardState extends State<AnchorCard> {
     var site = Sites.allSites[widget.siteId]!;
     var localFocusNode = widget.focusNode ?? AppFocusNode();
 
-    // 直接接管按键，替代原本的 HighlightWidget
+    
     return Focus(
       focusNode: localFocusNode,
       autofocus: widget.autofocus,
@@ -81,9 +81,9 @@ class _AnchorCardState extends State<AnchorCard> {
                   (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
           _cancelTimer();
           if (_isLongPressTriggered) {
-            return KeyEventResult.handled; // 长按拦截点击
+            return KeyEventResult.handled; 
           }
-          // 如果没触发长按，执行原本的点击跳转
+          
           if (widget.onTap != null) {
             widget.onTap!();
           } else {
@@ -95,7 +95,7 @@ class _AnchorCardState extends State<AnchorCard> {
       },
       child: Obx(
         () => GestureDetector(
-          onTap: () { // 兼容鼠标或触摸
+          onTap: () { 
             if (widget.onTap != null) widget.onTap!();
             else AppNavigator.toLiveRoomDetail(site: site, roomId: widget.roomId);
           },
@@ -170,7 +170,7 @@ class _AnchorCardState extends State<AnchorCard> {
                       ),
                     ),
                   ),
-                // 内置红心，不再需要外层包装
+                
                 if (widget.isPinned)
                   Positioned(
                     top: 12.w,

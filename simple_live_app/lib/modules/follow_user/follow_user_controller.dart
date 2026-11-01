@@ -99,10 +99,10 @@ class FollowUserController extends BasePageController<FollowUser> {
 
     void togglePin(FollowUser item) async {
     item.isPinned = !item.isPinned;
-    // 直接写库
+    
     await DBService.instance.followBox.put(item.id, item);
     
-    // 强制在内存中更新
+    
     var index = FollowService.instance.followList.indexWhere((e) => e.id == item.id);
     if (index != -1) {
       FollowService.instance.followList[index] = item;
@@ -120,7 +120,7 @@ class FollowUserController extends BasePageController<FollowUser> {
       FollowService.instance.curTagFollowList[index] = item;
     }
 
-    // 重新排序并通知刷新
+    
     FollowService.instance.filterData();
     filterData(); 
     SmartDialog.showToast(item.isPinned ? "已置顶" : "已取消置顶");
