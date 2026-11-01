@@ -167,7 +167,7 @@ class FollowUserPage extends GetView<FollowUserController> {
                         site: site, roomId: item.roomId);
                   },
                   onLongPress: () {
-                    setFollowTagDialog(item);
+                    controller.togglePin(item);
                   },
                 );
               },

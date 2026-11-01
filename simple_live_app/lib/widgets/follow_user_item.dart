@@ -36,8 +36,16 @@ class FollowUserItem extends StatelessWidget {
       ),
       title: Text.rich(
         TextSpan(
-          text: item.userName,
           children: [
+            if (item.isPinned)
+              WidgetSpan(
+                alignment: ui.PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: EdgeInsets.only(right: 4),
+                  child: Icon(Icons.star, color: Colors.red, size: 16),
+                ),
+              ),
+            TextSpan(text: item.userName),
             WidgetSpan(
               alignment: ui.PlaceholderAlignment.middle,
               child: Obx(

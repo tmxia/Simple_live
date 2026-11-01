@@ -96,6 +96,15 @@ class FollowUserController extends BasePageController<FollowUser> {
     filterData();
   }
 
+
+  void togglePin(FollowUser item) async {
+    item.isPinned = !item.isPinned;
+    await DBService.instance.followBox.put(item.id, item);
+    await FollowService.instance.loadData();
+    filterData();
+    SmartDialog.showToast(item.isPinned ? "已置顶" : "已取消置顶");
+  }
+
   void removeItem(FollowUser item) async {
     var result =
     await Utils.showAlertDialog("确定要取消关注${item.userName}吗?", title: "取消关注");
