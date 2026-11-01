@@ -306,7 +306,35 @@ class HomePage extends GetView<HomeController> {
                           height: 64.w,
                           borderRadius: 64.w,
                         ),
-                        title: "${item.isPinned ? "❤️ " : ""}${item.userName}",
+                        title: item.userName, // 保留原始 String 防报错
+                        titleWidget: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (item.isPinned)
+                              Padding(
+                                padding: EdgeInsets.only(right: 8.w),
+                                child: Icon(
+                                  Icons.favorite,
+                                  color: Colors.red,
+                                  size: 32.w, // 尺寸与首页卡片保持一致
+                                ),
+                              ),
+                            Flexible(
+                              child: DefaultTextStyle(
+                                style: TextStyle(
+                                  fontSize: 32.w,
+                                  color: foucsNode.isFoucsed.value
+                                      ? Colors.black
+                                      : Colors.white,
+                                ),
+                                child: Text(
+                                  item.userName,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         focusNode: foucsNode,
                         trailing: Obx(
                           () => Icon(

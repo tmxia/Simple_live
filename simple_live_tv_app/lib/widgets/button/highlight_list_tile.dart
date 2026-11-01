@@ -7,6 +7,7 @@ import 'package:simple_live_tv_app/widgets/highlight_widget.dart';
 
 class HighlightListTile extends StatelessWidget {
   final String title;
+  final Widget? titleWidget;
   final String? subtitle;
   final Widget? leading;
   final Widget? trailing;
@@ -17,6 +18,7 @@ class HighlightListTile extends StatelessWidget {
   const HighlightListTile({
     this.subtitle,
     required this.title,
+    this.titleWidget,
     this.leading,
     this.onTap,
     required this.focusNode,
