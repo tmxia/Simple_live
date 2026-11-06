@@ -52,6 +52,7 @@ mixin PlayerMixin {
     if(Platform.isAndroid){
       await pp.setProperty('force-seekable', 'yes');
     }
+            await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
   }
 
   /// 视频控制器
@@ -727,12 +728,35 @@ class PlayerController extends BaseController
   }
 
   void mediaEnd() {
-    WakelockPlus.disable();
-  }
+        WakelockPlus.disable();
+        if (player.state.playlist.medias.isNotEmpty) {
+            mediaError("stream completed");
+        }
+    }
 
-  void mediaError(String error) {
-    WakelockPlus.disable();
-  }
+  bool _isReconnecting = false;
+    void mediaError(String error) {
+        WakelockPlus.disable();
+        if (error.contains('audio device') || error.contains('Could not open codec')) return;
+        if (_isReconnecting) return;
+        _isReconnecting = true;
+        Future(() async {
+            try {
+                if (player.state.playlist.medias.isNotEmpty) {
+                    final currentUri = player.state.playlist.medias.first.uri;
+                    Log.w("检测到直播流中断: $error, 准备重连: $currentUri");
+                    await player.stop();
+                    await Future.delayed(const Duration(seconds: 2));
+                    await player.open(Media(currentUri));
+                    Log.i("重连成功");
+                }
+            } catch (e) {
+                Log.e("重连失败: $e");
+            } finally {
+                _isReconnecting = false;
+            }
+        });
+    }
 
   void showDebugInfo() {
     Utils.showBottomSheet(

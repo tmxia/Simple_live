@@ -46,6 +46,7 @@ mixin PlayerMixin {
 
       
     }
+            await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
   }
 
   /// 视频控制器
@@ -256,7 +257,11 @@ class PlayerController extends BaseController
         Log.w("音频设备异常，尝试恢复: $event");
         (player.platform as NativePlayer).setProperty('ao', 'opensles');
       }
-    });
+    
+        if (event.contains('stream') || event.contains('HTTP') || event.contains('Connection')) {
+          _attemptReconnect();
+        }
+      });
 
     _completedSubscription = player.stream.completed.listen((event) {
       if (event) {
@@ -282,7 +287,27 @@ class PlayerController extends BaseController
     });
   }
 
-  void disposeStream() {
+  bool _isReconnecting = false;
+    Future<void> _attemptReconnect() async {
+      if (_isReconnecting) return;
+      _isReconnecting = true;
+      try {
+        if (player.state.playlist.medias.isNotEmpty) {
+          final currentUri = player.state.playlist.medias.first.uri;
+          Log.w("检测到直播流中断，准备强制重连: $currentUri");
+          await player.stop();
+          await Future.delayed(const Duration(seconds: 2));
+          await player.open(Media(currentUri));
+          Log.i("重连成功");
+        }
+      } catch (e) {
+        Log.e("重连失败: $e");
+      } finally {
+        _isReconnecting = false;
+      }
+    }
+
+void disposeStream() {
     _errorSubscription?.cancel();
     _completedSubscription?.cancel();
     _widthSubscription?.cancel();
