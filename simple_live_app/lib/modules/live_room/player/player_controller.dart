@@ -751,7 +751,7 @@ class PlayerController extends BaseController
                     Log.i("重连成功");
                 }
             } catch (e) {
-                Log.e("重连失败: $e");
+                Log.e("重连失败: $e", StackTrace.current);
             } finally {
                 _isReconnecting = false;
             }
