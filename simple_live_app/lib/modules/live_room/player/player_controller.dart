@@ -27,7 +27,7 @@ mixin PlayerMixin {
   GlobalKey globalDanmuKey = GlobalKey();
 
   /// 播放器实例
-  late final player = Player(
+  late var player = Player(
     configuration: PlayerConfiguration(
       title: "Simple Live Player",
       logLevel: AppSettingsController.instance.logEnable.value
@@ -56,7 +56,7 @@ mixin PlayerMixin {
   }
 
   /// 视频控制器
-  late final videoController = VideoController(
+  late var videoController = VideoController(
     player,
     configuration: AppSettingsController.instance.customPlayerOutput.value
         ? VideoControllerConfiguration(
@@ -736,28 +736,63 @@ class PlayerController extends BaseController
 
   bool _isReconnecting = false;
     void mediaError(String error) {
-        WakelockPlus.disable();
-        if (error.contains('audio device') || error.contains('Could not open codec')) return;
-        if (_isReconnecting) return;
-        _isReconnecting = true;
-        Future(() async {
-            try {
-                if (player.state.playlist.medias.isNotEmpty) {
-                    final currentUri = player.state.playlist.medias.first.uri;
-                    Log.w("检测到直播流中断: $error, 准备重连: $currentUri");
-                    await player.stop();
-                    await Future.delayed(const Duration(seconds: 2));
-                    await player.open(Media(currentUri));
-                    Log.i("重连成功");
-                }
-            } catch (e) {
-                Log.e("重连失败: $e", StackTrace.current);
-            } finally {
-                _isReconnecting = false;
-            }
-        });
-    }
+    WakelockPlus.disable();
+    if (error.contains('audio device') || error.contains('Could not open codec')) return;
+    if (_isReconnecting) return;
+    _isReconnecting = true;
+    Future(() async {
+      try {
+        if (player.state.playlist.medias.isNotEmpty) {
+          final currentUri = player.state.playlist.medias.first.uri;
+          Log.w("检测到直播流中断: $error, 准备无感平滑重连: $currentUri");
+          
+          final oldPlayer = player;
 
+          player = Player(
+            configuration: PlayerConfiguration(
+              title: "Simple Live Player",
+              logLevel: AppSettingsController.instance.logEnable.value ? MPVLogLevel.info : MPVLogLevel.error,
+            ),
+          );
+
+          videoController = VideoController(
+            player,
+            configuration: AppSettingsController.instance.customPlayerOutput.value
+                ? VideoControllerConfiguration(
+                    vo: AppSettingsController.instance.videoOutputDriver.value,
+                    hwdec: AppSettingsController.instance.videoHardwareDecoder.value,
+                  )
+                : AppSettingsController.instance.playerCompatMode.value
+                    ? const VideoControllerConfiguration(
+                        vo: 'mediacodec_embed',
+                        hwdec: 'mediacodec',
+                      )
+                    : VideoControllerConfiguration(
+                        enableHardwareAcceleration: AppSettingsController.instance.hardwareDecode.value,
+                        androidAttachSurfaceAfterVideoParameters: false,
+                      ),
+          );
+
+          disposeStream();
+          initStream();
+          player.setVolume(AppSettingsController.instance.playerVolume.value);
+          update();
+
+          await initializePlayer();
+          await player.open(Media(currentUri));
+          Log.i("重建播放器重连成功");
+
+          Future.delayed(const Duration(seconds: 1), () {
+            oldPlayer.dispose();
+          });
+        }
+      } catch (e) {
+        Log.e("重建播放器重连失败: $e", StackTrace.current);
+      } finally {
+        _isReconnecting = false;
+      }
+    });
+  }
   void showDebugInfo() {
     Utils.showBottomSheet(
       title: "播放信息",

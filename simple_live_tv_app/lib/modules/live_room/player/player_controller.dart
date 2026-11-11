@@ -17,7 +17,7 @@ mixin PlayerMixin {
   GlobalKey globalDanmuKey = GlobalKey();
 
   /// 播放器实例
-  late final player = Player(
+  late var player = Player(
     configuration: const PlayerConfiguration(
       title: "Simple Live Player",
       bufferSize: 64 * 1024 * 1024, 
@@ -50,7 +50,7 @@ mixin PlayerMixin {
   }
 
   /// 视频控制器
-  late final videoController = VideoController(
+  late var videoController = VideoController(
     player,
     configuration: const VideoControllerConfiguration(
       enableHardwareAcceleration: true, 
