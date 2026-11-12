@@ -53,7 +53,8 @@ mixin PlayerMixin {
     if(Platform.isAndroid){
       await pp.setProperty('force-seekable', 'yes');
     }
-            await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
+            // 核心修复：移除底层死板的重连参数，交给 media_kit 自动管理，防止赛事流死锁
+    // await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
   }
 
   /// 视频控制器

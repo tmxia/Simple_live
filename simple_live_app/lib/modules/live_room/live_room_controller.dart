@@ -453,7 +453,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     final mediaList = playUrls.map((url) {
       var finalUrl = url;
-      if (AppSettingsController.instance.playerForceHttps.value) {
+      // 核心修复：虎牙等平台的赛事流强转 https 会导致死连卡死，这里跳过强转
+      if (AppSettingsController.instance.playerForceHttps.value && !finalUrl.contains("huya.com")) {
         finalUrl = finalUrl.replaceAll("http://", "https://");
       }
       return Media(finalUrl, httpHeaders: playHeaders);
