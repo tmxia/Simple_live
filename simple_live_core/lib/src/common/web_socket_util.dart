@@ -2,11 +2,7 @@ import 'dart:async';
 
 import 'package:web_socket_channel/io.dart';
 
-enum SocketStatus {
-  connected,
-  failed,
-  closed,
-}
+enum SocketStatus { connected, failed, closed }
 
 class WebScoketUtils {
   SocketStatus status = SocketStatus.closed;
@@ -16,6 +12,9 @@ class WebScoketUtils {
 
   /// 备用链接
   final String? backupUrl;
+
+  /// 备用链接列表
+  final List<String> backupUrls;
 
   /// 心跳时间
   final int heartBeatTime;
@@ -47,6 +46,7 @@ class WebScoketUtils {
     this.onHeartBeat,
     this.headers,
     this.backupUrl,
+    this.backupUrls = const [],
   });
   IOWebSocketChannel? webSocket;
   Timer? heartBeatTimer;
@@ -60,28 +60,39 @@ class WebScoketUtils {
 
   StreamSubscription<dynamic>? streamSubscription;
 
+  List<String> get _connectUrls {
+    final urls = <String>[url];
+    if (backupUrl != null && backupUrl!.isNotEmpty) {
+      urls.add(backupUrl!);
+    }
+    urls.addAll(backupUrls.where((url) => url.isNotEmpty));
+    return urls.toSet().toList();
+  }
+
   void connect({bool retry = false}) async {
     close();
-    try {
-      var wsurl = url;
-      if (backupUrl != null && backupUrl!.isNotEmpty && retry) {
-        wsurl = backupUrl!;
-      }
-      webSocket = IOWebSocketChannel.connect(
-        wsurl,
-        connectTimeout: Duration(seconds: 10),
-        headers: headers,
-      );
+    final urls = retry ? _connectUrls.skip(1).toList() : _connectUrls;
+    Object? lastError;
+    StackTrace? lastStackTrace;
+    for (final wsurl in urls) {
+      try {
+        webSocket = IOWebSocketChannel.connect(
+          wsurl,
+          connectTimeout: Duration(seconds: 10),
+          headers: headers,
+        );
 
-      await webSocket?.ready;
-      ready();
-    } catch (e) {
-      if (!retry) {
-        connect(retry: true);
+        await webSocket?.ready;
+        ready();
         return;
+      } catch (e, s) {
+        lastError = e;
+        lastStackTrace = s;
+        webSocket?.sink.close();
+        webSocket = null;
       }
-      onError(e, e);
     }
+    onError(lastError ?? "WebSocket connection failed", lastStackTrace);
   }
 
   /// 连接完成
@@ -99,16 +110,15 @@ class WebScoketUtils {
   }
 
   void initHeartBeat() {
-    heartBeatTimer = Timer.periodic(
-      Duration(milliseconds: heartBeatTime),
-      (timer) {
-        onHeartBeat?.call();
-      },
-    );
+    heartBeatTimer = Timer.periodic(Duration(milliseconds: heartBeatTime), (
+      timer,
+    ) {
+      onHeartBeat?.call();
+    });
   }
 
   void receiveMessage(dynamic data) {
-    
+    //接受到一条信息才算重连成功
     reconnectTime = 0;
     onMessage?.call(data);
   }

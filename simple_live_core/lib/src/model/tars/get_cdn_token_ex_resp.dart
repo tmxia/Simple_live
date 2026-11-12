@@ -4,8 +4,8 @@ import 'package:tars_dart/tars/codec/tars_output_stream.dart';
 import 'package:tars_dart/tars/codec/tars_struct.dart';
 
 class GetCdnTokenExResp extends TarsStruct {
-  String sFlvToken = ""; 
-  int iExpireTime = 0; 
+  String sFlvToken = ""; //tag 0
+  int iExpireTime = 0; //tag 1
 
   @override
   void readFrom(TarsInputStream _is) {

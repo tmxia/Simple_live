@@ -233,8 +233,15 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     currentQualityInfo.value = qualites[currentQuality].quality;
     currentLineInfo.value = "";
     currentLineIndex = -1;
-    var playUrl = await site.liveSite
-        .getPlayUrls(detail: detail.value!, quality: qualites[currentQuality]);
+    var playUrl;
+    try {
+      playUrl = await site.liveSite
+          .getPlayUrls(detail: detail.value!, quality: qualites[currentQuality]);
+    } catch (e) {
+      print("拉取播放地址异常: $e");
+      SmartDialog.showToast("获取播放地址失败，请尝试切换线路");
+      return;
+    }
     if (playUrl.urls.isEmpty) {
       SmartDialog.showToast("无法读取播放地址");
       return;
@@ -263,6 +270,16 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     
     await player.stop();
+    // 核心修复：先停止旧流，等待 120ms 彻底释放解码器
+    if (player.state.playing || player.state.playlist.medias.isNotEmpty) {
+      try {
+        await player.stop();
+        await Future.delayed(const Duration(milliseconds: 120));
+      } catch (e) {
+        print("停止旧播放失败: $e");
+      }
+    }
+
     await player.open(
       Media(
         playUrls[currentLineIndex],
