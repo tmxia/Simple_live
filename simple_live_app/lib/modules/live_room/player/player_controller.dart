@@ -745,17 +745,21 @@ class PlayerController extends BaseController
       try {
         if (player.state.playlist.medias.isNotEmpty) {
           final currentUri = player.state.playlist.medias.first.uri;
-          Log.w("检测到直播流中断: $error, 准备无感平滑重连: $currentUri");
+          Log.w("检测到直播流中断: $error, 准备彻底重建底层渲染器: $currentUri");
           
           final oldPlayer = player;
-
+          disposeStream();
+          
+          await oldPlayer.stop();
+          await oldPlayer.dispose();
+          
           player = Player(
             configuration: PlayerConfiguration(
               title: "Simple Live Player",
               logLevel: AppSettingsController.instance.logEnable.value ? MPVLogLevel.info : MPVLogLevel.error,
             ),
           );
-
+          
           videoController = VideoController(
             player,
             configuration: AppSettingsController.instance.customPlayerOutput.value
@@ -773,27 +777,17 @@ class PlayerController extends BaseController
                         androidAttachSurfaceAfterVideoParameters: false,
                       ),
           );
-
-          disposeStream();
+          
           initStream();
-          
-          // 核心：强制生成新实例，触发 UI 彻底重建原生渲染层
-          globalPlayerKey = GlobalKey<VideoState>();
-          videoRefreshTick.value++;
-          
           player.setVolume(AppSettingsController.instance.playerVolume.value);
-          update();
-
+          update(); // 通知 UI 刷新
+          
           await initializePlayer();
           await player.open(Media(currentUri));
-          Log.i("重建播放器重连成功");
-
-          Future.delayed(const Duration(seconds: 1), () {
-            oldPlayer.dispose();
-          });
+          Log.i("底层播放器硬重建成功");
         }
       } catch (e) {
-        Log.e("重建播放器重连失败: $e", StackTrace.current);
+        Log.e("重建播放器失败: $e", StackTrace.current);
       } finally {
         _isReconnecting = false;
       }

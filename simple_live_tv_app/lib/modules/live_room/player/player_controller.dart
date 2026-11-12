@@ -318,15 +318,52 @@ void disposeStream() {
 
   void mediaEnd() {}
 
-  void mediaError(String error) {}
-
-  @override
-  void onClose() async {
-    Log.w("播放器关闭");
-    disposeStream();
-    disposeDanmakuController();
-    await resetSystem();
-    await player.dispose();
-    super.onClose();
+  void mediaError(String error) {
+    WakelockPlus.disable();
+    if (error.contains('audio device') || error.contains('Could not open codec')) return;
+    if (_isReconnecting) return;
+    _isReconnecting = true;
+    Future(() async {
+      try {
+        if (player.state.playlist.medias.isNotEmpty) {
+          final currentUri = player.state.playlist.medias.first.uri;
+          Log.w("检测到直播流中断: $error, 准备彻底重建底层渲染器: $currentUri");
+          
+          final oldPlayer = player;
+          disposeStream();
+          
+          await oldPlayer.stop();
+          await oldPlayer.dispose();
+          
+          player = Player(
+            configuration: const PlayerConfiguration(
+              title: "Simple Live Player",
+              bufferSize: 64 * 1024 * 1024,
+            ),
+          );
+          
+          videoController = VideoController(
+            player,
+            configuration: const VideoControllerConfiguration(
+              enableHardwareAcceleration: true,
+              androidAttachSurfaceAfterVideoParameters: false,
+              width: 1920,
+              height: 1080,
+            ),
+          );
+          
+          initStream();
+          update(); // 通知 UI 刷新
+          
+          await initializePlayer();
+          await player.open(Media(currentUri));
+          Log.i("底层播放器硬重建成功");
+        }
+      } catch (e) {
+        Log.e("重建播放器失败: $e", StackTrace.current);
+      } finally {
+        _isReconnecting = false;
+      }
+    });
   }
 }
