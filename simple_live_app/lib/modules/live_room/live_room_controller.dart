@@ -462,16 +462,6 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     await initializePlayer();
 
-    // 核心修复：先停止旧流并等待 120ms 释放解码器，彻底解决切清晰度黑屏
-    if (player.state.playing || player.state.playlist.medias.isNotEmpty) {
-      try {
-        await player.stop();
-        await Future.delayed(const Duration(milliseconds: 120));
-      } catch (e) {
-        print("停止旧播放失败: $e");
-      }
-    }
-
     await player.open(Playlist(mediaList));
   }
 
