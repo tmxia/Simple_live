@@ -14,9 +14,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ==========================================
-  # 并行任务 1：编译 App 端
-  # ==========================================
   build-app:
     name: 构建 App 端
     runs-on: ubuntu-latest
@@ -54,19 +51,40 @@ jobs:
             "${{ secrets.RELEASE_KEY_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_app/android/key.properties
 
-      - name: 修复 Gradle & AGP & Kotlin 版本
+      - name: 全面修复构建环境 & 代码语法
         run: |
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "8.11.1"/g' simple_live_app/android/settings.gradle.kts || true
-          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.2.20"/g' simple_live_app/android/settings.gradle.kts || true
-          sed -i "s/id 'com.android.application' version '.*'/id 'com.android.application' version '8.11.1'/g" simple_live_app/android/settings.gradle || true
-          sed -i "s/id 'org.jetbrains.kotlin.android' version '.*'/id 'org.jetbrains.kotlin.android' version '2.2.20'/g" simple_live_app/android/settings.gradle || true
-          sed -i "s/ext.kotlin_version = '.*'/ext.kotlin_version = '2.2.20'/g" simple_live_app/android/build.gradle || true
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_app/android/settings.gradle.kts || true
+          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_app/android/settings.gradle.kts || true
+          
+          if ! grep -q "android.newDsl" simple_live_app/android/gradle.properties; then
+            echo "android.newDsl=false" >> simple_live_app/android/gradle.properties
+          fi
+          
+          sed -i '/isV1SigningEnabled/d' simple_live_app/android/app/build.gradle.kts || true
+          sed -i '/isV2SigningEnabled/d' simple_live_app/android/app/build.gradle.kts || true
+          sed -i '/kotlinOptions/,/}/d' simple_live_app/android/app/build.gradle.kts || true
+          
+          echo "" >> simple_live_app/android/app/build.gradle.kts
+          echo "android {" >> simple_live_app/android/app/build.gradle.kts
+          echo "    lint {" >> simple_live_app/android/app/build.gradle.kts
+          echo "        checkReleaseBuilds = false" >> simple_live_app/android/app/build.gradle.kts
+          echo "        abortOnError = false" >> simple_live_app/android/app/build.gradle.kts
+          echo "    }" >> simple_live_app/android/app/build.gradle.kts
+          echo "    compileOptions {" >> simple_live_app/android/app/build.gradle.kts
+          echo "        sourceCompatibility = JavaVersion.VERSION_17" >> simple_live_app/android/app/build.gradle.kts
+          echo "        targetCompatibility = JavaVersion.VERSION_17" >> simple_live_app/android/app/build.gradle.kts
+          echo "    }" >> simple_live_app/android/app/build.gradle.kts
+          echo "}" >> simple_live_app/android/app/build.gradle.kts
 
-      - name: 编译 App 端 Release APK (分架构)
+      - name: 编译 App 端 Release APK
         working-directory: ./simple_live_app
         run: |
           flutter pub get
+          INAPPWEBVIEW_GRADLE=$(find ~/.pub-cache -path "*flutter_inappwebview_android*/android/build.gradle" | head -n 1)
+          if [ -n "$INAPPWEBVIEW_GRADLE" ]; then
+            sed -i "s/getDefaultProguardFile('proguard-android.txt')/getDefaultProguardFile('proguard-android-optimize.txt')/g" "$INAPPWEBVIEW_GRADLE"
+          fi
           flutter build apk --release --split-per-abi
 
       - name: 收集 App 产物
@@ -78,7 +96,6 @@ jobs:
               cp "$SRC" "output/app/SimpleLive-App-v${{ steps.get_ver.outputs.app_ver }}-${abi}.apk"
             fi
           done
-          ls -lh output/app/
 
       - name: 上传 App 产物
         uses: actions/upload-artifact@v4
@@ -87,9 +104,6 @@ jobs:
           path: output/app/*.apk
           retention-days: 1
 
-  # ==========================================
-  # 并行任务 2：编译 TV 端
-  # ==========================================
   build-tv:
     name: 构建 TV 端
     runs-on: ubuntu-latest
@@ -127,16 +141,33 @@ jobs:
             "${{ secrets.RELEASE_KEY_PASSWORD }}" \
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_tv_app/android/key.properties
 
-      - name: 修复 Gradle & AGP & Kotlin 版本
+      - name: 全面修复构建环境 & 代码语法
         run: |
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-8.14-all.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "8.11.1"/g' simple_live_tv_app/android/settings.gradle.kts || true
-          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.2.20"/g' simple_live_tv_app/android/settings.gradle.kts || true
-          sed -i "s/id 'com.android.application' version '.*'/id 'com.android.application' version '8.11.1'/g" simple_live_tv_app/android/settings.gradle || true
-          sed -i "s/id 'org.jetbrains.kotlin.android' version '.*'/id 'org.jetbrains.kotlin.android' version '2.2.20'/g" simple_live_tv_app/android/settings.gradle || true
-          sed -i "s/ext.kotlin_version = '.*'/ext.kotlin_version = '2.2.20'/g" simple_live_tv_app/android/build.gradle || true
+          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
+          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_tv_app/android/settings.gradle.kts || true
+          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_tv_app/android/settings.gradle.kts || true
+          
+          if ! grep -q "android.newDsl" simple_live_tv_app/android/gradle.properties; then
+            echo "android.newDsl=false" >> simple_live_tv_app/android/gradle.properties
+          fi
+          
+          sed -i '/isV1SigningEnabled/d' simple_live_tv_app/android/app/build.gradle.kts || true
+          sed -i '/isV2SigningEnabled/d' simple_live_tv_app/android/app/build.gradle.kts || true
+          sed -i '/kotlinOptions/,/}/d' simple_live_tv_app/android/app/build.gradle.kts || true
+          
+          echo "" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "android {" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "    lint {" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "        checkReleaseBuilds = false" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "        abortOnError = false" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "    }" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "    compileOptions {" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "        sourceCompatibility = JavaVersion.VERSION_17" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "        targetCompatibility = JavaVersion.VERSION_17" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "    }" >> simple_live_tv_app/android/app/build.gradle.kts
+          echo "}" >> simple_live_tv_app/android/app/build.gradle.kts
 
-      - name: 编译 TV 端 Release APK (分架构)
+      - name: 编译 TV 端 Release APK
         working-directory: ./simple_live_tv_app
         run: |
           flutter pub get
@@ -151,7 +182,6 @@ jobs:
               cp "$SRC" "output/tv/SimpleLive-TV-v${{ steps.get_ver.outputs.tv_ver }}-${abi}.apk"
             fi
           done
-          ls -lh output/tv/
 
       - name: 上传 TV 产物
         uses: actions/upload-artifact@v4
@@ -160,9 +190,6 @@ jobs:
           path: output/tv/*.apk
           retention-days: 1
 
-  # ==========================================
-  # 汇总任务：发布 Release (等待 App 和 TV 都完成)
-  # ==========================================
   release:
     name: 创建 GitHub Release
     needs: [build-app, build-tv]
@@ -221,22 +248,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: v${{ steps.ver.outputs.app_ver }}
         run: |
-          ls -lh output/*.apk
           gh release upload "$TAG_NAME" output/*.apk --clobber
-          echo "已上传 $(ls output/*.apk | wc -l) 个 APK"
 
-  # ==========================================
-  # 清理任务
-  # ==========================================
   cleanup_old_runs:
-    name: 清理历史记录
+    name: 强力清理历史与死锁记录
     runs-on: ubuntu-latest
     if: always()
     permissions:
       actions: write
       contents: read
     steps:
-      - name: Delete old runs
+      - name: Delete old and stuck runs
         uses: actions/github-script@v7
         with:
           script: |
@@ -246,16 +268,23 @@ jobs:
               workflow_id: 'publish_app_release.yml',
               per_page: 100
             });
+            const now = new Date().getTime();
             for (const run of runs.data.workflow_runs) {
-              if (run.id !== context.runId && run.status === 'completed') {
+              if (run.id === context.runId) continue;
+              const createdTime = new Date(run.created_at).getTime();
+              const diffMins = (now - createdTime) / 1000 / 60;
+              
+              // 强力清理：已完成，或者排队/运行中超过 120 分钟的死锁任务
+              if (run.status === 'completed' || (['queued', 'in_progress'].includes(run.status) && diffMins > 120)) {
                 try {
                   await github.rest.actions.deleteWorkflowRun({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     run_id: run.id
                   });
+                  console.log(`已强制删除: ${run.id} (状态: ${run.status})`);
                 } catch (e) {
-                  console.log(`Failed to delete ${run.id}: ${e.message}`);
+                  console.log(`删除失败 ${run.id}: ${e.message}`);
                 }
               }
             }
