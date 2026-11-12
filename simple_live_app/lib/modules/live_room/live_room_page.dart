@@ -256,7 +256,15 @@ class LiveRoomPage extends GetView<LiveRoomController> {
     }
     return Stack(
       children: [
-        Video(
+        Obx(() {
+
+          controller.videoRefreshTick.value; // 监听刷新信号
+
+          return KeyedSubtree(
+
+            key: ValueKey(controller.globalPlayerKey),
+
+            child: Video(
           key: controller.globalPlayerKey,
           controller: controller.videoController,
           pauseUponEnteringBackgroundMode:
@@ -270,7 +278,11 @@ class LiveRoomPage extends GetView<LiveRoomController> {
           fit: boxFit,
           
           wakelock: false,
-        ),
+        )
+
+          );
+
+        }),
         Obx(
           () => Visibility(
             visible: !controller.liveStatus.value,

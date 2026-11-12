@@ -14,6 +14,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
+  RxInt videoRefreshTick = 0.obs;
   GlobalKey globalDanmuKey = GlobalKey();
 
   /// 播放器实例

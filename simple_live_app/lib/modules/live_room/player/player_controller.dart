@@ -24,6 +24,7 @@ import 'package:window_manager/window_manager.dart';
 
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
+  RxInt videoRefreshTick = 0.obs;
   GlobalKey globalDanmuKey = GlobalKey();
 
   /// 播放器实例
@@ -775,6 +776,11 @@ class PlayerController extends BaseController
 
           disposeStream();
           initStream();
+          
+          // 核心：强制生成新实例，触发 UI 彻底重建原生渲染层
+          globalPlayerKey = GlobalKey<VideoState>();
+          videoRefreshTick.value++;
+          
           player.setVolume(AppSettingsController.instance.playerVolume.value);
           update();
 
