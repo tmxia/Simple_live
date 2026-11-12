@@ -900,8 +900,14 @@ class PlayerController extends BaseController
     }
     disposeStream();
     disposeDanmakuController();
-    await resetSystem();
+    // 核心修复：先强制停止音频，再销毁实例，防止底层音频在后台残留
+    try {
+      await player.stop();
+    } catch (e) {
+      // ignore
+    }
     await player.dispose();
+    await resetSystem();
     super.onClose();
   }
 }

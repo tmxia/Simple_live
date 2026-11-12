@@ -366,4 +366,19 @@ void disposeStream() {
       }
     });
   }
+
+  @override
+  void onClose() async {
+    Log.w("TV播放器关闭");
+    disposeStream();
+    disposeDanmakuController();
+    try {
+      await player.stop();
+    } catch (e) {
+      // ignore
+    }
+    await player.dispose();
+    await resetSystem();
+    super.onClose();
+  }
 }
