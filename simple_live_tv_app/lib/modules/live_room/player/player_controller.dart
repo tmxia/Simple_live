@@ -47,7 +47,8 @@ mixin PlayerMixin {
 
       
     }
-            await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
+            // 核心修复：移除底层死板重连，提高直播秒开速度
+    // await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
   }
 
   /// 视频控制器
