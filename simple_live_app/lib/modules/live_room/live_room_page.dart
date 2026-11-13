@@ -9,6 +9,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:remixicon/remixicon.dart';
 import 'package:simple_live_app/app/app_style.dart';
+import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/constant.dart';
 import 'package:simple_live_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_app/app/sites.dart';
@@ -824,8 +825,11 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               onTap: () {
                 Get.back();
                 // 核心修复：改用 site.id 判断，并做安全强转，避免混淆导致 is 判断失效
-                if (["huya", "bilibili"].contains(controller.site.id)) {
-                  Future.delayed(const Duration(milliseconds: 300), () {
+                Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
+                Get.back();
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  Log.logPrint("[回放] 延迟 300ms 后，准备弹出回放列表...");
+                  try {
                     showModalBottomSheet(
                       context: Get.context!,
                       isScrollControlled: true,
@@ -834,15 +838,16 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                         roomId: controller.rxRoomId.value,
                         site: controller.site as dynamic, 
                         onPlay: (url) {
+                          Log.logPrint("[回放] 准备播放回放视频: $url");
                           controller.player.open(Media(url));
                           controller.player.play();
                         },
                       ),
                     );
-                  });
-                } else {
-                  SmartDialog.showToast("该平台暂不支持回放");
-                }
+                  } catch (e) {
+                    Log.logPrint("[回放] 弹出回放列表发生异常: $e");
+                  }
+                });
               },
             ),
             ListTile(

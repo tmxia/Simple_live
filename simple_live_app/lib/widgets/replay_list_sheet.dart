@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_app/app/app_style.dart';
+import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/widgets/net_image.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 
@@ -41,9 +42,11 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
       isLoading = true;
       errorMsg = "";
     });
+    Log.logPrint("[回放] 开始拉取数据，Room: ${widget.roomId}, Page: $page");
     try {
       // 动态调用，避免强转报错
       var res = await (widget.site as dynamic).getReplays(roomId: widget.roomId, page: page);
+      Log.logPrint("[回放] 拉取成功，数据量: ${res.items.length}, HasMore: ${res.hasMore}");
       if (!mounted) return;
       setState(() {
         items.addAll(res.items);
@@ -52,6 +55,7 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
         isLoading = false;
       });
     } catch (e) {
+      Log.logPrint("[回放] 拉取失败，错误: $e");
       if (!mounted) return;
       setState(() {
         isLoading = false;
