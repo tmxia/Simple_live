@@ -15,6 +15,7 @@ import 'package:simple_live_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_app/app/sites.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/modules/live_room/live_room_controller.dart';
+import 'package:simple_live_app/modules/live_room/replay_page.dart';
 import 'package:simple_live_app/modules/live_room/player/player_controls.dart';
 import 'package:simple_live_app/services/follow_service.dart';
 import 'package:simple_live_app/widgets/desktop_refresh_button.dart';
@@ -803,7 +804,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
         maxWidth: 600,
       ),
       isScrollControlled: true,
-      builder: (_) => Container(
+      builder: (sheetContext) => Container(
         padding: EdgeInsets.only(
           bottom: AppStyle.bottomBarHeight,
         ),
@@ -822,26 +823,23 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               leading: const Icon(Icons.history),
               title: const Text("查看回放"),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () {
+              onTap: () async {
                 Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
-                Navigator.pop(Get.context!);
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (Get.context == null) return;
-                  showModalBottomSheet(
-                    context: Get.context!,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => ReplayListSheet(
-                      roomId: controller.rxRoomId.value,
-                      site: controller.site as dynamic,
-                      onPlay: (url) {
-                        Log.logPrint("[回放] 准备播放回放视频: $url");
-                        controller.player.open(Media(url));
-                        controller.player.play();
-                      },
-                    ),
-                  );
-                });
+                
+                // 核心修复：精准关闭当前菜单，不使用延迟
+                Navigator.pop(sheetContext);
+                
+                // 直接推入独立路由页面
+                var url = await Get.to(() => ReplayPage(
+                  roomId: controller.rxRoomId.value,
+                  site: controller.site,
+                ));
+                
+                if (url != null && url is String) {
+                  Log.logPrint("[回放] 接收到回放地址，准备播放: $url");
+                  controller.player.open(Media(url));
+                  controller.player.play();
+                }
               },
             ),
             ListTile(
