@@ -17,7 +17,7 @@ import 'package:simple_live_core/src/model/live_room_detail.dart';
 import 'package:simple_live_core/src/model/live_play_quality.dart';
 import 'package:simple_live_core/src/model/live_category_result.dart';
 
-class BiliBiliSite implements LiveSite {
+class BiliBiliSite implements LiveSite, ReplaySite {
   @override
   String id = "bilibili";
 
@@ -690,5 +690,162 @@ class BiliBiliSite implements LiveSite {
         ?.replaceAll("\\", "");
     accessId = id ?? "";
     return accessId;
+  }
+
+  @override
+  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    try {
+      // 1. 房间号转 mid
+      var roomInit = await HttpClient.instance.getJson(
+        "https://api.live.bilibili.com/room/v1/Room/room_init",
+        queryParameters: {"id": roomId},
+      );
+      if (roomInit["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
+      var realRoomId = roomInit["data"]["room_id"].toString();
+
+      var userInfo = await HttpClient.instance.getJson(
+        "https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room",
+        queryParameters: {"roomid": realRoomId},
+      );
+      if (userInfo["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
+      var mid = userInfo["data"]["info"]["uid"].toString();
+
+      // 2. 获取合集列表
+      var collectionsRes = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/polymer/web-space/seasons_series_list",
+        queryParameters: {"mid": mid, "page_num": page, "page_size": 20},
+        header: {"referer": "https://space.bilibili.com/$mid/"},
+      );
+      if (collectionsRes["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
+
+      var lists = collectionsRes["data"]["items_lists"];
+      if (lists == null) return LiveReplayResult(items: [], hasMore: false);
+
+      // 3. 筛选包含直播回放字眼的合集
+      var replayRegex = RegExp(r'直播[\s·・_-]*(?:回放|回看|录像|录播)|live[\s_-]*(?:replay|archive|vod)', caseSensitive: false);
+      var targetCollection = null;
+      var isSeason = false;
+
+      for (var item in (lists["seasons_list"] ?? [])) {
+        var meta = item["meta"];
+        if (meta != null && replayRegex.hasMatch(meta["name"].toString())) {
+          targetCollection = meta;
+          isSeason = true;
+          break;
+        }
+      }
+      
+      if (targetCollection == null) {
+        for (var item in (lists["series_list"] ?? [])) {
+          var meta = item["meta"];
+          if (meta != null && replayRegex.hasMatch(meta["name"].toString())) {
+            targetCollection = meta;
+            isSeason = false;
+            break;
+          }
+        }
+      }
+
+      // 如果没找到合集，直接返回空
+      if (targetCollection == null) return LiveReplayResult(items: [], hasMore: false);
+
+      // 4. 获取合集下的视频列表
+      var collectionId = isSeason ? targetCollection["season_id"] : targetCollection["series_id"];
+      var archivesUrl = isSeason 
+          ? "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list"
+          : "https://api.bilibili.com/x/series/archives";
+      
+      var archivesQuery = isSeason 
+          ? {"mid": mid, "season_id": collectionId, "sort_reverse": false, "page_num": page, "page_size": 20}
+          : {"mid": mid, "series_id": collectionId, "only_normal": true, "sort": "desc", "pn": page, "ps": 20};
+
+      var archivesRes = await HttpClient.instance.getJson(
+        archivesUrl,
+        queryParameters: archivesQuery,
+        header: {"referer": "https://space.bilibili.com/$mid/"},
+      );
+
+      if (archivesRes["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
+
+      var archives = archivesRes["data"]["archives"] ?? [];
+      List<LiveReplayItem> items = [];
+      
+      for (var v in archives) {
+        items.add(LiveReplayItem(
+          id: v["bvid"].toString(), // 后续用来拿 cid 和播放地址
+          title: v["title"].toString(),
+          cover: v["pic"].toString().replaceAll("http:", "https:"),
+          author: targetCollection["name"].toString(),
+          duration: _formatDuration(v["duration"] ?? 0),
+          date: DateTime.fromMillisecondsSinceEpoch((v["pubdate"] ?? 0) * 1000).toString().split(" ").first,
+        ));
+      }
+
+      return LiveReplayResult(items: items, hasMore: items.length >= 20);
+    } catch (e) {
+      CoreLog.error(e);
+      return LiveReplayResult(items: [], hasMore: false);
+    }
+  }
+
+  @override
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    try {
+      // videoId 传过来的是 bvid
+      // 1. 获取 cid
+      var pagelist = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/player/pagelist",
+        queryParameters: {"bvid": videoId},
+      );
+      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) return [];
+      var cid = pagelist["data"][0]["cid"];
+
+      // 2. 获取播放地址 (fnval=16 表示包含 DASH 格式)
+      var playurl = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/player/playurl",
+        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
+      );
+      
+      if (playurl["code"] != 0) return [];
+
+      List<LivePlayQuality> qualities = [];
+      var dash = playurl["data"]["dash"];
+      
+      if (dash != null) {
+        // 解析 DASH 视频流 (取最高画质)
+        var videoStreams = dash["video"] as List;
+        if (videoStreams.isNotEmpty) {
+          // 按带宽排序选最高
+          videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
+          var bestVideo = videoStreams.first;
+          var url = bestVideo["baseUrl"].toString();
+          
+          qualities.add(LivePlayQuality(
+            quality: "B站原画",
+            data: {"url": url, "bitRate": bestVideo["bandwidth"]},
+          ));
+        }
+      } else if (playurl["data"]["durl"] != null) {
+        // 兜底解析 MP4 格式
+        var durls = playurl["data"]["durl"] as List;
+        if (durls.isNotEmpty) {
+          qualities.add(LivePlayQuality(
+            quality: "B站默认",
+            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
+          ));
+        }
+      }
+      
+      return qualities;
+    } catch (e) {
+      CoreLog.error(e);
+      return [];
+    }
+  }
+
+  String _formatDuration(int seconds) {
+    int m = seconds ~/ 60;
+    int s = seconds % 60;
+    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
 }
