@@ -823,6 +823,38 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               title: const Text("查看回放"),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
+                Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
+                
+                // 核心修复：使用 Navigator.pop(context) 精准关闭当前弹窗，防止误杀直播间路由
+                Navigator.pop(context);
+
+                // 延迟一点点，等旧弹窗彻底关闭后再弹新的
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (Get.context == null) return;
+                  
+                  Log.logPrint("[回放] 准备弹出回放列表...");
+                  try {
+                    showModalBottomSheet(
+                      context: Get.context!,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ReplayListSheet(
+                        roomId: controller.rxRoomId.value,
+                        site: controller.site as dynamic, 
+                        onPlay: (url) {
+                          Log.logPrint("[回放] 准备播放回放视频: $url");
+                          controller.player.open(Media(url));
+                          controller.player.play();
+                        },
+                      ),
+                    );
+                  } catch (e) {
+                    Log.logPrint("[回放] 弹出回放列表发生异常: $e");
+                  }
+                });
+              },
+            )
+              onTap: () {
                 Get.back();
                 // 核心修复：改用 site.id 判断，并做安全强转，避免混淆导致 is 判断失效
                 Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
