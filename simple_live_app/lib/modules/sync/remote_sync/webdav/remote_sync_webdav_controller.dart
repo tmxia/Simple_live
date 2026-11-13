@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:path/path.dart';
@@ -84,7 +85,7 @@ class RemoteSyncWebDAVController extends GetxController {
       
       if (isOk) {
         notLogin.value = false;
-        Get.snackbar("成功", "WebDAV 连接成功！", backgroundColor: Colors.green);
+        SmartDialog.showToast("WebDAV 连接成功！");
       } else {
         notLogin.value = true;
         Get.snackbar("连接失败", "请检查地址、账号或密码是否正确", backgroundColor: Colors.red);
@@ -347,7 +348,7 @@ class RemoteSyncWebDAVController extends GetxController {
 
       lastRecoverTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
-      Get.snackbar("成功", "恢复数据成功，请重启应用生效");
+      SmartDialog.showToast("恢复数据成功，请重启应用生效");
     } catch (e, st) {
       Log.e("WebDAV Recovery Error: $e", st);
       Get.snackbar("失败", "恢复数据失败: $e");
