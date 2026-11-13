@@ -28,27 +28,20 @@ mixin PlayerMixin {
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
+    // media_kit 仓库更新导致的问题，临时解决办法
     if (Platform.isAndroid) {
-      
-      await pp.setProperty('gpu-api', 'opengl');
-      
-      await pp.setProperty('hwdec', 'auto-copy');
-       
-      
-      await pp.setProperty('video-sync', 'desync');
-      
-      await pp.setProperty('framedrop', 'decoder+vo');
-      await pp.setProperty('ao', 'opensles');
-      await pp.setProperty('audio-buffer', '0.2');
-      await pp.setProperty('vd-lavc-threads', '0');
-      await pp.setProperty('demuxer-max-bytes', '64MiB'); 
-      await pp.setProperty('demuxer-readahead-secs', '5'); 
-
-
-      
+      await pp.setProperty('force-seekable', 'yes');
     }
-            // 核心修复：移除底层死板重连，提高直播秒开速度
-    // await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
+    // 🌟 核心调教：TV 端底层参数
+    var lowEnd = Platform.numberOfProcessors <= 4;
+    var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
+    await pp.setProperty('demuxer-max-bytes', '$maxBytes');
+    await pp.setProperty('demuxer-readahead-secs', '8');
+    await pp.setProperty('cache', 'yes');
+    await pp.setProperty('cache-secs', '30');
+    await pp.setProperty('network-timeout', '15');
+    await pp.setProperty('hwdec-software-fallback', '1');
+    await pp.setProperty('framedrop', 'decoder+vo');
   }
 
   /// 视频控制器

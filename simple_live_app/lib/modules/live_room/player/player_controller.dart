@@ -40,7 +40,7 @@ mixin PlayerMixin {
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
-    
+    // 设置音频输出驱动
     if (AppSettingsController.instance.customPlayerOutput.value) {
       if (player.platform is NativePlayer) {
         await (player.platform as dynamic).setProperty(
@@ -49,12 +49,33 @@ mixin PlayerMixin {
         );
       }
     }
-    
+    // media_kit 仓库更新导致的问题，临时解决办法
     if(Platform.isAndroid){
       await pp.setProperty('force-seekable', 'yes');
     }
-            // 核心修复：移除底层死板的重连参数，交给 media_kit 自动管理，防止赛事流死锁
-    // await pp.setProperty('stream-lavf-o', 'reconnect=1,reconnect_streamed=1,reconnect_delay_max=5');
+    // 🌟 核心调教：直播缓存限制（参考 pure_live）
+    var lowEnd = Platform.numberOfProcessors <= 4;
+    var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
+    var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
+    await pp.setProperty('demuxer-max-bytes', '$maxBytes');
+    await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
+    await pp.setProperty('demuxer-readahead-secs', '8');
+    await pp.setProperty('cache', 'yes');
+    await pp.setProperty('cache-secs', '30');
+    await pp.setProperty('cache-pause-wait', '4');
+    await pp.setProperty('network-timeout', '15');
+    // 硬解异常帧时自动回退软解
+    await pp.setProperty('hwdec-software-fallback', '1');
+    // 丢帧而不是堆积延迟
+    await pp.setProperty('framedrop', 'decoder+vo');
+    await pp.setProperty('demuxer-lavf-probesize', '2097152');
+    await pp.setProperty('demuxer-lavf-analyzeduration', '2');
+    if (Platform.isAndroid) {
+      await pp.setProperty('mediacodec-surface-iostream', 'yes');
+    }
+    if (lowEnd) {
+      await pp.setProperty('vd-lavc-threads', '2');
+    }
   }
 
   /// 视频控制器
