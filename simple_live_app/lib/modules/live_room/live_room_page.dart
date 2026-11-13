@@ -796,7 +796,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
     ];
   }
 
-  void showMore() {
+    void showMore() {
     showModalBottomSheet(
       context: Get.context!,
       constraints: const BoxConstraints(
@@ -819,8 +819,6 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               },
             ),
             ListTile(
-              
-            ListTile(
               leading: const Icon(Icons.history),
               title: const Text("查看回放"),
               trailing: const Icon(Icons.chevron_right),
@@ -835,7 +833,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                     backgroundColor: Colors.transparent,
                     builder: (_) => ReplayListSheet(
                       roomId: controller.rxRoomId.value,
-                      site: controller.site as dynamic, 
+                      site: controller.site as dynamic,
                       onPlay: (url) {
                         Log.logPrint("[回放] 准备播放回放视频: $url");
                         controller.player.open(Media(url));
