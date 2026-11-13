@@ -823,16 +823,16 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Get.back();
-                if (controller.site is ReplaySite) {
+                // 核心修复：改用 site.id 判断，并做安全强转，避免混淆导致 is 判断失效
+                if (["huya", "bilibili"].contains(controller.site.id)) {
                   Get.bottomSheet(
                     ReplayListSheet(
                       roomId: controller.rxRoomId.value,
-                      site: controller.site as ReplaySite,
+                      site: controller.site as dynamic, 
                       onPlay: (url) {
                         // 播放回放流
                         controller.player.open(Media(url));
                         controller.player.play();
-                        // 可以在这里给 controller 设置一个 isVod = true 的状态，以显示进度条
                       },
                     ),
                   );
