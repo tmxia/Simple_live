@@ -552,12 +552,6 @@ class DouyuSite implements LiveSite {
       );
     }).toList();
   }
-}
-
-class DouyuPlayData {
-  final int rate;
-  final List<String> cdns;
-  DouyuPlayData(this.rate, this.cdns);
 
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
@@ -568,5 +562,13 @@ class DouyuPlayData {
   Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     return [];
   }
+}
+
+class DouyuPlayData {
+  final int rate;
+  final List<String> cdns;
+  DouyuPlayData(this.rate, this.cdns);
+
+  
 
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:simple_live_core/simple_live_core.dart';
+import 'package:simple_live_core/src/model/live_replay_model.dart';
 import 'package:simple_live_core/src/common/convert_helper.dart';
 import 'package:simple_live_core/src/common/http_client.dart';
 import 'package:simple_live_core/src/scripts/douyin_abogus.dart';
@@ -930,6 +931,9 @@ class DouyinSite implements LiveSite {
         Random().nextInt(1000000000);
   }
 
+  
+
+
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     return LiveReplayResult(items: [], hasMore: false);
@@ -939,5 +943,4 @@ class DouyinSite implements LiveSite {
   Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     return [];
   }
-
 }
