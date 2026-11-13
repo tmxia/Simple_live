@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:simple_live_app/app/app_style.dart';
-import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/widgets/net_image.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 
@@ -50,21 +50,33 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
   }
 
   Future<void> _playReplay(LiveReplayItem item) async {
-    Utils.showLoading(msg: "获取播放地址中...");
+    // 弹出原生 Loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
       var qualities = await widget.site.getReplayQualities(videoId: item.id);
-      Utils.hideLoading();
+      if (mounted) Navigator.of(context).pop(); // 关闭 Loading
+      
       if (qualities.isNotEmpty) {
         var url = qualities.first.data["url"].toString();
-        Get.back(); // 关闭底部弹窗
+        if (mounted) Navigator.of(context).pop(); // 关闭底部弹窗
         widget.onPlay(url);
       } else {
-        Utils.showSnackBar("未获取到播放地址");
+        _showMsg("未获取到播放地址");
       }
     } catch (e) {
-      Utils.hideLoading();
-      Utils.showSnackBar("获取播放地址失败");
+      if (mounted) Navigator.of(context).pop(); // 关闭 Loading
+      _showMsg("获取播放地址失败");
     }
+  }
+
+  void _showMsg(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
