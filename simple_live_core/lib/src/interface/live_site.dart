@@ -1,3 +1,4 @@
+import 'package:simple_live_core/src/model/live_replay_model.dart';
 import 'package:simple_live_core/src/model/live_anchor_item.dart';
 
 import '../interface/live_danmaku.dart';
@@ -87,4 +88,15 @@ class LiveSite {
       {required String roomId}) {
     return Future.value([]);
   }
+
+  /// 获取回放列表 (默认空实现，各平台按需重写)
+  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    return LiveReplayResult(items: [], hasMore: false);
+  }
+  
+  /// 获取回放的清晰度列表 (默认空实现)
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    return [];
+  }
+
 }
