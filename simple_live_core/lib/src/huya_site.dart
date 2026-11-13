@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:simple_live_core/simple_live_core.dart';
+import 'package:simple_live_core/src/interface/replay_site.dart';
+import 'package:simple_live_core/src/model/live_replay_model.dart';
 import 'package:simple_live_core/src/common/http_client.dart';
 import 'package:crypto/crypto.dart';
 import 'package:simple_live_core/src/model/tars/get_cdn_token_ex_req.dart';
@@ -11,7 +13,7 @@ import 'package:simple_live_core/src/model/tars/get_cdn_token_resp.dart';
 import 'package:simple_live_core/src/model/tars/huya_user_id.dart';
 import 'package:tars_dart/tars/net/base_tars_http.dart';
 
-class HuyaSite implements LiveSite {
+class HuyaSite implements LiveSite, ReplaySite {
   static const baseUrl = "https://m.huya.com/";
   final String kUserAgent =
       "Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36 Edg/117.0.0.0";
@@ -781,5 +783,82 @@ class HuyaBitRateModel {
       "name": name,
       "bitRate": bitRate,
     });
+  }
+
+  @override
+  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    try {
+      // 1. 获取主播 UID
+      var profileInfo = await HttpClient.instance.getJson(
+        "https://mp.huya.com/cache.php",
+        queryParameters: {"m": "Live", "do": "profileRoom", "roomid": roomId, "showSecret": "1"},
+      );
+      var uid = profileInfo["data"]["profileInfo"]["uid"].toString();
+
+      // 2. 获取回放页面
+      var response = await HttpClient.instance.getText(
+        "https://www.huya.com/video/u/$uid",
+        queryParameters: {"tabName": "live", "pageIndex": page.toString()},
+        header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+      );
+
+      // 3. 提取 window.HNF_GLOBAL_INIT JSON
+      var match = RegExp(r'window\.HNF_GLOBAL_INIT\s*=\s*(\{[\s\S]*?\});?\s*</script>').firstMatch(response);
+      if (match == null) return LiveReplayResult(items: [], hasMore: false);
+
+      var jsonStr = match.group(1)!;
+      jsonStr = jsonStr.replaceAllMapped(RegExp(r'function[^{]*\{[^}]*\}'), (m) => 'null');
+      
+      var data = json.decode(jsonStr);
+      var videoList = data["userPageLiveRecordVideoRsp"]?["videoDataList"]?["value"];
+      if (videoList == null) return LiveReplayResult(items: [], hasMore: false);
+
+      List<LiveReplayItem> items = [];
+      for (var row in videoList) {
+        var videoData = row["videoData"];
+        if (videoData == null) continue;
+        var covers = videoData["covers"];
+        items.add(LiveReplayItem(
+          id: videoData["vid"].toString(),
+          title: videoData["videoTitle"].toString(),
+          cover: covers != null ? (covers["cover320"] ?? covers["cover"] ?? "").toString() : "",
+          author: videoData["userInfo"]?["userNick"] ?? "虎牙主播",
+          duration: videoData["duration"].toString(),
+          date: row["date"] ?? "",
+        ));
+      }
+      return LiveReplayResult(items: items, hasMore: items.isNotEmpty);
+    } catch (e) {
+      CoreLog.error(e);
+      return LiveReplayResult(items: [], hasMore: false);
+    }
+  }
+
+  @override
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    try {
+      var response = await HttpClient.instance.getJson(
+        "https://liveapi.huya.com/moment/getMomentContent",
+        queryParameters: {"videoId": videoId},
+      );
+      
+      var vMultiStreamInfo = response["data"]?["videoInfo"]?["vMultiStreamInfo"];
+      if (vMultiStreamInfo == null) return [];
+
+      List<LivePlayQuality> qualities = [];
+      for (var item in vMultiStreamInfo) {
+        qualities.add(LivePlayQuality(
+          quality: item["sDisplayName"].toString(),
+          data: {
+            "url": item["sStreamName"].toString(),
+            "bitRate": item["iBitRate"],
+          },
+        ));
+      }
+      return qualities;
+    } catch (e) {
+      CoreLog.error(e);
+      return [];
+    }
   }
 }
