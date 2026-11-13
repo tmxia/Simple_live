@@ -314,7 +314,7 @@ class CryptoUtility {
     } else {
       throw ArgumentError("Input data must be a String or List<int>");
     }
-    final hexResult = sm3sum(inputDataBytes);
+    final hexResult = sm3.convert(inputDataBytes).hex();
     final result = <int>[];
     for (var i = 0; i < hexResult.length; i += 2) {
       result.add(int.parse(hexResult.substring(i, i + 2), radix: 16));
