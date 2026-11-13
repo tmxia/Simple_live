@@ -558,4 +558,15 @@ class DouyuPlayData {
   final int rate;
   final List<String> cdns;
   DouyuPlayData(this.rate, this.cdns);
+
+  @override
+  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    return LiveReplayResult(items: [], hasMore: false);
+  }
+
+  @override
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    return [];
+  }
+
 }

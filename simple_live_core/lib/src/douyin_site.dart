@@ -929,4 +929,15 @@ class DouyinSite implements LiveSite {
     return int.tryParse(stringBuffer.toString()) ??
         Random().nextInt(1000000000);
   }
+
+  @override
+  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    return LiveReplayResult(items: [], hasMore: false);
+  }
+
+  @override
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    return [];
+  }
+
 }
