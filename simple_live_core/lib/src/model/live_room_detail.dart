@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 class LiveRoomDetail {
+  final String? categoryId;
   /// 房间ID
   final String roomId;
 
@@ -44,6 +45,7 @@ class LiveRoomDetail {
   final String? showTime;
 
   LiveRoomDetail({
+    this.categoryId,
     required this.roomId,
     required this.title,
     required this.cover,
