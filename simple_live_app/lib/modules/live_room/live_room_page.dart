@@ -824,7 +824,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
-                Navigator.pop(context);
+                Navigator.pop(Get.context!);
                 Future.delayed(const Duration(milliseconds: 300), () {
                   if (Get.context == null) return;
                   showModalBottomSheet(
