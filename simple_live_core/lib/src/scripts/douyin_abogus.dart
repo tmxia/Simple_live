@@ -2,7 +2,7 @@ import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:dart_sm/dart_sm.dart';
+import 'package:hashlib/hashlib.dart';
 
 class StringProcessor {
   static String toCharStr(List<int> codes) {
@@ -314,7 +314,7 @@ class CryptoUtility {
     } else {
       throw ArgumentError("Input data must be a String or List<int>");
     }
-    final hexResult = SM3.hashBytes(inputDataBytes);
+    final hexResult = sm3sum(inputDataBytes);
     final result = <int>[];
     for (var i = 0; i < hexResult.length; i += 2) {
       result.add(int.parse(hexResult.substring(i, i + 2), radix: 16));
