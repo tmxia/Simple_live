@@ -154,9 +154,77 @@ class HttpClient {
       return result;
     } catch (e) {
       if (e is DioException && e.type == DioExceptionType.badResponse) {
-        throw CoreError(e.message ?? '网络请求失败', statusCode: e.response?.statusCode ?? 0);
+        //throw CoreError(e.message, statusCode: e.response?.statusCode ?? 0);
+        return e.response!;
       } else {
         throw CoreError("发送HEAD请求失败");
+      }
+    }
+  }
+
+  /// Get请求，返回Response（用于需要读取响应头的场景）
+  /// * [url] 请求链接
+  /// * [queryParameters] 请求参数
+  /// * [cancel] 任务取消Token
+  Future<Response> get(
+    String url, {
+    Map<String, dynamic>? queryParameters,
+    Map<String, dynamic>? header,
+    CancelToken? cancel,
+  }) async {
+    try {
+      queryParameters ??= {};
+      header ??= {};
+      var result = await dio.get(
+        url,
+        queryParameters: queryParameters,
+        options: Options(
+          headers: header,
+          receiveDataWhenStatusError: true,
+        ),
+        cancelToken: cancel,
+      );
+      return result;
+    } catch (e) {
+      if (e is DioException && e.type == DioExceptionType.badResponse) {
+        return e.response!;
+      } else {
+        throw CoreError("发送GET请求失败");
+      }
+    }
+  }
+
+  /// Post请求，返回Response（用于需要读取响应头的场景）
+  /// * [url] 请求链接
+  /// * [data] 内容
+  /// * [cancel] 任务取消Token
+  Future<Response> post(
+    String url, {
+    Map<String, dynamic>? queryParameters,
+    dynamic data,
+    Map<String, dynamic>? header,
+    CancelToken? cancel,
+  }) async {
+    try {
+      queryParameters ??= {};
+      header ??= {};
+      data ??= {};
+      var result = await dio.post(
+        url,
+        queryParameters: queryParameters,
+        data: data,
+        options: Options(
+          headers: header,
+          receiveDataWhenStatusError: true,
+        ),
+        cancelToken: cancel,
+      );
+      return result;
+    } catch (e) {
+      if (e is DioException && e.type == DioExceptionType.badResponse) {
+        return e.response!;
+      } else {
+        throw CoreError("发送POST请求失败");
       }
     }
   }

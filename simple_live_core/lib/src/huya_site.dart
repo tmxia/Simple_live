@@ -26,7 +26,7 @@ class HuyaSite implements LiveSite {
   };
 
   final BaseTarsHttp tupClient =
-  BaseTarsHttp("http://wup.huya.com", "liveui", headers: requestHeaders);
+      BaseTarsHttp("https://wup.huya.com", "liveui", headers: requestHeaders);
 
   String? playUserAgent;
   @override
@@ -140,41 +140,41 @@ class HuyaSite implements LiveSite {
         HuyaBitRateModel(name: "高清", bitRate: 2000),
       ];
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    // if (urlData.lines.isEmpty) {
+    //   urlData.lines = [
+    //     HuyaLineModel(line: "tx.flv.huya.com", lineType: HuyaLineType.flv,),
+    //     HuyaLineModel(line: "bd.flv.huya.com", lineType: HuyaLineType.flv),
+    //     HuyaLineModel(line: "al.flv.huya.com", lineType: HuyaLineType.flv),
+    //     HuyaLineModel(line: "hw.flv.huya.com", lineType: HuyaLineType.flv),
+    //   ];
+    // }
+    //var url = getRealUrl(urlData.url);
 
     for (var item in urlData.bitRates) {
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
-      
+      // var urls = <String>[];
+      // for (var line in urlData.lines) {
+      //   var src = line.line;
+      //   src += "/${line.streamName}";
+      //   if (line.lineType == HuyaLineType.flv) {
+      //     //src = src.replaceAll(".m3u8", ".flv");
+      //     src += ".flv";
+      //   }
+      //   if (line.lineType == HuyaLineType.hls) {
+      //     src += ".m3u8";
+      //   }
+      //   var parms = processAnticode(
+      //     line.lineType == HuyaLineType.flv
+      //         ? line.flvAntiCode
+      //         : line.hlsAntiCode,
+      //     urlData.uid,
+      //     line.streamName,
+      //   );
+      //   src += "?$parms";
+      //   if (item.bitRate > 0) {
+      //     src += "&ratio=${item.bitRate}";
+      //   }
+      //   urls.add(src);
+      // }
 
       qualities.add(LivePlayQuality(
         data: {
@@ -188,7 +188,7 @@ class HuyaSite implements LiveSite {
     return Future.value(qualities);
   }
 
-  
+  // 每次访问播放虎牙都需要获取一次，不太合理，倾向于在客户端获取保存替换
   Future<String> getHuYaUA() async {
     if (playUserAgent != null) {
       return playUserAgent!;
@@ -209,24 +209,30 @@ class HuyaSite implements LiveSite {
 
   @override
   Future<LivePlayUrl> getPlayUrls(
-      {
-required LiveRoomDetail detail,
+      {required LiveRoomDetail detail,
       required LivePlayQuality quality}) async {
     var ls = <String>[];
+    // 单条线路的token/签名失败只影响该CDN，不放弃其余线路（参考pure_live）
     for (var element in quality.data["urls"]) {
       var line = element as HuyaLineModel;
-      var url = await getPlayUrl(line, quality.data["bitRate"]);
-      ls.add(url);
+      var url = '';
+      try {
+        url = await getPlayUrl(line, quality.data["bitRate"]);
+      } catch (e) {
+        CoreLog.error(e);
+      }
+      if (url.isNotEmpty && !ls.contains(url)) {
+        ls.add(url);
+      }
     }
-    
-    
+    if (ls.isEmpty) {
+      throw Exception("虎牙所有线路的播放地址获取失败，请稍后重试");
+    }
+    // 最新UA需要额外验证，此方法暂时弃用
+    // var ua = await getHuYaUA();
     return LivePlayUrl(
-      headers: {
-        'Referer': 'https://www.huya.com/',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      },
       urls: ls,
-      
+      headers: {"user-agent": HYSDK_UA},
     );
   }
 
@@ -240,7 +246,7 @@ required LiveRoomDetail detail,
     return url;
   }
 
-  
+  // 构造 anticode, python转写
   /// [stream] streamname [presenterUid] 用户id [antiCode] 页面anti
   ///
   /// return ture anticode
@@ -301,11 +307,33 @@ required LiveRoomDetail detail,
     return antiCodeRes.entries.map((e) => '${e.key}=${e.value}').join('&');
   }
 
+  /// 随机生成虎牙SDK的UA（参考pure_live）
+  /// 固定的 pc_exe UA 更易被虎牙风控识别，随机平台/子版本组合降低拒绝率
+  static String _requestHuyaUA() {
+    const platforms = [
+      (name: 'adr', version: '13.1.0', hasApiLevel: true),
+      (name: 'ios', version: '13.1.0', hasApiLevel: false),
+      (name: 'huya_nftv', version: '2.6.10', hasApiLevel: true),
+      (name: 'pc_exe', version: '7000000', hasApiLevel: false),
+    ];
+    var platform = platforms[Random().nextInt(platforms.length)];
+    var version = platform.version;
+    if (platform.name == 'adr' || platform.name == 'huya_nftv') {
+      version = '$version.${Random().nextInt(2000) + 3000}';
+    }
+    var ua = '${platform.name}&$version&official';
+    if (platform.hasApiLevel) {
+      ua = '$ua&${Random().nextInt(9) + 28}';
+    }
+    return ua;
+  }
+
   /// return sFlvToken
   Future<String> getCndTokenInfoEx(String stream) async {
     var func = "getCdnTokenInfoEx";
     var tid = HuyaUserId();
-    tid.sHuYaUA = "pc_exe&7060000&official";
+    // 随机SDK UA：固定 pc_exe&7060000&official 已被虎牙风控重点识别
+    tid.sHuYaUA = _requestHuyaUA();
     var tReq = GetCdnTokenExReq();
     tReq.tId = tid;
     tReq.sStreamName = stream;
@@ -361,7 +389,7 @@ required LiveRoomDetail detail,
     }
     var huyaLines = <HuyaLineModel>[];
     var huyaBiterates = <HuyaBitRateModel>[];
-    
+    //读取可用线路
     var lines = tLiveInfo["tLiveStreamInfo"]["vStreamInfo"]["value"];
     for (var item in lines) {
       if ((item["sFlvUrl"]?.toString() ?? "").isNotEmpty) {
@@ -377,7 +405,7 @@ required LiveRoomDetail detail,
       }
     }
 
-    
+    //清晰度
     var biterates = tLiveInfo["tLiveStreamInfo"]["vBitRateInfo"]["value"];
     for (var item in biterates) {
       var name = item["sDisplayName"].toString();
@@ -415,6 +443,7 @@ required LiveRoomDetail detail,
         topSid: topSid ?? 0,
         subSid: subSid ?? 0,
       ),
+      showTime: tLiveInfo["iStartTime"]?.toString(),
       url: "https://www.huya.com/$roomId",
     );
   }
@@ -666,19 +695,10 @@ required LiveRoomDetail detail,
   }
 
   @override
-  Future<List<LiveSuperChatMessage>> getSuperChatMessage({
-    required String roomId,
-    LiveRoomDetail? detail,
-  }) {
+  Future<List<LiveSuperChatMessage>> getSuperChatMessage(
+      {required String roomId}) {
+    //尚不支持
     return Future.value([]);
-  }
-
-  @override
-  Future<List<LiveContributionRankItem>> getContributionRank({
-    required String roomId,
-    LiveRoomDetail? detail,
-  }) {
-    return Future.value(<LiveContributionRankItem>[]);
   }
 }
 

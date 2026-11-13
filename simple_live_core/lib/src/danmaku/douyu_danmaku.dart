@@ -75,6 +75,64 @@ class DouyuDanmaku implements LiveDanmaku {
       var jsonData = sttToJObject(result);
 
       var type = jsonData["type"]?.toString();
+      // 醒目留言（SC）
+      if (type == "comm_chatmsg") {
+        try {
+          var chat = jsonData["chatmsg"];
+          var now = int.tryParse(jsonData["now"].toString()) ?? 0;
+          var cur = now > 0
+              ? DateTime.fromMillisecondsSinceEpoch(now)
+              : DateTime.now();
+          var sc = LiveSuperChatMessage(
+            backgroundBottomColor: "#292a60",
+            backgroundColor: "#c1c1ff",
+            endTime: cur.add(Duration(seconds: int.parse(jsonData["cet"]))),
+            face: "https://apic.douyucdn.cn/upload/${chat["ic"]}_small.jpg",
+            message: chat["txt"].toString(),
+            price: int.parse(jsonData["cprice"]) ~/ 100,
+            startTime: cur,
+            userName: chat["nn"].toString(),
+          );
+          onMessage?.call(LiveMessage(
+            type: LiveMessageType.superChat,
+            userName: "SUPER_CHAT_MESSAGE",
+            message: "SUPER_CHAT_MESSAGE",
+            color: LiveMessageColor.white,
+            data: sc,
+          ));
+        } catch (e) {
+          CoreLog.error("DouyuSC-comm_chatmsg:$e");
+        }
+        return;
+      }
+      // 语音醒目留言（SC）
+      if (type == "voice_trlt") {
+        try {
+          var scData = jsonData["list"][0];
+          var sc = LiveSuperChatMessage(
+            backgroundBottomColor: "#246488",
+            backgroundColor: "#ffffff",
+            endTime: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(scData["etime"]) * 1000),
+            face: "https://${scData["uat"][1]}",
+            message: scData["content"].toString(),
+            price: int.parse(scData["realPrice"]) ~/ 100,
+            startTime: DateTime.fromMillisecondsSinceEpoch(
+                int.parse(scData["acptime"]) * 1000),
+            userName: scData["un"].toString(),
+          );
+          onMessage?.call(LiveMessage(
+            type: LiveMessageType.superChat,
+            userName: "SUPER_CHAT_MESSAGE",
+            message: "SUPER_CHAT_MESSAGE",
+            color: LiveMessageColor.white,
+            data: sc,
+          ));
+        } catch (e) {
+          CoreLog.error("DouyuSC-voice_trlt:$e");
+        }
+        return;
+      }
       //斗鱼好像不会返回人气值
       if (type == "chatmsg") {
         // 屏蔽阴间弹幕

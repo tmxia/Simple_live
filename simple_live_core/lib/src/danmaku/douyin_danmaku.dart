@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:simple_live_core/src/common/web_socket_util.dart';
-import 'package:simple_live_core/src/danmaku/douyin_emoji_assets.dart';
 import 'package:simple_live_core/src/scripts/douyin_sign.dart';
 
 import 'proto/douyin.pb.dart';
@@ -43,14 +42,9 @@ class DouyinDanmaku implements LiveDanmaku {
   String serverUrl = "wss://webcast3-ws-web-lq.douyin.com/webcast/im/push/v2/";
   late DouyinDanmakuArgs danmakuArgs;
   WebScoketUtils? webScoketUtils;
-  final List<LiveMessage> _pendingChatMessages = <LiveMessage>[];
-  Timer? _flushChatTimer;
-  static const int _maxChatFlushBatch = 50;
-  static const Duration _chatFlushInterval = Duration(milliseconds: 80);
 
   @override
   Future start(dynamic args) async {
-    final startStopwatch = Stopwatch()..start();
     danmakuArgs = args as DouyinDanmakuArgs;
     var ts = DateTime.now().millisecondsSinceEpoch;
     var uri = Uri.parse(serverUrl).replace(
@@ -94,34 +88,18 @@ class DouyinDanmaku implements LiveDanmaku {
       },
     );
 
-    final signStopwatch = Stopwatch()..start();
     var sign = DouyinSign.getSignature(danmakuArgs.roomId, danmakuArgs.userId);
-    signStopwatch.stop();
-    CoreLog.i(
-      "[DouyinDanmaku] getSignature 耗时 ${signStopwatch.elapsedMilliseconds}ms",
-    );
 
     var url = "$uri&signature=$sign";
     var backupUrl = url.replaceAll("webcast3-ws-web-lq", "webcast5-ws-web-lf");
-    var backupUrls = [
-      url.replaceAll("webcast3-ws-web-lq", "webcast5-ws-web-hl"),
-      url.replaceAll("webcast3-ws-web-lq", "webcast3-ws-web-hl"),
-      url.replaceAll("webcast3-ws-web-lq", "webcast3-ws-web-lf"),
-    ];
-    CoreLog.d("[DouyinDanmaku] 连接弹幕服务器: ${danmakuArgs.webRid}");
+    print(url);
     webScoketUtils = WebScoketUtils(
       url: url,
       backupUrl: backupUrl,
-      backupUrls: backupUrls,
       headers: {
-        "Accept": "application/json, text/plain, */*",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Cache-Control": "no-cache",
-        "Pragma": "no-cache",
-        "User-Agent": DouyinSite.kDefaultUserAgent,
+        "User-Agnet": DouyinSite.kDefaultUserAgent,
         "Cookie": danmakuArgs.cookie,
         "Origin": "https://live.douyin.com",
-        "Referer": "https://live.douyin.com/${danmakuArgs.webRid}",
       },
       heartBeatTime: heartbeatTime,
       onMessage: (e) {
@@ -142,10 +120,6 @@ class DouyinDanmaku implements LiveDanmaku {
       },
     );
     webScoketUtils?.connect();
-    startStopwatch.stop();
-    CoreLog.i(
-      "[DouyinDanmaku] start(${danmakuArgs.webRid}) 耗时 ${startStopwatch.elapsedMilliseconds}ms",
-    );
   }
 
   @override
@@ -157,9 +131,6 @@ class DouyinDanmaku implements LiveDanmaku {
 
   void decodeMessage(args) {
     // CoreLog.i(args.toString());
-    final stopwatch = Stopwatch()..start();
-    var messageCount = 0;
-    var chatCount = 0;
 
     var wssPackage = PushFrame.fromBuffer(args);
 
@@ -171,186 +142,55 @@ class DouyinDanmaku implements LiveDanmaku {
       //return;
     }
     for (var msg in payloadPackage.messagesList) {
-      messageCount++;
       if (msg.method == 'WebcastChatMessage') {
-        final liveMessage = unPackWebcastChatMessage(msg.payload);
-        if (liveMessage != null) {
-          chatCount++;
-          _enqueueChatMessage(liveMessage);
-        }
+        unPackWebcastChatMessage(msg.payload);
       } else if (msg.method == 'WebcastRoomUserSeqMessage') {
         unPackWebcastRoomUserSeqMessage(msg.payload);
       }
     }
-    stopwatch.stop();
-    if (stopwatch.elapsedMilliseconds >= 16 || chatCount >= 20) {
-      CoreLog.i(
-        "[DouyinDanmaku] decodeMessage 耗时 ${stopwatch.elapsedMilliseconds}ms messages=$messageCount chats=$chatCount",
-      );
-    }
   }
 
-  LiveMessage? unPackWebcastChatMessage(List<int> payload) {
+  void unPackWebcastChatMessage(List<int> payload) {
     var chatMessage = ChatMessage.fromBuffer(payload);
-    final spans = _extractRtfSpans(chatMessage);
-    if (spans.isEmpty) {
-      _appendTextWithEmojiFallback(spans, chatMessage.content);
+    // 醒目留言（付费留言）：携带背景气泡图和更高优先级，识别为SC
+    // （抖音不公开留言金额，price记为0）
+    if (chatMessage.hasBackgroundImageV2() ||
+        chatMessage.hasBackgroundImage()) {
+      var now = DateTime.now();
+      onMessage?.call(
+        LiveMessage(
+          type: LiveMessageType.superChat,
+          color: LiveMessageColor.white,
+          message: chatMessage.content,
+          userName: chatMessage.user.nickName,
+          data: LiveSuperChatMessage(
+            backgroundBottomColor: "#161823",
+            backgroundColor: "#FE2C55",
+            endTime: now.add(const Duration(seconds: 60)),
+            face: chatMessage.user.hasAvatarThumb()
+                ? chatMessage.user.avatarThumb.uri
+                : "",
+            message: chatMessage.content,
+            price: 0,
+            startTime: now,
+            userName: chatMessage.user.nickName,
+          ),
+        ),
+      );
+      return;
     }
-    final imageUrls = spans
-        .where((item) => item.isImage)
-        .map((item) => item.imageUrl!.trim())
-        .toSet()
-        .toList();
-    final message = _buildChatMessageText(chatMessage, spans);
-    return LiveMessage(
-      type: LiveMessageType.chat,
-      color: LiveMessageColor.white,
-      //暂不知道具体怎么转换颜色
-      // color: chatMessage.common.fullScreenTextColor.
-      //     ? LiveMessageColor.white
-      //     : LiveMessageColor.numberToColor(color),
-      message: message,
-      userName: chatMessage.user.nickName,
-      imageUrls: imageUrls.isEmpty ? null : imageUrls,
-      spans: spans.isEmpty ? null : spans,
+    onMessage?.call(
+      LiveMessage(
+        type: LiveMessageType.chat,
+        color: LiveMessageColor.white,
+        //暂不知道具体怎么转换颜色
+        // color: chatMessage.common.fullScreenTextColor.
+        //     ? LiveMessageColor.white
+        //     : LiveMessageColor.numberToColor(color),
+        message: chatMessage.content,
+        userName: chatMessage.user.nickName,
+      ),
     );
-  }
-
-  void _enqueueChatMessage(LiveMessage message) {
-    _pendingChatMessages.add(message);
-    if (_pendingChatMessages.length >= _maxChatFlushBatch) {
-      _flushChatTimer ??= Timer(Duration.zero, _flushChatMessages);
-      return;
-    }
-    _flushChatTimer ??= Timer(_chatFlushInterval, _flushChatMessages);
-  }
-
-  void _flushChatMessages() {
-    _flushChatTimer?.cancel();
-    _flushChatTimer = null;
-    if (_pendingChatMessages.isEmpty) {
-      return;
-    }
-    final batchSize = _pendingChatMessages.length > _maxChatFlushBatch
-        ? _maxChatFlushBatch
-        : _pendingChatMessages.length;
-    final batch = _pendingChatMessages.sublist(0, batchSize);
-    _pendingChatMessages.removeRange(0, batchSize);
-    for (final message in batch) {
-      onMessage?.call(message);
-    }
-    if (_pendingChatMessages.isNotEmpty) {
-      _flushChatTimer = Timer(_chatFlushInterval, _flushChatMessages);
-    }
-  }
-
-  String _buildChatMessageText(
-    ChatMessage chatMessage,
-    List<LiveMessageSpan> spans,
-  ) {
-    final content = chatMessage.content.trim();
-    if (content.isNotEmpty) {
-      return content;
-    }
-    if (spans.isEmpty) {
-      return chatMessage.content;
-    }
-    final buffer = StringBuffer();
-    for (final span in spans) {
-      if (span.isText) {
-        buffer.write(span.text);
-      }
-    }
-    return buffer.toString().trim();
-  }
-
-  List<LiveMessageSpan> _extractRtfSpans(ChatMessage chatMessage) {
-    final spans = <LiveMessageSpan>[];
-    if (!chatMessage.hasRtfContent()) {
-      return spans;
-    }
-    for (final piece in chatMessage.rtfContent.piecesList) {
-      if (piece.hasImageValue() && piece.imageValue.hasImage()) {
-        final imageUrl = _extractImageUrl(piece.imageValue.image);
-        if (imageUrl != null) {
-          spans.add(LiveMessageSpan.image(imageUrl));
-          continue;
-        }
-        final fallback = _extractImageFallbackText(piece.imageValue.image);
-        if (fallback != null) {
-          _appendTextWithEmojiFallback(spans, fallback);
-        }
-      }
-      if (piece.stringValue.trim().isNotEmpty) {
-        _appendTextWithEmojiFallback(spans, piece.stringValue);
-      }
-      if (piece.hasPatternRefValue()) {
-        final pattern = piece.patternRefValue.defaultPattern.trim();
-        if (pattern.isNotEmpty) {
-          _appendTextWithEmojiFallback(spans, pattern);
-        }
-      }
-    }
-    return spans;
-  }
-
-  void _appendTextWithEmojiFallback(List<LiveMessageSpan> spans, String text) {
-    if (text.isEmpty) {
-      return;
-    }
-    var start = 0;
-    for (final match in RegExp(r'\[[^\[\]]{1,16}\]').allMatches(text)) {
-      final token = match.group(0);
-      if (token == null) {
-        continue;
-      }
-      final asset = douyinEmojiAssets[token];
-      if (asset == null) {
-        continue;
-      }
-      if (match.start > start) {
-        spans.add(LiveMessageSpan.text(text.substring(start, match.start)));
-      }
-      spans.add(LiveMessageSpan.image(asset));
-      start = match.end;
-    }
-    if (start < text.length) {
-      spans.add(LiveMessageSpan.text(text.substring(start)));
-    }
-  }
-
-  String? _extractImageUrl(Image image) {
-    for (final url in image.urlListList) {
-      final value = url.trim();
-      if (value.startsWith('http://') || value.startsWith('https://')) {
-        return value;
-      }
-    }
-    final openWebUrl = image.openWebUrl.trim();
-    if (openWebUrl.startsWith('http://') || openWebUrl.startsWith('https://')) {
-      return openWebUrl;
-    }
-    final uri = image.uri.trim();
-    if (uri.startsWith('http://') || uri.startsWith('https://')) {
-      return uri;
-    }
-    return null;
-  }
-
-  String? _extractImageFallbackText(Image image) {
-    final alternativeText = image.content.alternativeText.trim();
-    if (alternativeText.isNotEmpty) {
-      return alternativeText;
-    }
-    final name = image.content.name.trim();
-    if (name.isNotEmpty) {
-      return name;
-    }
-    final uri = image.uri.trim();
-    if (uri.isNotEmpty) {
-      return '[$uri]';
-    }
-    return null;
   }
 
   void unPackWebcastRoomUserSeqMessage(List<int> payload) {
@@ -371,7 +211,7 @@ class DouyinDanmaku implements LiveDanmaku {
     var obj = PushFrame();
     obj.payloadType = 'ack';
     obj.logId = logId;
-    obj.payload = utf8.encode(internalExt);
+    obj.payloadType = internalExt;
     webScoketUtils?.sendMessage(obj.writeToBuffer());
   }
 
@@ -383,12 +223,8 @@ class DouyinDanmaku implements LiveDanmaku {
 
   @override
   Future stop() async {
-    _flushChatTimer?.cancel();
-    _flushChatTimer = null;
-    _pendingChatMessages.clear();
     onMessage = null;
     onClose = null;
-    onReady = null;
     webScoketUtils?.close();
   }
 }
