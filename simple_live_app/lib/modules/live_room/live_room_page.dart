@@ -23,6 +23,7 @@ import 'package:simple_live_app/widgets/settings/settings_card.dart';
 import 'package:simple_live_app/widgets/settings/settings_number.dart';
 import 'package:simple_live_app/widgets/settings/settings_switch.dart';
 import 'package:simple_live_app/widgets/superchat_card.dart';
+import 'package:simple_live_app/widgets/replay_list_sheet.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 
 class LiveRoomPage extends GetView<LiveRoomController> {
@@ -812,6 +813,30 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 controller.refreshRoom();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text("查看回放"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                if (controller.site is ReplaySite) {
+                  Get.bottomSheet(
+                    ReplayListSheet(
+                      roomId: controller.rxRoomId.value,
+                      site: controller.site as ReplaySite,
+                      onPlay: (url) {
+                        // 播放回放流
+                        controller.player.open(Media(url));
+                        controller.player.play();
+                        // 可以在这里给 controller 设置一个 isVod = true 的状态，以显示进度条
+                      },
+                    ),
+                  );
+                } else {
+                  SmartDialog.showToast("该平台暂不支持回放");
+                }
               },
             ),
             ListTile(
