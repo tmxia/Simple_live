@@ -825,17 +825,21 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                 Get.back();
                 // 核心修复：改用 site.id 判断，并做安全强转，避免混淆导致 is 判断失效
                 if (["huya", "bilibili"].contains(controller.site.id)) {
-                  Get.bottomSheet(
-                    ReplayListSheet(
-                      roomId: controller.rxRoomId.value,
-                      site: controller.site as dynamic, 
-                      onPlay: (url) {
-                        // 播放回放流
-                        controller.player.open(Media(url));
-                        controller.player.play();
-                      },
-                    ),
-                  );
+                  Future.delayed(const Duration(milliseconds: 300), () {
+                    showModalBottomSheet(
+                      context: Get.context!,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ReplayListSheet(
+                        roomId: controller.rxRoomId.value,
+                        site: controller.site as dynamic, 
+                        onPlay: (url) {
+                          controller.player.open(Media(url));
+                          controller.player.play();
+                        },
+                      ),
+                    );
+                  });
                 } else {
                   SmartDialog.showToast("该平台暂不支持回放");
                 }

@@ -33,11 +33,18 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
     });
   }
 
+  String errorMsg = "";
+
   Future<void> _loadData() async {
     if (!hasMore || !mounted) return;
-    setState(() => isLoading = true);
+    setState(() {
+      isLoading = true;
+      errorMsg = "";
+    });
     try {
-      var res = await widget.site.getReplays(roomId: widget.roomId, page: page);
+      // 动态调用，避免强转报错
+      var res = await (widget.site as dynamic).getReplays(roomId: widget.roomId, page: page);
+      if (!mounted) return;
       setState(() {
         items.addAll(res.items);
         hasMore = res.hasMore;
@@ -45,7 +52,11 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
         isLoading = false;
       });
     } catch (e) {
-      setState(() => isLoading = false);
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        errorMsg = e.toString(); // 把错误展示在界面上
+      });
     }
   }
 
@@ -98,7 +109,16 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
             child: items.isEmpty && isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : items.isEmpty
-                    ? const Center(child: Text("暂无回放"))
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Text(
+                            errorMsg.isNotEmpty ? "加载失败:\n$errorMsg" : "暂无回放记录",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      )
                     : ListView.separated(
                         controller: _scrollController,
                         padding: AppStyle.edgeInsetsA12,
