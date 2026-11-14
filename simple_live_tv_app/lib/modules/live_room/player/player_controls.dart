@@ -364,7 +364,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
     controller.fetchReplays();
     
     Utils.showSystemRightDialog(
-      width: 1000.w,
+      width: 800.w,
       child: Column(
         children: [
           AppStyle.vGap24,
