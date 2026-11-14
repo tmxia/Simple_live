@@ -168,11 +168,22 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                                 Text(format(pos), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
                                 SizedBox(width: 16.w),
                                 Expanded(
-                                  child: LinearProgressIndicator(
-                                    value: dur.inMilliseconds > 0 ? pos.inMilliseconds / dur.inMilliseconds : 0.0,
-                                    backgroundColor: Colors.white24,
-                                    valueColor: AlwaysStoppedAnimation(Theme.of(Get.context!).colorScheme.primary),
-                                    minHeight: 6.w,
+                                  child: SliderTheme(
+                                    data: SliderTheme.of(context).copyWith(
+                                      trackHeight: 4.w,
+                                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.w),
+                                      overlayShape: RoundSliderOverlayShape(overlayRadius: 16.w),
+                                      activeTrackColor: Theme.of(context).colorScheme.primary,
+                                      inactiveTrackColor: Colors.white30,
+                                      thumbColor: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    child: Slider(
+                                      value: pos.inMilliseconds.toDouble().clamp(0.0, dur.inMilliseconds.toDouble()),
+                                      max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                                      onChanged: (val) {
+                                        controller.player.seek(Duration(milliseconds: val.toInt()));
+                                      },
+                                    ),
                                   ),
                                 ),
                                 SizedBox(width: 16.w),
@@ -594,15 +605,19 @@ void showPlayerSettings(LiveRoomController controller) {
                       .cast<int, String>(),
                   value: controller.currentQuality,
                   onChanged: (e) async {
-                    final qualityName = controller.qualites[e].quality;
-                    // 强制等待写入磁盘，防止杀后台丢失
-                    await LocalStorageService.instance.setValue(
-                      LocalStorageService.kLastQuality,
-                      qualityName,
-                    );
-                    controller.currentQuality = e;
-                    controller.getPlayUrl();
                     Get.back();
+                    controller.currentQuality = e;
+                    if (controller.isVod.value) {
+                      controller.currentQualityInfo.value = controller.qualites[e].quality;
+                      controller.player.open(Media(controller.qualites[e].data["url"].toString(), httpHeaders: controller.playHeaders));
+                    } else {
+                      final qualityName = controller.qualites[e].quality;
+                      await LocalStorageService.instance.setValue(
+                        LocalStorageService.kLastQuality,
+                        qualityName,
+                      );
+                      controller.getPlayUrl();
+                    }
                   },
                 ),
               ),

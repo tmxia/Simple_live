@@ -452,9 +452,6 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   
   void playReplayItem(LivePlayQuality quality) {
-    qualites.clear();
-    qualites.add(quality);
-    currentQuality = 0;
     isVod.value = true;
     
     var qData = quality.data;
@@ -766,7 +763,13 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
         onChanged: (e) {
           Get.back();
           currentQuality = e ?? 0;
-          getPlayUrl();
+          if (isVod.value) {
+            // 直接切流，不需要重新发请求
+            currentQualityInfo.value = qualites[currentQuality].quality;
+            player.open(Media(qualites[currentQuality].data["url"].toString(), httpHeaders: playHeaders));
+          } else {
+            getPlayUrl();
+          }
         },
         child: ListView.builder(
           itemCount: qualites.length,

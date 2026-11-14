@@ -802,7 +802,13 @@ class BiliBiliSite implements LiveSite {
     try {
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
-        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 1, "qn": 0},
+        queryParameters: {
+          "bvid": videoId, 
+          "cid": cid, 
+          "fnval": 1, 
+          "qn": 80, 
+          "platform": "html5"
+        },
         header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
       );
       if (playurl["code"] == 0) {
@@ -843,7 +849,13 @@ class BiliBiliSite implements LiveSite {
 
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
-        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 1, "qn": 0},
+        queryParameters: {
+          "bvid": videoId, 
+          "cid": cid, 
+          "fnval": 1, 
+          "qn": 80, 
+          "platform": "html5"
+        },
         header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
       );
       
@@ -857,8 +869,9 @@ class BiliBiliSite implements LiveSite {
       if (playurl["data"]["durl"] != null) {
         var durls = playurl["data"]["durl"] as List;
         if (durls.isNotEmpty) {
+          String qualityStr = playurl["data"]["quality"]?.toString() ?? "1080P";
           qualities.add(LivePlayQuality(
-            quality: "默认画质",
+            quality: "画质: $qualityStr",
             data: {"url": durls[0]["url"].toString(), "bitRate": 0, "pages": vodPages, "bvid": videoId},
           ));
         }
