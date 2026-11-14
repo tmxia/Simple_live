@@ -31,7 +31,7 @@ Widget playerControls(
         controller,
       );
     }
-    return _buildSafeControls(
+    return buildControls(
       videoState.context.orientation == Orientation.portrait,
       videoState,
       controller,
