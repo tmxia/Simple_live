@@ -608,8 +608,7 @@ void showPlayerSettings(LiveRoomController controller) {
                     Get.back();
                     controller.currentQuality = e;
                     if (controller.isVod.value) {
-                      controller.currentQualityInfo.value = controller.qualites[e].quality;
-                      controller.player.open(Media(controller.qualites[e].data["url"].toString(), httpHeaders: controller.playHeaders));
+                      controller.playReplayItem(controller.qualites[e]);
                     } else {
                       final qualityName = controller.qualites[e].quality;
                       await LocalStorageService.instance.setValue(
