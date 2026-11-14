@@ -789,7 +789,6 @@ class HuyaSite implements LiveSite {
         queryParameters: {"videoId": videoId},
         header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
       );
-      
       var res = json.decode(response);
       var vMultiStreamInfo = res["data"]?["videoInfo"]?["vMultiStreamInfo"];
       
@@ -814,9 +813,8 @@ class HuyaSite implements LiveSite {
   }
 
 
-
-}}
-
+}
+}
 class HuyaUrlDataModel {
   final String url;
   final String uid;
