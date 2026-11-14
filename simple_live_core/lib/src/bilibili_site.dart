@@ -788,36 +788,7 @@ class BiliBiliSite implements LiveSite {
       return LiveReplayResult(items: [], hasMore: false);
     }
   }
-  Future<LiveReplayResult> _getOfficialRecord(String roomId) async {
-    try {
-      var res = await HttpClient.instance.getJson(
-        "https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordList",
-        queryParameters: {"room_id": roomId},
-        header: {
-          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "referer": "https://live.bilibili.com/",
-        },
-      );
-      if (res["code"] != 0 || res["data"] == null) return LiveReplayResult(items: [], hasMore: false);
-      var recordList = res["data"]["record_list"];
-      if (recordList == null || recordList is! List) return LiveReplayResult(items: [], hasMore: false);
-
-      List<LiveReplayItem> items = [];
-      for (var v in recordList) {
-        items.add(LiveReplayItem(
-          id: v["record_id"].toString(),
-          title: v["title"].toString(),
-          cover: v["cover"].toString().replaceAll("http:", "https:"),
-          author: "B站录播",
-          duration: _formatDuration(v["length"] ?? 0),
-          date: DateTime.fromMillisecondsSinceEpoch((v["create_time"] ?? 0) * 1000).toString().split(" ").first,
-        ));
-      }
-      return LiveReplayResult(items: items, hasMore: false);
-    } catch (e) {
-      return LiveReplayResult(items: [], hasMore: false);
-    }
-  }
+  
 
     String _formatDuration(int seconds) {
     int m = seconds ~/ 60;
