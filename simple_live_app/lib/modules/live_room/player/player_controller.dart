@@ -352,11 +352,19 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
     if (Platform.isAndroid || Platform.isIOS) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
           overlays: SystemUiOverlay.values);
+      
+      // 核心修复：先触发系统屏幕旋转
       setPortraitOrientation();
+      
+      // 延迟 250 毫秒等待系统物理屏幕完全旋转至竖直状态，再通知 UI 切换
+      // 这样能彻底根除横竖屏切换时 UI 被异常拉伸导致的“跳闪”现象
+      Future.delayed(const Duration(milliseconds: 250), () {
+        fullScreenState.value = false;
+      });
     } else {
       windowManager.setFullScreen(false);
+      fullScreenState.value = false;
     }
-    fullScreenState.value = false;
 
     
   }
