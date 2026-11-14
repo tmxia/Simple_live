@@ -831,23 +831,24 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                 Navigator.pop(sheetContext);
                 
                 // 直接推入独立路由页面
-                var url = await Get.to(() => ReplayPage(
-                  roomId: controller.rxRoomId.value,
-                  site: controller.site,
-                ));
-                
-                if (url != null && url is String) {
-                  Log.logPrint("[回放] 接收到完整回放数据，准备播放");
-                  controller.isVod.value = true;
-                  
-                  if (result is LivePlayQuality) {
-                    controller.playReplayItem(result);
-                  } else if (result is String) {
-                    controller.player.open(Media(result));
-                    controller.player.play();
-                  }
-                  controller.showDanmakuState.value = false;
-                }
+                var result = await Get.to(() => ReplayPage(
+                            roomId: controller.rxRoomId.value,
+                            site: controller.site,
+                          ));
+
+                          if (result != null) {
+                            Log.logPrint("[回放] 接收到完整回放数据，准备播放");
+                            controller.isVod.value = true;
+                            
+                            if (result is LivePlayQuality) {
+                              controller.playReplayItem(result);
+                            } else if (result is String) {
+                              controller.player.open(Media(result));
+                              controller.player.play();
+                            }
+                            
+                            controller.showDanmakuState.value = false;
+                          }
               },
             ),
             ListTile(
