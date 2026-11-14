@@ -146,6 +146,46 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
             ),
             child: Column(
               children: [
+                // === 新增的进度条 (仅在回放时显示) ===
+                Obx(() {
+                  if (!controller.isVod.value) return const SizedBox.shrink();
+                  return StreamBuilder<Duration>(
+                    stream: controller.player.stream.position,
+                    initialData: controller.player.state.position,
+                    builder: (context, snapshot) {
+                      return StreamBuilder<Duration>(
+                        stream: controller.player.stream.duration,
+                        initialData: controller.player.state.duration,
+                        builder: (context, durationSnapshot) {
+                          final pos = snapshot.data ?? Duration.zero;
+                          final dur = durationSnapshot.data ?? Duration.zero;
+                          String format(Duration d) => "${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
+                          
+                          return Padding(
+                            padding: EdgeInsets.only(bottom: 16.w),
+                            child: Row(
+                              children: [
+                                Text(format(pos), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
+                                SizedBox(width: 16.w),
+                                Expanded(
+                                  child: LinearProgressIndicator(
+                                    value: dur.inMilliseconds > 0 ? pos.inMilliseconds / dur.inMilliseconds : 0.0,
+                                    backgroundColor: Colors.white24,
+                                    valueColor: AlwaysStoppedAnimation(Theme.of(Get.context!).colorScheme.primary),
+                                    minHeight: 6.w,
+                                  ),
+                                ),
+                                SizedBox(width: 16.w),
+                                Text(format(dur), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
+                              ],
+                            ),
+                          );
+                        }
+                      );
+                    }
+                  );
+                }),
+
                 Row(
                   children: [
                     //清晰度
