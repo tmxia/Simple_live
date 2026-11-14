@@ -140,16 +140,31 @@ class OtherSettingsController extends BaseController {
   }
 
   void saveLogFile(LogFileModel item) async {
-    var filePath = await FilePicker.platform.saveFile(
-      allowedExtensions: ['log'],
-      type: FileType.custom,
-      fileName: item.name,
-      bytes: Uint8List(0),
-    );
-    if (filePath != null) {
-      var file = File(item.path);
-      await file.copy(filePath);
-      SmartDialog.showToast("保存成功");
+    try {
+      // 1. 将日志文件内容读取为字节数组
+      var bytes = await File(item.path).readAsBytes();
+      
+      // 2. 判断是否为移动端（移动端受 Scoped Storage 限制，必须通过 bytes 保存）
+      var inlineSave = Platform.isAndroid || Platform.isIOS || kIsWeb;
+      
+      var filePath = await FilePicker.platform.saveFile(
+        allowedExtensions: ['log'],
+        type: FileType.custom,
+        fileName: item.name,
+        bytes: inlineSave ? bytes : null,
+      );
+      
+      // 3. 桌面端直接写入，移动端已在 saveFile 中通过 bytes 写入
+      if (!inlineSave && filePath != null) {
+        await File(filePath).writeAsBytes(bytes);
+      }
+      
+      if (filePath != null) {
+        SmartDialog.showToast("保存成功");
+      }
+    } catch (e) {
+      Log.logPrint("保存日志失败: $e");
+      SmartDialog.showToast("保存失败");
     }
   }
 

@@ -299,14 +299,34 @@ Widget buildFullControls(
                   Expanded(
                   child: Obx(() {
                     if (controller.isVod.value) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                        child: VideoProgressBar(
-                          controller: videoState.widget.controller.player,
-                          showDuration: true,
-                          bufferedColor: Colors.white30,
-                          progressColor: Theme.of(context).colorScheme.primary,
-                        ),
+                      return StreamBuilder<Duration>(
+                        stream: videoState.widget.controller.player.stream.position,
+                        builder: (context, positionSnapshot) {
+                          final position = positionSnapshot.data ?? Duration.zero;
+                          return StreamBuilder<Duration>(
+                            stream: videoState.widget.controller.player.stream.duration,
+                            builder: (context, durationSnapshot) {
+                              final duration = durationSnapshot.data ?? Duration.zero;
+                              final maxVal = duration.inSeconds.toDouble() > 0 ? duration.inSeconds.toDouble() : 1.0;
+                              return SliderTheme(
+                                data: SliderTheme.of(videoState.context).copyWith(
+                                  trackHeight: 2,
+                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
+                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
+                                ),
+                                child: Slider(
+                                  value: position.inSeconds.toDouble().clamp(0.0, maxVal),
+                                  max: maxVal,
+                                  activeColor: Theme.of(videoState.context).colorScheme.primary,
+                                  inactiveColor: Colors.white30,
+                                  onChanged: (value) {
+                                    videoState.widget.controller.player.seek(Duration(seconds: value.toInt()));
+                                  },
+                                ),
+                              );
+                            },
+                          );
+                        },
                       );
                     }
                     return const Center();

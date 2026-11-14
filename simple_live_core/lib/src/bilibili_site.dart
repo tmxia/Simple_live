@@ -692,12 +692,10 @@ class BiliBiliSite implements LiveSite {
         ?.replaceAll("\\", "");
     accessId = id ?? "";
     return accessId;
-  }
-
+  
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
-      // 使用 B站直播间专门的录制记录 API，不依赖 UP 主的合集名字
       var res = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordList",
         queryParameters: {"room_id": roomId},
@@ -711,7 +709,7 @@ class BiliBiliSite implements LiveSite {
       List<LiveReplayItem> items = [];
       for (var v in recordList) {
         items.add(LiveReplayItem(
-          id: v["record_id"].toString(), // 后续用这个去请求播放地址
+          id: v["record_id"].toString(),
           title: v["title"].toString(),
           cover: v["cover"].toString().replaceAll("http:", "https:"),
           author: "B站录播",
@@ -719,7 +717,7 @@ class BiliBiliSite implements LiveSite {
           date: DateTime.fromMillisecondsSinceEpoch((v["create_time"] ?? 0) * 1000).toString().split(" ").first,
         ));
       }
-      return LiveReplayResult(items: items, hasMore: false); // 录制列表通常不翻页
+      return LiveReplayResult(items: items, hasMore: false);
     } catch (e) {
       CoreLog.error(e);
       return LiveReplayResult(items: [], hasMore: false);
@@ -729,8 +727,6 @@ class BiliBiliSite implements LiveSite {
   @override
   Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
-      // videoId 是 record_id
-      // 请求 B站录播的播放地址
       var res = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordUrl",
         queryParameters: {"record_id": videoId},
@@ -758,65 +754,6 @@ class BiliBiliSite implements LiveSite {
     int s = seconds % 60;
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
-
-  @override
-  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
-    try {
-      // videoId 传过来的是 bvid
-      // 1. 获取 cid
-      var pagelist = await HttpClient.instance.getJson(
-        "https://api.bilibili.com/x/player/pagelist",
-        queryParameters: {"bvid": videoId},
-      );
-      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) return [];
-      var cid = pagelist["data"][0]["cid"];
-
-      // 2. 获取播放地址 (fnval=16 表示包含 DASH 格式)
-      var playurl = await HttpClient.instance.getJson(
-        "https://api.bilibili.com/x/player/playurl",
-        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
-      );
-      
-      if (playurl["code"] != 0) return [];
-
-      List<LivePlayQuality> qualities = [];
-      var dash = playurl["data"]["dash"];
-      
-      if (dash != null) {
-        // 解析 DASH 视频流 (取最高画质)
-        var videoStreams = dash["video"] as List;
-        if (videoStreams.isNotEmpty) {
-          // 按带宽排序选最高
-          videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
-          var bestVideo = videoStreams.first;
-          var url = bestVideo["baseUrl"].toString();
-          
-          qualities.add(LivePlayQuality(
-            quality: "B站原画",
-            data: {"url": url, "bitRate": bestVideo["bandwidth"]},
-          ));
-        }
-      } else if (playurl["data"]["durl"] != null) {
-        // 兜底解析 MP4 格式
-        var durls = playurl["data"]["durl"] as List;
-        if (durls.isNotEmpty) {
-          qualities.add(LivePlayQuality(
-            quality: "B站默认",
-            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
-          ));
-        }
-      }
-      
-      return qualities;
-    } catch (e) {
-      CoreLog.error(e);
-      return [];
-    }
-  }
-
-  String _formatDuration(int seconds) {
-    int m = seconds ~/ 60;
-    int s = seconds % 60;
-    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
-  }
 }
+
+  
