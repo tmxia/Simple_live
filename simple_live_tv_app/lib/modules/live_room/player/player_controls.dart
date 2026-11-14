@@ -1,3 +1,4 @@
+import 'package:simple_live_core/simple_live_core.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'package:flutter/material.dart';
