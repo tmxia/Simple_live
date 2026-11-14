@@ -877,7 +877,7 @@ class BiliBiliSite implements LiveSite {
         }
       }
 
-      CoreLog.info("[B站回放] 解析到 ${qualities.length} 个播放地址");
+      CoreLog.d("[B站回放] 解析到 ${qualities.length} 个播放地址");
       return qualities;
     } catch (e) {
       CoreLog.error("[B站回放] 获取播放流异常: $e");

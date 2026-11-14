@@ -829,7 +829,7 @@ class HuyaSite implements LiveSite {
         }
       }
       
-      CoreLog.info("[虎牙回放] 成功解析到 ${qualities.length} 个播放地址");
+      CoreLog.d("[虎牙回放] 成功解析到 ${qualities.length} 个播放地址");
       return qualities;
     } catch (e) {
       CoreLog.error("[虎牙回放] 解析异常: $e");
@@ -862,6 +862,86 @@ class HuyaLineModel {
   final HuyaLineType lineType;
   int bitRate;
   final int presenterUid; // topSid = subSid = presenterUid
+
+  HuyaLineModel({
+    required this.line,
+    required this.lineType,
+    required this.flvAntiCode,
+    required this.hlsAntiCode,
+    required this.streamName,
+    required this.cdnType,
+    this.bitRate = 0,
+    required this.presenterUid,
+  });
+
+  @override
+  String toString() {
+    return json.encode({
+      "line": line,
+      "cdnType": cdnType,
+      "flvAntiCode": flvAntiCode,
+      "hlsAntiCode": hlsAntiCode,
+      "streamName": streamName,
+      "lineType": lineType.toString(),
+      "presenterUid": presenterUid,
+    });
+  }
+}
+
+class HuyaBitRateModel {
+  final String name;
+  final int bitRate;
+
+  HuyaBitRateModel({
+    required this.bitRate,
+    required this.name,
+  });
+
+  @override
+  String toString() {
+    return json.encode({
+      "name": name,
+      "bitRate": bitRate,
+    });
+  }
+}
+
+
+class HuyaUrlDataModel {
+  final String url;
+  final String uid;
+  List<HuyaLineModel> lines;
+  List<HuyaBitRateModel> bitRates;
+
+  HuyaUrlDataModel({
+    required this.bitRates,
+    required this.lines,
+    required this.url,
+    required this.uid,
+  });
+
+  @override
+  String toString() {
+    return json.encode({
+      "url": url,
+      "uid": uid,
+      "lines": lines.map((e) => e.toString()).toList(),
+      "bitRates": bitRates.map((e) => e.toString()).toList(),
+    });
+  }
+}
+
+enum HuyaLineType { flv, hls }
+
+class HuyaLineModel {
+  final String line;
+  final String cdnType;
+  final String flvAntiCode;
+  final String hlsAntiCode;
+  final String streamName;
+  final HuyaLineType lineType;
+  int bitRate;
+  final int presenterUid;
 
   HuyaLineModel({
     required this.line,
