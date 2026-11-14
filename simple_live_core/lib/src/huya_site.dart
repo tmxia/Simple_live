@@ -811,10 +811,8 @@ class HuyaSite implements LiveSite {
       return [];
     }
   }
-
-
 }
-}
+
 class HuyaUrlDataModel {
   final String url;
   final String uid;
@@ -892,4 +890,6 @@ class HuyaBitRateModel {
       "bitRate": bitRate,
     });
   }
+}
+
 }
