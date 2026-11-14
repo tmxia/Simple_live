@@ -754,10 +754,11 @@ class BiliBiliSite implements LiveSite {
     }
   }
 
-  String _formatDuration(int seconds) {
+    String _formatDuration(int seconds) {
     int m = seconds ~/ 60;
     int s = seconds % 60;
-    return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
+    return m.toString().padLeft(2, '0') + ":" + s.toString().padLeft(2, '0');
+  }:${s.toString().padLeft(2, '0')}";
   }
 }
 

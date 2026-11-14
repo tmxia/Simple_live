@@ -31,7 +31,7 @@ Widget playerControls(
         controller,
       );
     }
-    return buildControls(
+    return _buildSafeControls(
       videoState.context.orientation == Orientation.portrait,
       videoState,
       controller,
@@ -296,42 +296,7 @@ Widget buildFullControls(
                       ),
                     ),
                   ),
-                  Expanded(
-                  child: Obx(() {
-                    if (controller.isVod.value) {
-                      return StreamBuilder<Duration>(
-                        stream: videoState.widget.controller.player.stream.position,
-                        builder: (context, positionSnapshot) {
-                          final position = positionSnapshot.data ?? Duration.zero;
-                          return StreamBuilder<Duration>(
-                            stream: videoState.widget.controller.player.stream.duration,
-                            builder: (context, durationSnapshot) {
-                              final duration = durationSnapshot.data ?? Duration.zero;
-                              final maxVal = duration.inSeconds.toDouble() > 0 ? duration.inSeconds.toDouble() : 1.0;
-                              return SliderTheme(
-                                data: SliderTheme.of(videoState.context).copyWith(
-                                  trackHeight: 2,
-                                  thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 12),
-                                ),
-                                child: Slider(
-                                  value: position.inSeconds.toDouble().clamp(0.0, maxVal),
-                                  max: maxVal,
-                                  activeColor: Theme.of(videoState.context).colorScheme.primary,
-                                  inactiveColor: Colors.white30,
-                                  onChanged: (value) {
-                                    videoState.widget.controller.player.seek(Duration(seconds: value.toInt()));
-                                  },
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      );
-                    }
-                    return const Center();
-                  }),
-                ),
+                  const Expanded(child: Center()),
                 Visibility(
                   visible: !Platform.isAndroid && !Platform.isIOS,
                   child: IconButton(
