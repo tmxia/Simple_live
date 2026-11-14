@@ -706,29 +706,71 @@ class HuyaSite implements LiveSite {
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
-      // 1. 获取主播 UID
+      // 1. 获取真实 UID
       var profileInfo = await HttpClient.instance.getJson(
         "https://mp.huya.com/cache.php",
         queryParameters: {"m": "Live", "do": "profileRoom", "roomid": roomId, "showSecret": "1"},
       );
-      var uid = profileInfo["data"]["profileInfo"]["uid"].toString();
+      var uid = profileInfo["data"]?["profileInfo"]?["uid"]?.toString();
+      if (uid == null || uid.isEmpty) return LiveReplayResult(items: [], hasMore: false);
 
-      // 2. 获取回放页面
+      // 2. 请求视频列表页面
       var response = await HttpClient.instance.getText(
         "https://www.huya.com/video/u/$uid",
         queryParameters: {"tabName": "live", "pageIndex": page.toString()},
-        header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+        header: {
+          "referer": "https://www.huya.com/",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
       );
 
-      // 3. 提取 window.HNF_GLOBAL_INIT JSON
-      var match = RegExp(r'window\.HNF_GLOBAL_INIT\s*=\s*(\{[\s\S]*?\});?\s*</script>').firstMatch(response);
-      if (match == null) return LiveReplayResult(items: [], hasMore: false);
-
-      var jsonStr = match.group(1)!;
-      jsonStr = jsonStr.replaceAllMapped(RegExp(r'function[^{]*\{[^}]*\}'), (m) => 'null');
+      // 3. 使用 PureLive 的括号深度匹配法，精准提取 JSON，绝不截断！
+      var assignIndex = response.indexOf("window.HNF_GLOBAL_INIT");
+      if (assignIndex == -1) return LiveReplayResult(items: [], hasMore: false);
       
+      var startBrace = response.indexOf("{", assignIndex);
+      if (startBrace == -1) return LiveReplayResult(items: [], hasMore: false);
+
+      var depth = 0;
+      var endBrace = -1;
+      var inString = false;
+      var escape = false;
+
+      for (var i = startBrace; i < response.length; i++) {
+        var c = response[i];
+        if (escape) {
+          escape = false;
+          continue;
+        }
+        if (c == '\\') {
+          escape = true;
+          continue;
+        }
+        if (c == '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (c == "{") depth++;
+          if (c == "}") {
+            depth--;
+            if (depth == 0) {
+              endBrace = i;
+              break;
+            }
+          }
+        }
+      }
+
+      if (endBrace == -1) return LiveReplayResult(items: [], hasMore: false);
+
+      var jsonStr = response.substring(startBrace, endBrace + 1);
+      // 替换掉里面的 JS 函数，防止 json.decode 失败
+      jsonStr = jsonStr.replaceAllMapped(RegExp(r'function[^{]*\{[^}]*\}'), (m) => 'null');
+
       var data = json.decode(jsonStr);
       var videoList = data["userPageLiveRecordVideoRsp"]?["videoDataList"]?["value"];
+      
       if (videoList == null) return LiveReplayResult(items: [], hasMore: false);
 
       List<LiveReplayItem> items = [];
@@ -752,8 +794,7 @@ class HuyaSite implements LiveSite {
     }
   }
 
-  @override
-  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
       var response = await HttpClient.instance.getJson(
         "https://liveapi.huya.com/moment/getMomentContent",
