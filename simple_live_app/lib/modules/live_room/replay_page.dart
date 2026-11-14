@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:simple_live_app/app/sites.dart';
 import 'package:simple_live_app/app/app_style.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/widgets/net_image.dart';
@@ -7,7 +8,7 @@ import 'package:simple_live_core/simple_live_core.dart';
 
 class ReplayPage extends StatefulWidget {
   final String roomId;
-  final dynamic site;
+  final Site site;
 
   const ReplayPage({Key? key, required this.roomId, required this.site}) : super(key: key);
 
@@ -43,7 +44,7 @@ class _ReplayPageState extends State<ReplayPage> {
     Log.logPrint("[回放] 开始拉取数据，Room: ${widget.roomId}, Page: $page");
     
     try {
-      var res = await widget.site.getReplays(roomId: widget.roomId, page: page);
+      var res = await widget.site.liveSite.getReplays(roomId: widget.roomId, page: page);
       Log.logPrint("[回放] 拉取成功，数据量: ${res.items.length}");
       if (!mounted) return;
       setState(() {
@@ -70,7 +71,7 @@ class _ReplayPageState extends State<ReplayPage> {
     );
 
     try {
-      var qualities = await widget.site.getReplayQualities(videoId: item.id);
+      var qualities = await widget.site.liveSite.getReplayQualities(videoId: item.id);
       if (mounted) Navigator.of(context).pop(); // 关闭 Loading
       
       if (qualities.isNotEmpty) {
