@@ -676,45 +676,81 @@ class HuyaSite implements LiveSite {
         queryParameters: {"videoId": videoId},
         header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
       );
-      
+
       var res = json.decode(response);
       if (res["status"] != 200 && res["status"] != 0 && res["status"] != null) {
          CoreLog.e("[回放] 虎牙接口拒绝返回 | status: ${res["status"]}", StackTrace.current);
       }
 
-      var videoInfo = res["data"]?["videoInfo"];
-      var vMultiStreamInfo = videoInfo?["vMultiStreamInfo"];
-      
-      // 虎牙有时将回放数据放在另一层，做个兜底查找
-      if (vMultiStreamInfo == null) {
-        vMultiStreamInfo = res["data"]?["videoData"]?["vMultiStreamInfo"];
+      var data = res["data"];
+      if (data == null) return [];
+
+      // 核心修复：万能递归查找流列表
+      List? findStreamList(dynamic obj) {
+        if (obj is Map) {
+          for (var key in obj.keys) {
+            if (key == "vMultiStreamInfo" || key == "streams" || key == "list" || key == "definitions" || key == "videoInfo") {
+              var val = obj[key];
+              if (val is List && val.isNotEmpty && val[0] is Map && 
+                 (val[0].containsKey("sUrl") || val[0].containsKey("sStreamName") || val[0].containsKey("url") || val[0].containsKey("sFlvUrl"))) {
+                return val;
+              }
+            }
+            var result = findStreamList(obj[key]);
+            if (result != null) return result;
+          }
+        } else if (obj is List) {
+          for (var item in obj) {
+            var result = findStreamList(item);
+            if (result != null) return result;
+          }
+        }
+        return null;
       }
-      
-      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) {
-         CoreLog.e("[回放] 虎牙找不到 vMultiStreamInfo 节点", StackTrace.current);
+
+      var vMultiStreamInfo = findStreamList(data);
+
+      if (vMultiStreamInfo == null) {
+         CoreLog.e("[回放] 虎牙找不到任何流节点", StackTrace.current);
          return [];
       }
 
       List<LivePlayQuality> qualities = [];
       for (var item in vMultiStreamInfo) {
-        String? url = item["sUrl"]?.toString() ?? item["sStreamName"]?.toString();
+        String? url = item["sUrl"]?.toString() ?? item["url"]?.toString();
+        
+        if (url == null || url.isEmpty) {
+          String sFlvUrl = item["sFlvUrl"]?.toString() ?? "";
+          String sStreamName = item["sStreamName"]?.toString() ?? "";
+          String sFlvUrlSuffix = item["sFlvUrlSuffix"]?.toString() ?? "";
+          
+          if (sFlvUrl.isNotEmpty && sStreamName.isNotEmpty) {
+            String stream = sStreamName.endsWith(".flv") ? sStreamName : "$sStreamName.flv";
+            url = "$sFlvUrl$stream$sFlvUrlSuffix";
+          } else if (sStreamName.isNotEmpty) {
+            url = sStreamName.startsWith("http") ? sStreamName : "https://al.flv.huya.com/src/$sStreamName.flv";
+          }
+        }
+
         if (url != null && url.isNotEmpty) {
-          if (!url.startsWith("http")) url = "https://al.flv.huya.com/$url";
+          if (!url.startsWith("http")) {
+            url = "https://al.flv.huya.com/$url";
+          }
           qualities.add(LivePlayQuality(
-            quality: item["sDisplayName"]?.toString() ?? "原画",
-            data: {"url": url, "bitRate": item["iBitRate"] ?? 0},
+            quality: item["sDisplayName"]?.toString() ?? item["name"]?.toString() ?? "原画",
+            data: {"url": url, "bitRate": item["iBitRate"] ?? item["bitRate"] ?? 0},
           ));
         }
       }
+      
       CoreLog.d("[回放] 虎牙解析成功 | 共 ${qualities.length} 个清晰度");
       return qualities;
-    } catch (e) {
-      CoreLog.e("[回放] 虎牙解析异常 | $e", StackTrace.current);
+    } catch (e, stack) {
+      CoreLog.e("[回放] 虎牙解析异常 | $e", stack);
       return [];
     }
   }
 }
-
 
 class HuyaUrlDataModel {
   final String url;
