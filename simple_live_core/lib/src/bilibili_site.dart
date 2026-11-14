@@ -796,6 +796,10 @@ class BiliBiliSite implements LiveSite {
       var res = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordList",
         queryParameters: {"room_id": roomId},
+        header: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "referer": "https://live.bilibili.com/",
+        },
       );
       if (res["code"] != 0 || res["data"] == null) return LiveReplayResult(items: [], hasMore: false);
       var recordList = res["data"]["record_list"];

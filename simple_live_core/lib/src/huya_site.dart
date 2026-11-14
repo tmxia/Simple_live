@@ -706,10 +706,16 @@ class HuyaSite implements LiveSite {
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
-      var profileInfo = await HttpClient.instance.getJson(
+      // 强制使用 getText + json.decode，并带上伪装 Headers，防止虎牙返回奇怪格式
+      var profileText = await HttpClient.instance.getText(
         "https://mp.huya.com/cache.php",
         queryParameters: {"m": "Live", "do": "profileRoom", "roomid": roomId, "showSecret": "1"},
+        header: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "referer": "https://www.huya.com/",
+        },
       );
+      var profileInfo = json.decode(profileText);
       var uid = profileInfo["data"]?["profileInfo"]?["uid"]?.toString();
       if (uid == null || uid.isEmpty) return LiveReplayResult(items: [], hasMore: false);
 
