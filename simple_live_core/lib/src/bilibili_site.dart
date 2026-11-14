@@ -701,7 +701,6 @@ class BiliBiliSite implements LiveSite {
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
-      // 1. 获取真实房间号和主播 Mid
       var roomInit = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/room/v1/Room/room_init",
         queryParameters: {"id": roomId},
@@ -716,7 +715,7 @@ class BiliBiliSite implements LiveSite {
       if (userInfo["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
       var mid = userInfo["data"]["info"]["uid"].toString();
 
-      // 2. 获取合集/系列列表
+      // 与 PureLive 一致的 API：获取 UP 主合集/系列
       var collectionsRes = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/polymer/web-space/seasons_series_list",
         queryParameters: {"mid": mid, "page_num": page, "page_size": 20},
@@ -727,7 +726,7 @@ class BiliBiliSite implements LiveSite {
       var lists = collectionsRes["data"]["items_lists"];
       if (lists == null) return LiveReplayResult(items: [], hasMore: false);
 
-      // 3. 筛选包含直播回放的合集
+      // 完美复刻 PureLive 的正则匹配
       var replayRegex = RegExp(r'直播[\s·・_-]*(?:回放|回看|录像|录播)|live[\s_-]*(?:replay|archive|vod)', caseSensitive: false);
       var targetCollection = null;
       var isSeason = false;
@@ -740,7 +739,6 @@ class BiliBiliSite implements LiveSite {
           break;
         }
       }
-      
       if (targetCollection == null) {
         for (var item in (lists["series_list"] ?? [])) {
           var meta = item["meta"];
@@ -752,9 +750,11 @@ class BiliBiliSite implements LiveSite {
         }
       }
 
-      if (targetCollection == null) return LiveReplayResult(items: [], hasMore: false);
+      if (targetCollection == null) {
+        // 如果是官方赛事直播间（没有合集），尝试通过官方录制 API 获取
+        return await _getOfficialRecord(roomId);
+      }
 
-      // 4. 获取合集下的视频列表
       var collectionId = isSeason ? targetCollection["season_id"] : targetCollection["series_id"];
       var archivesUrl = isSeason 
           ? "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list"
@@ -771,7 +771,6 @@ class BiliBiliSite implements LiveSite {
       );
 
       if (archivesRes["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
-
       var archives = archivesRes["data"]["archives"] ?? [];
       List<LiveReplayItem> items = [];
       
@@ -785,7 +784,6 @@ class BiliBiliSite implements LiveSite {
           date: DateTime.fromMillisecondsSinceEpoch((v["pubdate"] ?? 0) * 1000).toString().split(" ").first,
         ));
       }
-
       return LiveReplayResult(items: items, hasMore: items.length >= 20);
     } catch (e) {
       CoreLog.error(e);
@@ -793,58 +791,34 @@ class BiliBiliSite implements LiveSite {
     }
   }
 
-    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+  Future<LiveReplayResult> _getOfficialRecord(String roomId) async {
     try {
-      // videoId 传过来的是 bvid
-      var pagelist = await HttpClient.instance.getJson(
-        "https://api.bilibili.com/x/player/pagelist",
-        queryParameters: {"bvid": videoId},
-        header: {"referer": "https://www.bilibili.com/"},
+      var res = await HttpClient.instance.getJson(
+        "https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordList",
+        queryParameters: {"room_id": roomId},
       );
-      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) return [];
-      var cid = pagelist["data"][0]["cid"];
+      if (res["code"] != 0 || res["data"] == null) return LiveReplayResult(items: [], hasMore: false);
+      var recordList = res["data"]["record_list"];
+      if (recordList == null || recordList is! List) return LiveReplayResult(items: [], hasMore: false);
 
-      var playurl = await HttpClient.instance.getJson(
-        "https://api.bilibili.com/x/player/playurl",
-        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
-        header: {"referer": "https://www.bilibili.com/"},
-      );
-      
-      if (playurl["code"] != 0) return [];
-
-      List<LivePlayQuality> qualities = [];
-      var dash = playurl["data"]["dash"];
-      
-      if (dash != null) {
-        var videoStreams = dash["video"] as List;
-        if (videoStreams.isNotEmpty) {
-          videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
-          var bestVideo = videoStreams.first;
-          var url = bestVideo["baseUrl"].toString();
-          
-          qualities.add(LivePlayQuality(
-            quality: "B站原画",
-            data: {"url": url, "bitRate": bestVideo["bandwidth"]},
-          ));
-        }
-      } else if (playurl["data"]["durl"] != null) {
-        var durls = playurl["data"]["durl"] as List;
-        if (durls.isNotEmpty) {
-          qualities.add(LivePlayQuality(
-            quality: "B站默认",
-            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
-          ));
-        }
+      List<LiveReplayItem> items = [];
+      for (var v in recordList) {
+        items.add(LiveReplayItem(
+          id: v["record_id"].toString(),
+          title: v["title"].toString(),
+          cover: v["cover"].toString().replaceAll("http:", "https:"),
+          author: "B站录播",
+          duration: _formatDuration(v["length"] ?? 0),
+          date: DateTime.fromMillisecondsSinceEpoch((v["create_time"] ?? 0) * 1000).toString().split(" ").first,
+        ));
       }
-      
-      return qualities;
+      return LiveReplayResult(items: items, hasMore: false);
     } catch (e) {
-      CoreLog.error(e);
-      return [];
+      return LiveReplayResult(items: [], hasMore: false);
     }
   }
 
-    String _formatDuration(int seconds) {
+  String _formatDuration(int seconds) {
     int m = seconds ~/ 60;
     int s = seconds % 60;
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
