@@ -693,6 +693,11 @@ class BiliBiliSite implements LiveSite {
     accessId = id ?? "";
     return accessId;
   
+  
+  }
+
+  
+  
   @override
   Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
@@ -753,6 +758,10 @@ class BiliBiliSite implements LiveSite {
     int m = seconds ~/ 60;
     int s = seconds % 60;
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
+  }
+}
+
+  :${s.toString().padLeft(2, '0')}";
   }
 }
 
