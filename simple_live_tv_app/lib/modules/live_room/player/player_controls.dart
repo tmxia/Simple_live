@@ -30,19 +30,15 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
       Positioned.fill(
         child: GestureDetector(
           onTap: () {
-            // 核心修复：手机端触摸切换底栏显示/隐藏
+            // 手机端触摸切换底栏显示/隐藏
             if (controller.showControlsState.value) {
               controller.hideControls();
-              // 隐藏时释放焦点
               controller.focusNode.requestFocus();
             } else {
               controller.showControls();
-              // 显示时，让“观看回放”按钮获得焦点，方便遥控器直接按 OK
-              Future.delayed(const Duration(milliseconds: 150), () {
-                // 通过全局 Key 或特定的焦点名称让第一个按钮选中
-                if (controller.replayFocusNode.hasFocus == false) {
-                  controller.replayFocusNode.requestFocus();
-                }
+              // 核心修复：使用 addPostFrameCallback 确保组件渲染完成后，立刻让“观看回放”获得焦点
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                controller.replayFocusNode.requestFocus();
               });
             }
           },
