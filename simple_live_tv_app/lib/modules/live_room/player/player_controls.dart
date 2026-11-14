@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
@@ -22,24 +23,34 @@ Widget playerControls(VideoState videoState, LiveRoomController controller) {
 }
 
 Widget buildControls(VideoState videoState, LiveRoomController controller) {
-  return Stack(
-    children: [
+  return Focus(
+    autofocus: true,
+    // 物理拦截全局上下方向键
+    onKeyEvent: (node, event) {
+      if (controller.showControlsState.value) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp || 
+              event.logicalKey == LogicalKeyboardKey.arrowDown) {
+            return KeyEventResult.handled; // 吃掉上下键，不让全局生效
+          }
+        }
+      }
+      return KeyEventResult.ignored;
+    },
+    child: Stack(
+      children: [
       Container(),
       buildDanmuView(videoState, controller),
       
       Positioned.fill(
         child: GestureDetector(
           onTap: () {
-            // 手机端触摸切换底栏显示/隐藏
             if (controller.showControlsState.value) {
-              controller.hideControls();
-              controller.focusNode.requestFocus();
+              // 如果底栏已经出来，按 OK 键不要关闭底栏，而是强行让“观看回放”获得焦点
+              controller.replayFocusNode.requestFocus();
             } else {
+              // 底栏未显示时，正常呼出
               controller.showControls();
-              // 核心修复：使用 addPostFrameCallback 确保组件渲染完成后，立刻让“观看回放”获得焦点
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                controller.replayFocusNode.requestFocus();
-              });
             }
           },
         ),
@@ -130,6 +141,12 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
               ? 0
               : -300.w,
           duration: const Duration(milliseconds: 200),
+          // 核心修复：动画结束回调。当底栏滑出完毕，立刻抢占焦点！
+          onEnd: () {
+            if (controller.showControlsState.value && !controller.lockControlsState.value) {
+              controller.replayFocusNode.requestFocus();
+            }
+          },
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
@@ -301,6 +318,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
         ),
       ),
     ],
+  ),
   );
 }
 
