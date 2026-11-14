@@ -796,6 +796,48 @@ class HuyaSite implements LiveSite {
 
     Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
+      var response = await HttpClient.instance.getText(
+        "https://liveapi.huya.com/moment/getMomentContent",
+        queryParameters: {"videoId": videoId},
+        header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
+      );
+      
+      var res = json.decode(response);
+      var vMultiStreamInfo = res["data"]?["videoInfo"]?["vMultiStreamInfo"];
+      
+      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) {
+        CoreLog.error("[虎牙回放] 找不到 vMultiStreamInfo 字段，请检查接口结构");
+        return [];
+      }
+
+      List<LivePlayQuality> qualities = [];
+      for (var item in vMultiStreamInfo) {
+        // 虎牙的回放流真实字段可能是 sStreamName 也可能是 sUrl，我们两个都抓
+        String? url = item["sUrl"]?.toString() ?? item["sStreamName"]?.toString();
+        
+        if (url != null && url.isNotEmpty) {
+          // 如果返回的不是绝对路径，强行拼上虎牙的 CDN 前缀
+          if (!url.startsWith("http")) {
+            url = "https://al.flv.huya.com/$url";
+          }
+          
+          qualities.add(LivePlayQuality(
+            quality: item["sDisplayName"]?.toString() ?? "原画",
+            data: {"url": url, "bitRate": item["iBitRate"] ?? 0},
+          ));
+        }
+      }
+      
+      CoreLog.logPrint("[虎牙回放] 解析到 ${qualities.length} 个播放地址");
+      return qualities;
+    } catch (e) {
+      CoreLog.error("[虎牙回放] 解析异常: $e");
+      return [];
+    }
+  }
+
+  }) async {
+    try {
       var response = await HttpClient.instance.getJson(
         "https://liveapi.huya.com/moment/getMomentContent",
         queryParameters: {"videoId": videoId},
