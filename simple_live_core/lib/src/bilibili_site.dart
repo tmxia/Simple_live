@@ -711,11 +711,12 @@ class BiliBiliSite implements LiveSite {
       var userInfo = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/live_user/v1/UserInfo/get_anchor_in_room",
         queryParameters: {"roomid": realRoomId},
+        header: {"referer": "https://live.bilibili.com/"},
       );
       if (userInfo["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
       var mid = userInfo["data"]["info"]["uid"].toString();
 
-      // 与 PureLive 一致的 API：获取 UP 主合集/系列
+      // 获取合集
       var collectionsRes = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/polymer/web-space/seasons_series_list",
         queryParameters: {"mid": mid, "page_num": page, "page_size": 20},
@@ -726,8 +727,8 @@ class BiliBiliSite implements LiveSite {
       var lists = collectionsRes["data"]["items_lists"];
       if (lists == null) return LiveReplayResult(items: [], hasMore: false);
 
-      // 完美复刻 PureLive 的正则匹配
-      var replayRegex = RegExp(r'直播[\s·・_-]*(?:回放|回看|录像|录播)|live[\s_-]*(?:replay|archive|vod)', caseSensitive: false);
+      // 核心修复：完全使用 PureLive 的正则，并兼容“赛事”
+      var replayRegex = RegExp(r'直播|赛事|比赛|回放|录像|录播|archive|replay|vod', caseSensitive: false);
       var targetCollection = null;
       var isSeason = false;
 
@@ -751,7 +752,6 @@ class BiliBiliSite implements LiveSite {
       }
 
       if (targetCollection == null) {
-        // 如果是官方赛事直播间（没有合集），尝试通过官方录制 API 获取
         return await _getOfficialRecord(roomId);
       }
 
@@ -822,7 +822,7 @@ class BiliBiliSite implements LiveSite {
     }
   }
 
-  String _formatDuration(int seconds) {
+    String _formatDuration(int seconds) {
     int m = seconds ~/ 60;
     int s = seconds % 60;
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
