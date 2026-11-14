@@ -505,47 +505,81 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
 
   void showPlaylistSheet(LiveRoomController controller) {
     if (controller.vodPages.isEmpty) return;
-    Get.bottomSheet(
-      backgroundColor: Colors.transparent,
-      Container(
-        height: Get.height * 0.6,
-        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("视频选集", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close)),
-                ],
+
+    // 构建视频选集列表 UI
+    Widget buildVodList() {
+      return Obx(() => ListView.builder(
+        shrinkWrap: true,
+        itemCount: controller.vodPages.length,
+        itemBuilder: (_, i) {
+          var title = controller.vodPages[i]["title"].toString();
+          var isPlaying = controller.vodCurrentIndex.value == i;
+          
+          // 获取当前主题色
+          final primaryColor = Get.theme.colorScheme.primary;
+
+          return ListTile(
+            selected: isPlaying,
+            selectedTileColor: primaryColor.withAlpha(20),
+            title: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal,
+                color: isPlaying ? primaryColor : null,
               ),
             ),
-            const Divider(height: 1),
-            Expanded(
-              child: Obx(() => ListView.builder(
-                itemCount: controller.vodPages.length,
-                itemBuilder: (_, i) {
-                  var title = controller.vodPages[i]["title"].toString();
-                  var isPlaying = controller.vodCurrentIndex.value == i;
-                  return ListTile(
-                    selected: isPlaying,
-                    selectedTileColor: Get.theme.colorScheme.primary.withAlpha(20),
-                    title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal, color: isPlaying ? Get.theme.colorScheme.primary : null)),
-                    trailing: isPlaying ? Icon(Icons.play_arrow, color: Get.theme.colorScheme.primary, size: 20) : null,
-                    onTap: () {
-                      Get.back();
-                      controller.changeVodPage(i);
-                    }
-                  );
-                }
-              )),
-            ),
-          ],
+            trailing: isPlaying ? Icon(Icons.play_arrow, color: primaryColor, size: 20) : null,
+            onTap: () {
+              if (controller.isVertical.value) {
+                Get.back();
+              } else {
+                Utils.hideRightDialog();
+              }
+              controller.changeVodPage(i);
+            }
+          );
+        }
+      ));
+    }
+
+    if (controller.isVertical.value) {
+      // 竖屏：底部弹出
+      Get.bottomSheet(
+        backgroundColor: Colors.transparent,
+        Container(
+          height: Get.height * 0.6,
+          decoration: const BoxDecoration(
+            color: Colors.white, 
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20))
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("视频选集", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close)),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(child: buildVodList()),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      // 横屏：右侧弹出
+      Utils.showRightDialog(
+        title: "视频选集",
+        useSystem: true,
+        child: buildVodList(),
+      );
+    }
   }
 
   Widget buildVodPlaylistCapsule(LiveRoomController controller) {
