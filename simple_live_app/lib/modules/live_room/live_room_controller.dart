@@ -496,12 +496,26 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   
   Future<void> changeVodPage(int index) async {
     if (!isVod.value || index < 0 || index >= vodPages.length) return;
+    if (vodCurrentIndex.value == index) return;
+    
     var targetCid = vodPages[index]["cid"].toString();
+
+    // 如果是物理切片，直接走 jump
+    if (targetCid.startsWith("durl_")) {
+      vodCurrentIndex.value = index;
+      await player.jump(index);
+      return;
+    }
+
     errorMsg.value = "正在加载第 ${index + 1} 集...";
+    SmartDialog.showLoading(msg: "正在加载选集...");
     
     try {
-      if (site is BiliBiliSite) {
-        var url = await (site as BiliBiliSite).getReplayUrlByCid(currentReplayBvid, targetCid);
+      // 核心修复：site 是 Site 实例，它的 liveSite 才是 BiliBiliSite
+      if (site.liveSite is BiliBiliSite) {
+        var url = await (site.liveSite as BiliBiliSite).getReplayUrlByCid(currentReplayBvid, targetCid);
+        
+        SmartDialog.dismiss(status: SmartStatus.loading);
         if (url.isNotEmpty) {
           playUrls.clear();
           playUrls.add(url);
@@ -512,10 +526,16 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
           await player.open(Playlist([media]));
           errorMsg.value = "";
         } else {
+          SmartDialog.showToast("获取播放地址失败");
           errorMsg.value = "获取播放地址失败";
         }
+      } else {
+        SmartDialog.dismiss(status: SmartStatus.loading);
+        SmartDialog.showToast("非B站平台，暂不支持选集");
       }
     } catch (e) {
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("加载失败: $e");
       errorMsg.value = "加载失败";
     }
   }
