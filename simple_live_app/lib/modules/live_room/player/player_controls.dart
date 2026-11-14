@@ -506,7 +506,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   void showPlaylistSheet(LiveRoomController controller) {
     if (controller.vodPages.isEmpty) return;
 
-    // 构建视频选集列表 UI
+    // 构建视频选集列表 UI（通用部分）
     Widget buildVodList() {
       return Obx(() => ListView.builder(
         shrinkWrap: true,
@@ -532,6 +532,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
             ),
             trailing: isPlaying ? Icon(Icons.play_arrow, color: primaryColor, size: 20) : null,
             onTap: () {
+              // 根据当前横竖屏状态，采用不同的关闭方式
               if (controller.isVertical.value) {
                 Get.back();
               } else {
@@ -544,8 +545,9 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
       ));
     }
 
+    // 核心修复：根据横竖屏状态，决定弹窗样式
     if (controller.isVertical.value) {
-      // 竖屏：底部弹出
+      // ===== 竖屏：保持原有的底部弹窗 =====
       Get.bottomSheet(
         backgroundColor: Colors.transparent,
         Container(
@@ -573,7 +575,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
         ),
       );
     } else {
-      // 横屏：右侧弹出
+      // ===== 横屏：采用右侧面板 =====
       Utils.showRightDialog(
         title: "视频选集",
         useSystem: true,
