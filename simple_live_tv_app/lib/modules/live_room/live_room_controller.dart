@@ -32,7 +32,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     liveDanmaku = site.liveSite.getDanmaku();
   }
   final FocusNode focusNode = FocusNode();
-  final FocusNode replayFocusNode = FocusNode();
+  final AppFocusNode replayFocusNode = AppFocusNode();
   late Rx<Site> rxSite;
   Site get site => rxSite.value;
   late Rx<String> rxRoomId;
