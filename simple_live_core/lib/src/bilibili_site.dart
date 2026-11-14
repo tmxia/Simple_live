@@ -823,4 +823,59 @@ class BiliBiliSite implements LiveSite {
     int s = seconds % 60;
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
+
+  @override
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    try {
+      // 1. 用 bvid 获取 cid
+      var pagelist = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/player/pagelist",
+        queryParameters: {"bvid": videoId},
+        header: {"referer": "https://www.bilibili.com/"},
+      );
+      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) return [];
+      var cid = pagelist["data"][0]["cid"];
+
+      // 2. 用 bvid 和 cid 获取真实视频流 (fnval=16 表示请求 DASH 格式)
+      var playurl = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/player/playurl",
+        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
+        header: {"referer": "https://www.bilibili.com/"},
+      );
+      
+      if (playurl["code"] != 0) return [];
+
+      List<LivePlayQuality> qualities = [];
+      var dash = playurl["data"]["dash"];
+      
+      if (dash != null) {
+        // 解析 DASH 视频流 (按带宽降序排，取最高画质)
+        var videoStreams = dash["video"] as List;
+        if (videoStreams.isNotEmpty) {
+          videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
+          var bestVideo = videoStreams.first;
+          var url = bestVideo["baseUrl"].toString();
+          
+          qualities.add(LivePlayQuality(
+            quality: "B站原画",
+            data: {"url": url, "bitRate": bestVideo["bandwidth"]},
+          ));
+        }
+      } else if (playurl["data"]["durl"] != null) {
+        // 兜底解析 MP4 格式
+        var durls = playurl["data"]["durl"] as List;
+        if (durls.isNotEmpty) {
+          qualities.add(LivePlayQuality(
+            quality: "B站默认",
+            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
+          ));
+        }
+      }
+      
+      return qualities;
+    } catch (e) {
+      CoreLog.error(e);
+      return [];
+    }
+  }
 }
