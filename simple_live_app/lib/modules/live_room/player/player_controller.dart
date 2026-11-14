@@ -109,6 +109,9 @@ mixin PlayerStateMixin on PlayerMixin {
   /// 是否显示弹幕
   RxBool showDanmakuState = false.obs;
 
+  /// 是否为点播(回放)模式
+  RxBool isVod = false.obs;
+
   /// 是否显示控制器
   RxBool showControlsState = false.obs;
 

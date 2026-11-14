@@ -296,7 +296,22 @@ Widget buildFullControls(
                       ),
                     ),
                   ),
-                  const Expanded(child: Center()),
+                  Expanded(
+                  child: Obx(() {
+                    if (controller.isVod.value) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: VideoProgressBar(
+                          controller: videoState.widget.controller.player,
+                          showDuration: true,
+                          bufferedColor: Colors.white30,
+                          progressColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    }
+                    return const Center();
+                  }),
+                ),
                   Visibility(
                     visible: !Platform.isAndroid && !Platform.isIOS,
                     child: IconButton(
@@ -553,7 +568,22 @@ Widget buildControls(
                     ),
                   ),
                 ),
-                const Expanded(child: Center()),
+                Expanded(
+                  child: Obx(() {
+                    if (controller.isVod.value) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: VideoProgressBar(
+                          controller: videoState.widget.controller.player,
+                          showDuration: true,
+                          bufferedColor: Colors.white30,
+                          progressColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      );
+                    }
+                    return const Center();
+                  }),
+                ),
                 Visibility(
                   visible: !Platform.isAndroid && !Platform.isIOS,
                   child: IconButton(

@@ -816,6 +816,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               title: const Text("刷新"),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
+                controller.isVod.value = false;
                 controller.refreshRoom();
               },
             ),
@@ -837,8 +838,14 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                 
                 if (url != null && url is String) {
                   Log.logPrint("[回放] 接收到回放地址，准备播放: $url");
+                  
+                  // 开启 VOD 模式，显示进度条
+                  controller.isVod.value = true;
+                  
                   controller.player.open(Media(url));
                   controller.player.play();
+                  // 默认回放时关闭弹幕以防遮挡
+                  controller.showDanmakuState.value = false;
                 }
               },
             ),
