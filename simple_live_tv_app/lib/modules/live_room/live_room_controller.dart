@@ -62,6 +62,14 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   var isBackground = false;
 
   var datetime = "00:00".obs;
+  
+  // 回放相关
+  RxBool isVod = false.obs;
+  RxList<Map<String, dynamic>> vodPages = <Map<String, dynamic>>[].obs;
+  var vodCurrentIndex = 0.obs;
+  String currentReplayBvid = '';
+  RxList<LiveReplayItem> replayList = <LiveReplayItem>[].obs;
+  var replayLoading = false.obs;
 
   void initTimer() {
     Timer.periodic(const Duration(seconds: 1), (timer) {
@@ -260,6 +268,89 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     mediaErrorRetryCount = 0;
     setPlayer();
+  }
+
+  
+  Future<void> fetchReplays() async {
+    if (replayLoading.value) return;
+    replayLoading.value = true;
+    replayList.clear();
+    try {
+      var res = await site.liveSite.getReplays(roomId: roomId, page: 1);
+      replayList.assignAll(res.items);
+    } catch (e) {
+      SmartDialog.showToast("获取回放列表失败");
+    } finally {
+      replayLoading.value = false;
+    }
+  }
+
+  void playReplay(LiveReplayItem item) async {
+    SmartDialog.showLoading(msg: "正在获取流...");
+    try {
+      var qualities = await site.liveSite.getReplayQualities(videoId: item.id);
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      if (qualities.isNotEmpty) {
+        playReplayItem(qualities.first);
+      } else {
+        SmartDialog.showToast("无法获取地址");
+      }
+    } catch (e) {
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("播放失败: $e");
+    }
+  }
+
+  void playReplayItem(LivePlayQuality quality) {
+    qualites.clear();
+    qualites.add(quality);
+    currentQuality = 0;
+    isVod.value = true;
+    
+    var qData = quality.data;
+    if (qData["pages"] != null) {
+      vodPages.assignAll((qData["pages"] as List).map((e) => Map<String, dynamic>.from(e)).toList());
+    }
+    if (qData["bvid"] != null) {
+      currentReplayBvid = qData["bvid"].toString();
+    }
+
+    String url = qData["url"].toString();
+    playUrls.clear();
+    playUrls.add(url);
+    
+    currentLineIndex = 0;
+    currentLineInfo.value = "默认线路";
+    setPlayer(); 
+  }
+
+  Future<void> changeVodPage(int index) async {
+    if (!isVod.value || index < 0 || index >= vodPages.length) return;
+    var targetCid = vodPages[index]["cid"].toString();
+    SmartDialog.showLoading(msg: "加载选集...");
+    
+    try {
+      if (site.liveSite is BiliBiliSite) {
+        var url = await (site.liveSite as BiliBiliSite).getReplayUrlByCid(currentReplayBvid, targetCid);
+        if (url.isNotEmpty) {
+          playUrls.clear();
+          playUrls.add(url);
+          currentLineIndex = 0;
+          vodCurrentIndex.value = index;
+          await setPlayer();
+          SmartDialog.dismiss(status: SmartStatus.loading);
+        } else {
+          SmartDialog.dismiss(status: SmartStatus.loading);
+          SmartDialog.showToast("获取地址失败");
+        }
+      } else {
+        SmartDialog.dismiss(status: SmartStatus.loading);
+        SmartDialog.showToast("暂不支持选集");
+      }
+    } catch (e) {
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("加载失败");
+    }
   }
 
   void setPlayer() async {

@@ -170,6 +170,27 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    // === 1. 观看回放 (首位置) ===
+                    HighlightButton(
+                      focusNode: AppFocusNode(),
+                      iconData: Icons.history,
+                      text: "观看回放",
+                      onTap: () => showReplayDialog(controller),
+                    ),
+                    
+                    // === 2. 选集胶囊 (自适应显示) ===
+                    if (controller.isVod.value && controller.vodPages.length > 1) ...[
+                      AppStyle.hGap32,
+                      HighlightButton(
+                        focusNode: AppFocusNode(),
+                        iconData: Icons.playlist_play,
+                        text: "选集 ${controller.vodCurrentIndex.value + 1}/${controller.vodPages.length}",
+                        onTap: () => showVodListDialog(controller),
+                      ),
+                    ],
+                    AppStyle.hGap32,
+
+                    // === 3. 原有功能 (右移) ===
                     Icon(
                       Icons.arrow_circle_up_rounded,
                       color: Colors.white,
@@ -321,6 +342,110 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
 //     ),
 //   );
 // }
+
+
+  void showReplayDialog(LiveRoomController controller) {
+    controller.focusNode.unfocus();
+    controller.fetchReplays();
+    
+    Utils.showSystemRightDialog(
+      width: 1000.w,
+      child: Column(
+        children: [
+          AppStyle.vGap24,
+          Row(
+            children: [
+              AppStyle.hGap48,
+              HighlightButton(
+                focusNode: AppFocusNode(),
+                iconData: Icons.arrow_back,
+                text: "返回",
+                autofocus: true,
+                onTap: () => Get.back(),
+              ),
+              AppStyle.hGap32,
+              Text("历史回放", style: AppStyle.titleStyleWhite.copyWith(fontSize: 36.w, fontWeight: FontWeight.bold)),
+              AppStyle.hGap24,
+              const Spacer(),
+            ],
+          ),
+          Expanded(
+            child: Obx(() {
+              if (controller.replayLoading.value) return const Center(child: CircularProgressIndicator());
+              if (controller.replayList.isEmpty) return const AppEmptyWidget(text: "暂无回放");
+              return ListView.separated(
+                padding: AppStyle.edgeInsetsA48,
+                itemCount: controller.replayList.length,
+                separatorBuilder: (_, __) => AppStyle.vGap24,
+                itemBuilder: (_, i) {
+                  var item = controller.replayList[i];
+                  return ReplayCard(
+                    item: item,
+                    onTap: () {
+                      Get.back();
+                      controller.playReplay(item);
+                    },
+                  );
+                }
+              );
+            }),
+          ),
+        ],
+      ),
+    ).then((_) => controller.focusNode.requestFocus());
+  }
+
+  void showVodListDialog(LiveRoomController controller) {
+    if (controller.vodPages.isEmpty) return;
+    controller.focusNode.unfocus();
+    
+    Utils.showSystemRightDialog(
+      width: 800.w,
+      child: Column(
+        children: [
+          AppStyle.vGap24,
+          Row(
+            children: [
+              AppStyle.hGap48,
+              HighlightButton(
+                focusNode: AppFocusNode(),
+                iconData: Icons.arrow_back,
+                text: "返回",
+                onTap: () => Get.back(),
+              ),
+              AppStyle.hGap32,
+              Text("视频选集", style: AppStyle.titleStyleWhite.copyWith(fontSize: 36.w, fontWeight: FontWeight.bold)),
+              AppStyle.hGap24,
+              const Spacer(),
+            ],
+          ),
+          Expanded(
+            child: Obx(() => ListView.builder(
+              padding: AppStyle.edgeInsetsA48,
+              itemCount: controller.vodPages.length,
+              itemBuilder: (_, i) {
+                var title = controller.vodPages[i]["title"].toString();
+                var isSelected = controller.vodCurrentIndex.value == i;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 16.w),
+                  child: HighlightButton(
+                    focusNode: AppFocusNode(),
+                    autofocus: isSelected,
+                    iconData: isSelected ? Icons.play_circle_fill : Icons.play_circle_outline,
+                    text: title,
+                    onTap: () {
+                      Get.back();
+                      controller.changeVodPage(i);
+                    },
+                  ),
+                );
+              }
+            )),
+          ),
+        ],
+      ),
+    ).then((_) => controller.focusNode.requestFocus());
+  }
 
 void showPlayerSettings(LiveRoomController controller) {
   // 移除焦点
@@ -690,4 +815,86 @@ void showFollowUser(LiveRoomController controller) {
     // 还原焦点
     controller.focusNode.requestFocus();
   });
+}
+
+
+class ReplayCard extends StatefulWidget {
+  final LiveReplayItem item;
+  final VoidCallback onTap;
+
+  const ReplayCard({Key? key, required this.item, required this.onTap}) : super(key: key);
+
+  @override
+  State<ReplayCard> createState() => _ReplayCardState();
+}
+
+class _ReplayCardState extends State<ReplayCard> {
+  final focusNode = AppFocusNode();
+
+  @override
+  Widget build(BuildContext context) {
+    return Focus(
+      focusNode: focusNode,
+      onFocusChange: (hasFocus) {
+        focusNode.isFoucsed.value = hasFocus;
+      },
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Obx(() {
+          final isFocused = focusNode.isFoucsed.value;
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: isFocused ? Colors.white.withAlpha(50) : Colors.white.withAlpha(10),
+              borderRadius: BorderRadius.circular(12.w),
+              border: Border.all(
+                color: isFocused ? Colors.white : Colors.transparent,
+                width: 2.w,
+              ),
+            ),
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8.w),
+                  child: Image.network(
+                    widget.item.cover,
+                    width: 240.w,
+                    height: 135.w,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 240.w,
+                      height: 135.w,
+                      color: Colors.grey,
+                      child: const Icon(Icons.image, color: Colors.white),
+                    ),
+                  ),
+                ),
+                AppStyle.hGap24,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppStyle.textStyleWhite.copyWith(fontSize: 28.w, fontWeight: FontWeight.bold),
+                      ),
+                      AppStyle.vGap16,
+                      Text(
+                        "${widget.item.date}  ${widget.item.duration}",
+                        style: AppStyle.textStyleWhite.copyWith(fontSize: 22.w, color: Colors.grey[400]),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ),
+    );
+  }
 }
