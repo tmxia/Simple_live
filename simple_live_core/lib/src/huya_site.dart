@@ -794,29 +794,30 @@ class HuyaSite implements LiveSite {
     }
   }
 
-    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+      Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
       var response = await HttpClient.instance.getText(
         "https://liveapi.huya.com/moment/getMomentContent",
         queryParameters: {"videoId": videoId},
-        header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
+        header: {
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+          "referer": "https://www.huya.com/"
+        },
       );
       
       var res = json.decode(response);
       var vMultiStreamInfo = res["data"]?["videoInfo"]?["vMultiStreamInfo"];
       
       if (vMultiStreamInfo == null || vMultiStreamInfo is! List) {
-        CoreLog.error("[虎牙回放] 找不到 vMultiStreamInfo 字段，请检查接口结构");
+        CoreLog.error("[虎牙回放] 找不到 vMultiStreamInfo 字段");
         return [];
       }
 
       List<LivePlayQuality> qualities = [];
       for (var item in vMultiStreamInfo) {
-        // 虎牙的回放流真实字段可能是 sStreamName 也可能是 sUrl，我们两个都抓
         String? url = item["sUrl"]?.toString() ?? item["sStreamName"]?.toString();
         
         if (url != null && url.isNotEmpty) {
-          // 如果返回的不是绝对路径，强行拼上虎牙的 CDN 前缀
           if (!url.startsWith("http")) {
             url = "https://al.flv.huya.com/$url";
           }
@@ -828,7 +829,7 @@ class HuyaSite implements LiveSite {
         }
       }
       
-      CoreLog.logPrint("[虎牙回放] 解析到 ${qualities.length} 个播放地址");
+      CoreLog.info("[虎牙回放] 成功解析到 ${qualities.length} 个播放地址");
       return qualities;
     } catch (e) {
       CoreLog.error("[虎牙回放] 解析异常: $e");
@@ -836,49 +837,7 @@ class HuyaSite implements LiveSite {
     }
   }
 
-  }) async {
-    try {
-      var response = await HttpClient.instance.getJson(
-        "https://liveapi.huya.com/moment/getMomentContent",
-        queryParameters: {"videoId": videoId},
-      );
-      
-      var vMultiStreamInfo = response["data"]?["videoInfo"]?["vMultiStreamInfo"];
-      if (vMultiStreamInfo == null) return [];
-
-      List<LivePlayQuality> qualities = [];
-      for (var item in vMultiStreamInfo) {
-        qualities.add(LivePlayQuality(
-          quality: item["sDisplayName"].toString(),
-          data: {
-            "url": item["sStreamName"].toString(),
-            "bitRate": item["iBitRate"],
-          },
-        ));
-      }
-      return qualities;
-    } catch (e) {
-      CoreLog.error(e);
-      return [];
-    }
-  }
-
-}
-
-class HuyaUrlDataModel {
-  final String url;
-  final String uid;
-  List<HuyaLineModel> lines;
-  List<HuyaBitRateModel> bitRates;
-
-  HuyaUrlDataModel({
-    required this.bitRates,
-    required this.lines,
-    required this.url,
-    required this.uid,
-  });
-
-  @override
+@override
   String toString() {
     return json.encode({
       "url": url,

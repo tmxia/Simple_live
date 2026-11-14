@@ -829,32 +829,42 @@ class BiliBiliSite implements LiveSite {
   }
 
   @override
-  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
-      // 1. 用 bvid 获取 cid
       var pagelist = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/pagelist",
         queryParameters: {"bvid": videoId},
-        header: {"referer": "https://www.bilibili.com/"},
+        header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
       );
-      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) return [];
+      if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) {
+        CoreLog.error("[B站回放] 获取 cid 失败");
+        return [];
+      }
       var cid = pagelist["data"][0]["cid"];
 
-      // 2. 用 bvid 和 cid 获取真实视频流 (fnval=16 表示请求 DASH 格式)
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
         queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
-        header: {"referer": "https://www.bilibili.com/"},
+        header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
       );
       
-      if (playurl["code"] != 0) return [];
+      if (playurl["code"] != 0) {
+        CoreLog.error("[B站回放] 获取播放流失败");
+        return [];
+      }
 
       List<LivePlayQuality> qualities = [];
-      var dash = playurl["data"]["dash"];
       
-      if (dash != null) {
-        // 解析 DASH 视频流 (按带宽降序排，取最高画质)
-        var videoStreams = dash["video"] as List;
+      if (playurl["data"]["durl"] != null) {
+        var durls = playurl["data"]["durl"] as List;
+        if (durls.isNotEmpty) {
+          qualities.add(LivePlayQuality(
+            quality: "默认画质",
+            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
+          ));
+        }
+      } else if (playurl["data"]["dash"] != null) {
+        var videoStreams = playurl["data"]["dash"]["video"] as List;
         if (videoStreams.isNotEmpty) {
           videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
           var bestVideo = videoStreams.first;
@@ -865,21 +875,14 @@ class BiliBiliSite implements LiveSite {
             data: {"url": url, "bitRate": bestVideo["bandwidth"]},
           ));
         }
-      } else if (playurl["data"]["durl"] != null) {
-        // 兜底解析 MP4 格式
-        var durls = playurl["data"]["durl"] as List;
-        if (durls.isNotEmpty) {
-          qualities.add(LivePlayQuality(
-            quality: "B站默认",
-            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
-          ));
-        }
       }
-      
+
+      CoreLog.info("[B站回放] 解析到 ${qualities.length} 个播放地址");
       return qualities;
     } catch (e) {
-      CoreLog.error(e);
+      CoreLog.error("[B站回放] 获取播放流异常: $e");
       return [];
     }
   }
+
 }
