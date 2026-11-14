@@ -837,14 +837,15 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                 ));
                 
                 if (url != null && url is String) {
-                  Log.logPrint("[回放] 接收到回放地址，准备播放: $url");
-                  
-                  // 开启 VOD 模式，显示进度条
+                  Log.logPrint("[回放] 接收到完整回放数据，准备播放");
                   controller.isVod.value = true;
                   
-                  controller.player.open(Media(url));
-                  controller.player.play();
-                  // 默认回放时关闭弹幕以防遮挡
+                  if (result is LivePlayQuality) {
+                    controller.playReplayItem(result);
+                  } else if (result is String) {
+                    controller.player.open(Media(result));
+                    controller.player.play();
+                  }
                   controller.showDanmakuState.value = false;
                 }
               },

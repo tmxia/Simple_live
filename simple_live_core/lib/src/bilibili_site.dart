@@ -797,7 +797,33 @@ class BiliBiliSite implements LiveSite {
   }
 
   @override
-    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    
+  Future<String> getReplayUrlByCid(String videoId, String cid) async {
+    try {
+      var playurl = await HttpClient.instance.getJson(
+        "https://api.bilibili.com/x/player/playurl",
+        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 1, "qn": 0},
+        header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+      );
+      if (playurl["code"] == 0) {
+        if (playurl["data"]["durl"] != null) {
+          var durls = playurl["data"]["durl"] as List;
+          if (durls.isNotEmpty) return durls[0]["url"].toString();
+        } else if (playurl["data"]["dash"] != null) {
+          var videoStreams = playurl["data"]["dash"]["video"] as List;
+          if (videoStreams.isNotEmpty) {
+             videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
+             return videoStreams.first["baseUrl"].toString();
+          }
+        }
+      }
+    } catch (e) {
+      CoreLog.error("[B站回放] 获取指定分P流异常: $e");
+    }
+    return "";
+  }
+
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
       var pagelist = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/pagelist",
@@ -807,6 +833,11 @@ class BiliBiliSite implements LiveSite {
       if (pagelist["code"] != 0 || (pagelist["data"] as List).isEmpty) {
         CoreLog.error("[B站回放] 获取 cid 失败");
         return [];
+      }
+      List<dynamic> allPages = pagelist["data"] as List;
+      List<Map<String, dynamic>> vodPages = [];
+      for (var p in allPages) {
+        vodPages.add({"cid": p["cid"].toString(), "title": (p["part"] ?? "第 ${vodPages.length + 1} 集").toString()});
       }
       var cid = pagelist["data"][0]["cid"];
 
@@ -828,7 +859,7 @@ class BiliBiliSite implements LiveSite {
         if (durls.isNotEmpty) {
           qualities.add(LivePlayQuality(
             quality: "默认画质",
-            data: {"url": durls[0]["url"].toString(), "bitRate": 0},
+            data: {"url": durls[0]["url"].toString(), "bitRate": 0, "pages": vodPages, "bvid": videoId},
           ));
         }
       } else if (playurl["data"]["dash"] != null) {
@@ -840,7 +871,7 @@ class BiliBiliSite implements LiveSite {
           
           qualities.add(LivePlayQuality(
             quality: "B站原画",
-            data: {"url": url, "bitRate": bestVideo["bandwidth"]},
+            data: {"url": url, "bitRate": bestVideo["bandwidth"], "pages": vodPages, "bvid": videoId},
           ));
         }
       }

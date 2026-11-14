@@ -72,6 +72,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   /// 线路数据
   RxList<String> playUrls = RxList<String>();
+  RxList<Map<String, dynamic>> vodPages = <Map<String, dynamic>>[].obs;
+  var vodCurrentIndex = 0.obs;
+  String currentReplayBvid = '';
 
   Map<String, String>? playHeaders;
 
@@ -447,6 +450,30 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     setPlayer();
   }
 
+  
+  void playReplayItem(LivePlayQuality quality) {
+    qualites.clear();
+    qualites.add(quality);
+    currentQuality = 0;
+    isVod.value = true;
+    
+    var qData = quality.data;
+    if (qData["pages"] != null) {
+      vodPages.assignAll((qData["pages"] as List).map((e) => Map<String, dynamic>.from(e)).toList());
+    }
+    if (qData["bvid"] != null) {
+      currentReplayBvid = qData["bvid"].toString();
+    }
+
+    String url = qData["url"].toString();
+    playUrls.clear();
+    playUrls.add(url);
+    
+    currentLineIndex = 0;
+    currentLineInfo.value = "默认线路";
+    initPlaylist(); 
+  }
+
   void initPlaylist() async {
     currentLineInfo.value = "线路${currentLineIndex + 1}";
     errorMsg.value = "";
@@ -464,6 +491,33 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     await initializePlayer();
 
     await player.open(Playlist(mediaList));
+  }
+
+  
+  Future<void> changeVodPage(int index) async {
+    if (!isVod.value || index < 0 || index >= vodPages.length) return;
+    var targetCid = vodPages[index]["cid"].toString();
+    errorMsg.value = "正在加载第 ${index + 1} 集...";
+    
+    try {
+      if (site is BiliBiliSite) {
+        var url = await (site as BiliBiliSite).getReplayUrlByCid(currentReplayBvid, targetCid);
+        if (url.isNotEmpty) {
+          playUrls.clear();
+          playUrls.add(url);
+          currentLineIndex = 0;
+          vodCurrentIndex.value = index;
+          
+          final media = Media(url, httpHeaders: playHeaders);
+          await player.open(Playlist([media]));
+          errorMsg.value = "";
+        } else {
+          errorMsg.value = "获取播放地址失败";
+        }
+      }
+    } catch (e) {
+      errorMsg.value = "加载失败";
+    }
   }
 
   void setPlayer() async {

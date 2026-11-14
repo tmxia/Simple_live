@@ -201,15 +201,13 @@ Widget buildFullControls(VideoState videoState, LiveRoomController controller) {
                         onPressed: () => showDanmakuSettings(controller),
                         icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_setting.png'), size: 24, color: Colors.white),
                       ),
-                      Obx(
-                        () => Padding(
+                      Obx(() {
+                        if (controller.isVod.value) return buildVodPlaylistCapsule(controller);
+                        return Padding(
                           padding: const EdgeInsets.only(left: 8.0),
-                          child: Text(
-                            controller.isVod.value ? "" : controller.liveDuration.value,
-                            style: const TextStyle(fontSize: 14, color: Colors.white),
-                          ),
-                        ),
-                      ),
+                          child: Text(controller.liveDuration.value, style: const TextStyle(fontSize: 14, color: Colors.white)),
+                        );
+                      }),
                       const Expanded(child: Center()),
                       Visibility(
                         visible: !Platform.isAndroid && !Platform.isIOS,
@@ -399,15 +397,13 @@ Widget buildControls(bool isPortrait, VideoState videoState, LiveRoomController 
                       onPressed: () => controller.showDanmuSettingsSheet(),
                       icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_setting.png'), size: 24, color: Colors.white),
                     ),
-                    Obx(
-                      () => Padding(
+                    Obx(() {
+                      if (controller.isVod.value) return buildVodPlaylistCapsule(controller);
+                      return Padding(
                         padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
-                          controller.isVod.value ? "" : controller.liveDuration.value,
-                          style: const TextStyle(fontSize: 14, color: Colors.white),
-                        ),
-                      ),
-                    ),
+                        child: Text(controller.liveDuration.value, style: const TextStyle(fontSize: 14, color: Colors.white)),
+                      );
+                    }),
                     const Expanded(child: Center()),
                     Visibility(
                       visible: !Platform.isAndroid && !Platform.isIOS,
@@ -505,6 +501,74 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
     ),
   );
 }
+
+
+  void showPlaylistSheet(LiveRoomController controller) {
+    if (controller.vodPages.isEmpty) return;
+    Get.bottomSheet(
+      backgroundColor: Colors.transparent,
+      Container(
+        height: Get.height * 0.6,
+        decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("视频选集", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.close)),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: Obx(() => ListView.builder(
+                itemCount: controller.vodPages.length,
+                itemBuilder: (_, i) {
+                  var title = controller.vodPages[i]["title"].toString();
+                  var isPlaying = controller.vodCurrentIndex.value == i;
+                  return ListTile(
+                    selected: isPlaying,
+                    selectedTileColor: Get.theme.colorScheme.primary.withAlpha(20),
+                    title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: isPlaying ? FontWeight.bold : FontWeight.normal, color: isPlaying ? Get.theme.colorScheme.primary : null)),
+                    trailing: isPlaying ? Icon(Icons.play_arrow, color: Get.theme.colorScheme.primary, size: 20) : null,
+                    onTap: () {
+                      Get.back();
+                      controller.changeVodPage(i);
+                    }
+                  );
+                }
+              )),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget buildVodPlaylistCapsule(LiveRoomController controller) {
+    return Obx(() {
+      if (!controller.isVod.value || controller.vodPages.length <= 1) return const SizedBox.shrink();
+      return GestureDetector(
+        onTap: () => showPlaylistSheet(controller),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white30, width: 0.5)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.playlist_play, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              Text("选集 ${controller.vodCurrentIndex.value + 1}/${controller.vodPages.length}", style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)),
+            ],
+          ),
+        ),
+      );
+    });
+  }
 
 Widget buildVodProgressBar(VideoState videoState, LiveRoomController controller) {
   return Obx(() {

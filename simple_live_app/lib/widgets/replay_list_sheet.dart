@@ -8,7 +8,7 @@ import 'package:simple_live_core/simple_live_core.dart';
 class ReplayListSheet extends StatefulWidget {
   final String roomId;
   final ReplaySite site;
-  final Function(String url) onPlay;
+  final Function(LivePlayQuality quality) onPlay;
 
   const ReplayListSheet({Key? key, required this.roomId, required this.site, required this.onPlay}) : super(key: key);
 
@@ -77,9 +77,10 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
       if (mounted) Navigator.of(context).pop(); // 关闭 Loading
       
       if (qualities.isNotEmpty) {
-        var url = qualities.first.data["url"].toString();
+        var quality = qualities.first;
+        var url = quality.data["url"].toString();
         if (mounted) Navigator.of(context).pop(); // 关闭底部弹窗
-        widget.onPlay(url);
+        widget.onPlay(quality);
       } else {
         _showMsg("未获取到播放地址");
       }
