@@ -222,9 +222,11 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                   ],
                 ),
                 AppStyle.vGap12,
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
+                FocusTraversalGroup(
+                  policy: ReadingOrderTraversalPolicy(),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
                     // === 1. 观看回放 (首位置) ===
                     HighlightButton(
                       focusNode: controller.replayFocusNode,
@@ -280,6 +282,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                     AppStyle.hGap16,
                     Text("设置", style: AppStyle.textStyleWhite),
                   ],
+                  ),
                 ),
               ],
             ),
