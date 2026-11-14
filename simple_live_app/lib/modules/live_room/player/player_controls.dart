@@ -506,7 +506,9 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   void showPlaylistSheet(LiveRoomController controller) {
     if (controller.vodPages.isEmpty) return;
 
-    // 构建视频选集列表 UI（通用部分）
+    // 核心修复：判断物理屏幕是否为竖屏，而不是判断视频比例
+    final isPortraitScreen = MediaQuery.of(Get.context!).orientation == Orientation.portrait;
+
     Widget buildVodList() {
       return Obx(() => ListView.builder(
         shrinkWrap: true,
@@ -514,8 +516,6 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
         itemBuilder: (_, i) {
           var title = controller.vodPages[i]["title"].toString();
           var isPlaying = controller.vodCurrentIndex.value == i;
-          
-          // 获取当前主题色
           final primaryColor = Get.theme.colorScheme.primary;
 
           return ListTile(
@@ -532,8 +532,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
             ),
             trailing: isPlaying ? Icon(Icons.play_arrow, color: primaryColor, size: 20) : null,
             onTap: () {
-              // 根据当前横竖屏状态，采用不同的关闭方式
-              if (controller.isVertical.value) {
+              if (isPortraitScreen) {
                 Get.back();
               } else {
                 Utils.hideRightDialog();
@@ -545,9 +544,8 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
       ));
     }
 
-    // 核心修复：根据横竖屏状态，决定弹窗样式
-    if (controller.isVertical.value) {
-      // ===== 竖屏：保持原有的底部弹窗 =====
+    if (isPortraitScreen) {
+      // 竖屏：底部滑出弹窗
       Get.bottomSheet(
         backgroundColor: Colors.transparent,
         Container(
@@ -575,7 +573,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
         ),
       );
     } else {
-      // ===== 横屏：采用右侧面板 =====
+      // 横屏：右侧面板
       Utils.showRightDialog(
         title: "视频选集",
         useSystem: true,
