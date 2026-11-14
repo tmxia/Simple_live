@@ -699,8 +699,9 @@ class BiliBiliSite implements LiveSite {
   
   
   @override
-  Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
+    Future<LiveReplayResult> getReplays({required String roomId, int page = 1}) async {
     try {
+      CoreLog.d("[回放] B站请求列表 | roomId: $roomId, page: $page");
       var roomInit = await HttpClient.instance.getJson(
         "https://api.live.bilibili.com/room/v1/Room/room_init",
         queryParameters: {"id": roomId},
@@ -716,81 +717,77 @@ class BiliBiliSite implements LiveSite {
       if (userInfo["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
       var mid = userInfo["data"]["info"]["uid"].toString();
 
-      // 获取合集
       var collectionsRes = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/polymer/web-space/seasons_series_list",
         queryParameters: {"mid": mid, "page_num": page, "page_size": 20},
         header: {"referer": "https://space.bilibili.com/$mid/"},
       );
-      if (collectionsRes["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
+      
+      var lists = collectionsRes["data"]?["items_lists"];
+      if (lists != null) {
+        // 放宽匹配：包含“赛事”、“回放”、“集锦”均可
+        var replayRegex = RegExp(r'直播|赛事|比赛|回放|录像|录播|集锦|archive|replay|vod|S\d+', caseSensitive: false);
+        var targetCollection = null;
+        var isSeason = false;
 
-      var lists = collectionsRes["data"]["items_lists"];
-      if (lists == null) return LiveReplayResult(items: [], hasMore: false);
-
-      // 核心修复：完全使用 PureLive 的正则，并兼容“赛事”
-      var replayRegex = RegExp(r'直播|赛事|比赛|回放|录像|录播|archive|replay|vod', caseSensitive: false);
-      var targetCollection = null;
-      var isSeason = false;
-
-      for (var item in (lists["seasons_list"] ?? [])) {
-        var meta = item["meta"];
-        if (meta != null && replayRegex.hasMatch(meta["name"].toString())) {
-          targetCollection = meta;
-          isSeason = true;
-          break;
-        }
-      }
-      if (targetCollection == null) {
-        for (var item in (lists["series_list"] ?? [])) {
+        for (var item in (lists["seasons_list"] ?? [])) {
           var meta = item["meta"];
           if (meta != null && replayRegex.hasMatch(meta["name"].toString())) {
-            targetCollection = meta;
-            isSeason = false;
-            break;
+            targetCollection = meta; isSeason = true; break;
+          }
+        }
+        if (targetCollection == null) {
+          for (var item in (lists["series_list"] ?? [])) {
+            var meta = item["meta"];
+            if (meta != null && replayRegex.hasMatch(meta["name"].toString())) {
+              targetCollection = meta; isSeason = false; break;
+            }
+          }
+        }
+
+        if (targetCollection != null) {
+          var collectionId = isSeason ? targetCollection["season_id"] : targetCollection["series_id"];
+          var archivesUrl = isSeason ? "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list" : "https://api.bilibili.com/x/series/archives";
+          var archivesQuery = isSeason ? {"mid": mid, "season_id": collectionId, "sort_reverse": false, "page_num": page, "page_size": 20} : {"mid": mid, "series_id": collectionId, "only_normal": true, "sort": "desc", "pn": page, "ps": 20};
+
+          var archivesRes = await HttpClient.instance.getJson(archivesUrl, queryParameters: archivesQuery, header: {"referer": "https://space.bilibili.com/$mid/"});
+          if (archivesRes["code"] == 0) {
+            var archives = archivesRes["data"]["archives"] ?? [];
+            List<LiveReplayItem> items = [];
+            for (var v in archives) {
+              items.add(LiveReplayItem(id: v["bvid"].toString(), title: v["title"].toString(), cover: v["pic"].toString().replaceAll("http:", "https:"), author: targetCollection["name"].toString(), duration: _formatDuration(v["duration"] ?? 0), date: DateTime.fromMillisecondsSinceEpoch((v["pubdate"] ?? 0) * 1000).toString().split(" ").first));
+            }
+            if (items.isNotEmpty) {
+               CoreLog.d("[回放] B站合集解析成功 | 共 ${items.length} 条");
+               return LiveReplayResult(items: items, hasMore: items.length >= 20);
+            }
           }
         }
       }
 
-      if (targetCollection == null) {
-        return await _getOfficialRecord(roomId);
-      }
-
-      var collectionId = isSeason ? targetCollection["season_id"] : targetCollection["series_id"];
-      var archivesUrl = isSeason 
-          ? "https://api.bilibili.com/x/polymer/web-space/seasons_archives_list"
-          : "https://api.bilibili.com/x/series/archives";
-      
-      var archivesQuery = isSeason 
-          ? {"mid": mid, "season_id": collectionId, "sort_reverse": false, "page_num": page, "page_size": 20}
-          : {"mid": mid, "series_id": collectionId, "only_normal": true, "sort": "desc", "pn": page, "ps": 20};
-
-      var archivesRes = await HttpClient.instance.getJson(
-        archivesUrl,
-        queryParameters: archivesQuery,
-        header: {"referer": "https://space.bilibili.com/$mid/"},
-      );
-
-      if (archivesRes["code"] != 0) return LiveReplayResult(items: [], hasMore: false);
-      var archives = archivesRes["data"]["archives"] ?? [];
-      List<LiveReplayItem> items = [];
-      
-      for (var v in archives) {
-        items.add(LiveReplayItem(
-          id: v["bvid"].toString(),
-          title: v["title"].toString(),
-          cover: v["pic"].toString().replaceAll("http:", "https:"),
-          author: targetCollection["name"].toString(),
-          duration: _formatDuration(v["duration"] ?? 0),
-          date: DateTime.fromMillisecondsSinceEpoch((v["pubdate"] ?? 0) * 1000).toString().split(" ").first,
-        ));
-      }
-      return LiveReplayResult(items: items, hasMore: items.length >= 20);
+      // 兜底：直接用官方录制列表
+      return await _getOfficialRecord(roomId);
     } catch (e) {
-      CoreLog.error(e);
+      CoreLog.e("[回放] B站解析异常 | $e", StackTrace.current);
       return LiveReplayResult(items: [], hasMore: false);
     }
   }
 
+  Future<LiveReplayResult> _getOfficialRecord(String roomId) async {
+    try {
+      var res = await HttpClient.instance.getJson("https://api.live.bilibili.com/xlive/web-room/v1/record/getRecordList", queryParameters: {"room_id": roomId}, header: {"referer": "https://live.bilibili.com/"});
+      var recordList = res["data"]?["record_list"];
+      if (recordList is! List) return LiveReplayResult(items: [], hasMore: false);
+      List<LiveReplayItem> items = [];
+      for (var v in recordList) {
+        items.add(LiveReplayItem(id: v["record_id"].toString(), title: v["title"].toString(), cover: v["cover"].toString().replaceAll("http:", "https:"), author: "B站录播", duration: _formatDuration(v["length"] ?? 0), date: ""));
+      }
+      CoreLog.d("[回放] B站官方录播解析成功 | 共 ${items.length} 条");
+      return LiveReplayResult(items: items, hasMore: false);
+    } catch (e) {
+      return LiveReplayResult(items: [], hasMore: false);
+    }
+  }
   Future<LiveReplayResult> _getOfficialRecord(String roomId) async {
     try {
       var res = await HttpClient.instance.getJson(

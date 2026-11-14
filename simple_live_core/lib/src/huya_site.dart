@@ -668,17 +668,32 @@ class HuyaSite implements LiveSite {
   }
 
   @override
-  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+    Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
+      CoreLog.d("[回放] 虎牙请求播放流 | videoId: $videoId");
       var response = await HttpClient.instance.getText(
         "https://liveapi.huya.com/moment/getMomentContent",
         queryParameters: {"videoId": videoId},
         header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
       );
-      var res = json.decode(response);
-      var vMultiStreamInfo = res["data"]?["videoInfo"]?["vMultiStreamInfo"];
       
-      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) return [];
+      var res = json.decode(response);
+      if (res["status"] != 200 && res["status"] != 0 && res["status"] != null) {
+         CoreLog.e("[回放] 虎牙接口拒绝返回 | status: ${res["status"]}", StackTrace.current);
+      }
+
+      var videoInfo = res["data"]?["videoInfo"];
+      var vMultiStreamInfo = videoInfo?["vMultiStreamInfo"];
+      
+      // 虎牙有时将回放数据放在另一层，做个兜底查找
+      if (vMultiStreamInfo == null) {
+        vMultiStreamInfo = res["data"]?["videoData"]?["vMultiStreamInfo"];
+      }
+      
+      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) {
+         CoreLog.e("[回放] 虎牙找不到 vMultiStreamInfo 节点", StackTrace.current);
+         return [];
+      }
 
       List<LivePlayQuality> qualities = [];
       for (var item in vMultiStreamInfo) {
@@ -691,89 +706,11 @@ class HuyaSite implements LiveSite {
           ));
         }
       }
+      CoreLog.d("[回放] 虎牙解析成功 | 共 ${qualities.length} 个清晰度");
       return qualities;
     } catch (e) {
-      CoreLog.error("[虎牙回放] 解析异常: $e");
+      CoreLog.e("[回放] 虎牙解析异常 | $e", StackTrace.current);
       return [];
     }
-  }
-}
-
-class HuyaUrlDataModel {
-  final String url;
-  final String uid;
-  List<HuyaLineModel> lines;
-  List<HuyaBitRateModel> bitRates;
-
-  HuyaUrlDataModel({
-    required this.bitRates,
-    required this.lines,
-    required this.url,
-    required this.uid,
-  });
-
-  @override
-  String toString() {
-    return json.encode({
-      "url": url,
-      "uid": uid,
-      "lines": lines.map((e) => e.toString()).toList(),
-      "bitRates": bitRates.map((e) => e.toString()).toList(),
-    });
-  }
-}
-
-enum HuyaLineType { flv, hls }
-
-class HuyaLineModel {
-  final String line;
-  final String cdnType;
-  final String flvAntiCode;
-  final String hlsAntiCode;
-  final String streamName;
-  final HuyaLineType lineType;
-  int bitRate;
-  final int presenterUid;
-
-  HuyaLineModel({
-    required this.line,
-    required this.lineType,
-    required this.flvAntiCode,
-    required this.hlsAntiCode,
-    required this.streamName,
-    required this.cdnType,
-    this.bitRate = 0,
-    required this.presenterUid,
-  });
-
-  @override
-  String toString() {
-    return json.encode({
-      "line": line,
-      "cdnType": cdnType,
-      "flvAntiCode": flvAntiCode,
-      "hlsAntiCode": hlsAntiCode,
-      "streamName": streamName,
-      "lineType": lineType.toString(),
-      "presenterUid": presenterUid,
-    });
-  }
-}
-
-class HuyaBitRateModel {
-  final String name;
-  final int bitRate;
-
-  HuyaBitRateModel({
-    required this.bitRate,
-    required this.name,
-  });
-
-  @override
-  String toString() {
-    return json.encode({
-      "name": name,
-      "bitRate": bitRate,
-    });
   }
 }
