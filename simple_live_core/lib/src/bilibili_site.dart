@@ -812,7 +812,7 @@ class BiliBiliSite implements LiveSite {
 
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
-        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 16, "qn": 0},
+        queryParameters: {"bvid": videoId, "cid": cid, "fnval": 1, "qn": 0},
         header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
       );
       

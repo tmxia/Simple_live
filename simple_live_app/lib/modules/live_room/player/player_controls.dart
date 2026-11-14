@@ -50,6 +50,26 @@ Widget buildFullControls(
       children: [
         Container(),
         buildDanmuView(videoState, controller),
+        Obx(() {
+          if (!controller.isVod.value) return const SizedBox.shrink();
+          return Positioned(
+            left: 16,
+            right: 16,
+            bottom: controller.fullScreenState.value ? 70 : 50,
+            child: buildVodProgressBar(videoState, controller),
+          );
+        }),
+        
+        Obx(() {
+          if (!controller.isVod.value) return const SizedBox.shrink();
+          return Positioned(
+            left: 16,
+            right: 16,
+            bottom: controller.fullScreenState.value ? 70 : 50,
+            child: buildVodProgressBar(videoState, controller),
+          );
+        }),
+        
         Obx(
           () => Visibility(
             visible: AppSettingsController.instance.playershowSuperChat.value &&
@@ -1018,4 +1038,40 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
       ],
     );
   }
+}
+
+Widget buildVodProgressBar(VideoState videoState, LiveRoomController controller) {
+  return Obx(() {
+    if (!controller.isVod.value) return const SizedBox.shrink();
+    return StreamBuilder<Duration>(
+      stream: videoState.widget.controller.player.stream.position,
+      builder: (context, snapshot) {
+        final position = snapshot.data ?? Duration.zero;
+        return StreamBuilder<Duration>(
+          stream: videoState.widget.controller.player.stream.duration,
+          builder: (context, snapshot) {
+            final duration = snapshot.data ?? Duration.zero;
+            final max = duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0;
+            return SliderTheme(
+              data: SliderThemeData(
+                trackHeight: 2.0,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+                activeTrackColor: Theme.of(context).colorScheme.primary,
+                inactiveTrackColor: Colors.white30,
+                thumbColor: Theme.of(context).colorScheme.primary,
+              ),
+              child: Slider(
+                value: position.inSeconds.toDouble().clamp(0.0, max),
+                max: max,
+                onChanged: (value) {
+                  videoState.widget.controller.player.seek(Duration(seconds: value.toInt()));
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  });
 }
