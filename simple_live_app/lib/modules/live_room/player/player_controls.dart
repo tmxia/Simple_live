@@ -50,8 +50,6 @@ Widget buildFullControls(
       children: [
         Container(),
         buildDanmuView(videoState, controller),
-
-        
         Obx(
           () => Visibility(
             visible: AppSettingsController.instance.playershowSuperChat.value &&
@@ -64,10 +62,8 @@ Widget buildFullControls(
             ),
           ),
         ),
-
         Center(
-          child: 
-              StreamBuilder(
+          child: StreamBuilder(
             stream: videoState.widget.controller.player.stream.buffering,
             initialData: videoState.widget.controller.player.state.buffering,
             builder: (_, s) => Visibility(
@@ -99,22 +95,10 @@ Widget buildFullControls(
                 width: double.infinity,
                 height: double.infinity,
                 color: Colors.transparent,
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
               ),
             ),
           ),
         ),
-
-        
         Obx(
           () => AnimatedPositioned(
             left: 0,
@@ -215,7 +199,6 @@ Widget buildFullControls(
             ),
           ),
         ),
-        
         Obx(
           () => AnimatedPositioned(
             left: 0,
@@ -297,6 +280,255 @@ Widget buildFullControls(
                     ),
                   ),
                   const Expanded(child: Center()),
+                  Visibility(
+                    visible: !Platform.isAndroid && !Platform.isIOS,
+                    child: IconButton(
+                      key: volumeButtonkey,
+                      onPressed: () {
+                        controller
+                            .showVolumeSlider(volumeButtonkey.currentContext!);
+                      },
+                      icon: const Icon(
+                        Icons.volume_down,
+                        size: 24,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showQualitesInfo(controller);
+                    },
+                    child: Obx(
+                      () => Text(
+                        controller.currentQualityInfo.value,
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 15),
+                      ),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      showLinesInfo(controller);
+                    },
+                    child: Text(
+                      controller.currentLineInfo.value,
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      if (controller.smallWindowState.value) {
+                        controller.exitSmallWindow();
+                      } else {
+                        controller.exitFull();
+                      }
+                    },
+                    icon: const Icon(
+                      Remix.fullscreen_exit_fill,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Obx(
+          () => AnimatedPositioned(
+            top: 0,
+            bottom: 0,
+            right: controller.showControlsState.value
+                ? padding.right + 12
+                : -(64 + padding.right),
+            duration: const Duration(milliseconds: 200),
+            child: buildLockButton(controller),
+          ),
+        ),
+        Obx(
+          () => AnimatedPositioned(
+            top: 0,
+            bottom: 0,
+            left: controller.showControlsState.value
+                ? padding.left + 12
+                : -(64 + padding.right),
+            duration: const Duration(milliseconds: 200),
+            child: buildLockButton(controller),
+          ),
+        ),
+        Obx(
+          () => Offstage(
+            offstage: !controller.showGestureTip.value,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade900,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  controller.gestureTipText.value,
+                  style: const TextStyle(fontSize: 18, color: Colors.white),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget buildLockButton(LiveRoomController controller) {
+  return Center(
+    child: InkWell(
+      onTap: () {
+        controller.setLockState();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.black45,
+          borderRadius: AppStyle.radius8,
+        ),
+        width: 40,
+        height: 40,
+        child: Center(
+          child: Icon(
+            controller.lockControlsState.value
+                ? Icons.lock_outline_rounded
+                : Icons.lock_open_outlined,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+Widget buildControls(
+  bool isPortrait,
+  VideoState videoState,
+  LiveRoomController controller,
+) {
+  GlobalKey volumeButtonkey = GlobalKey();
+  return Stack(
+    children: [
+      Container(),
+      buildDanmuView(videoState, controller),
+      Obx(
+        () => Visibility(
+          visible: AppSettingsController.instance.playershowSuperChat.value &&
+              ((!Platform.isAndroid && !Platform.isIOS) ||
+                  controller.fullScreenState.value),
+          child: Positioned(
+            left: 24,
+            bottom: 24,
+            child: PlayerSuperChatOverlay(controller: controller),
+          ),
+        ),
+      ),
+      Center(
+        child: StreamBuilder(
+          stream: videoState.widget.controller.player.stream.buffering,
+          initialData: videoState.widget.controller.player.state.buffering,
+          builder: (_, s) => Visibility(
+            visible: s.data ?? false,
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ),
+      ),
+      Positioned.fill(
+        child: GestureDetector(
+          onTap: controller.onTap,
+          onDoubleTapDown: controller.onDoubleTap,
+          onVerticalDragStart: controller.onVerticalDragStart,
+          onVerticalDragUpdate: controller.onVerticalDragUpdate,
+          onVerticalDragEnd: controller.onVerticalDragEnd,
+          child: MouseRegion(
+            onEnter: controller.onEnter,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.transparent,
+            ),
+          ),
+        ),
+      ),
+      Obx(
+        () => AnimatedPositioned(
+          left: 0,
+          right: 0,
+          bottom: controller.showControlsState.value ? 0 : -48,
+          duration: const Duration(milliseconds: 200),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.black87,
+                ],
+              ),
+            ),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    controller.refreshRoom();
+                  },
+                  icon: const Icon(
+                    Remix.refresh_line,
+                    color: Colors.white,
+                  ),
+                ),
+                Offstage(
+                  offstage: controller.showDanmakuState.value,
+                  child: IconButton(
+                    onPressed: () => controller.showDanmakuState.value =
+                        !controller.showDanmakuState.value,
+                    icon: const ImageIcon(
+                      AssetImage('assets/icons/icon_danmaku_open.png'),
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Offstage(
+                  offstage: !controller.showDanmakuState.value,
+                  child: IconButton(
+                    onPressed: () => controller.showDanmakuState.value =
+                        !controller.showDanmakuState.value,
+                    icon: const ImageIcon(
+                      AssetImage('assets/icons/icon_danmaku_close.png'),
+                      size: 24,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    controller.showDanmuSettingsSheet();
+                  },
+                  icon: const ImageIcon(
+                    AssetImage('assets/icons/icon_danmaku_setting.png'),
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                ),
+                Obx(
+                  () => Padding(
+                    padding: const EdgeInsets.only(left: 8.0),
+                    child: Text(
+                      controller.liveDuration.value,
+                      style: const TextStyle(fontSize: 14, color: Colors.white),
+                    ),
+                  ),
+                ),
+                const Expanded(child: Center()),
                 Visibility(
                   visible: !Platform.isAndroid && !Platform.isIOS,
                   child: IconButton(
@@ -399,7 +631,6 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
       area: AppSettingsController.instance.danmuArea.value,
       duration: AppSettingsController.instance.danmuSpeed.value.toInt(),
       opacity: AppSettingsController.instance.danmuOpacity.value,
-      
       fontWeight: AppSettingsController.instance.danmuFontWeight.value,
     ),
   );
@@ -443,22 +674,23 @@ void showLinesInfo(LiveRoomController controller) {
               text: "线路${i + 1}",
               children: [
                 WidgetSpan(
-                    child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: AppStyle.radius4,
-                    border: Border.all(
-                      color: Colors.grey,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: AppStyle.radius4,
+                      border: Border.all(
+                        color: Colors.grey,
+                      ),
+                    ),
+                    padding: AppStyle.edgeInsetsH4,
+                    margin: AppStyle.edgeInsetsL8,
+                    child: Text(
+                      controller.playUrls[i].contains(".flv") ? "FLV" : "HLS",
+                      style: const TextStyle(
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                  padding: AppStyle.edgeInsetsH4,
-                  margin: AppStyle.edgeInsetsL8,
-                  child: Text(
-                    controller.playUrls[i].contains(".flv") ? "FLV" : "HLS",
-                    style: const TextStyle(
-                      fontSize: 12,
-                    ),
-                  ),
-                )),
+                ),
               ],
             ),
             style: const TextStyle(fontSize: 14),
@@ -466,8 +698,6 @@ void showLinesInfo(LiveRoomController controller) {
           minLeadingWidth: 16,
           onTap: () {
             Utils.hideRightDialog();
-            
-            
             controller.changePlayLine(i);
           },
         );
@@ -541,7 +771,7 @@ void showPlayerSettings(LiveRoomController controller) {
     width: 320,
     useSystem: true,
     child: Obx(
-      () => RadioGroup(
+      () => RadioGroup<int>(
         groupValue: AppSettingsController.instance.scaleMode.value,
         onChanged: (e) {
           AppSettingsController.instance.setScaleMode(e ?? 0);
@@ -557,31 +787,31 @@ void showPlayerSettings(LiveRoomController controller) {
                 style: Get.textTheme.titleMedium,
               ),
             ),
-            const RadioListTile(
+            const RadioListTile<int>(
               value: 0,
               contentPadding: AppStyle.edgeInsetsH4,
               title: Text("适应"),
               visualDensity: VisualDensity.compact,
             ),
-            const RadioListTile(
+            const RadioListTile<int>(
               value: 1,
               contentPadding: AppStyle.edgeInsetsH4,
               title: Text("拉伸"),
               visualDensity: VisualDensity.compact,
             ),
-            const RadioListTile(
+            const RadioListTile<int>(
               value: 2,
               contentPadding: AppStyle.edgeInsetsH4,
               title: Text("铺满"),
               visualDensity: VisualDensity.compact,
             ),
-            const RadioListTile(
+            const RadioListTile<int>(
               value: 3,
               contentPadding: AppStyle.edgeInsetsH4,
               title: Text("16:9"),
               visualDensity: VisualDensity.compact,
             ),
-            const RadioListTile(
+            const RadioListTile<int>(
               value: 4,
               contentPadding: AppStyle.edgeInsetsH4,
               title: Text("4:3"),
@@ -599,7 +829,6 @@ void showFollowUser(LiveRoomController controller) {
     controller.showFollowUserSheet();
     return;
   }
-
   Utils.showRightDialog(
     title: "关注列表",
     width: 400,
@@ -737,7 +966,7 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
   @override
   void initState() {
     super.initState();
-    
+
     final now = DateTime.now().millisecondsSinceEpoch;
     for (var sc in widget.controller.superChats) {
       int remain = (sc.endTime.millisecondsSinceEpoch - now) ~/ 1000;
@@ -745,16 +974,14 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
         _addSC(sc, customSeconds: remain < 15 ? remain : 15);
       }
     }
-    
+
     _worker =
         ever<List<LiveSuperChatMessage>>(widget.controller.superChats, (list) {
-      
       for (var sc in list) {
         if (!_displayed.any((e) => e.sc == sc)) {
           _addSC(sc);
         }
       }
-      
       _displayed.removeWhere((e) => !list.contains(e.sc));
       setState(() {});
     });
