@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
@@ -233,8 +234,17 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                   ],
                 ),
                 AppStyle.vGap12,
-                FocusTraversalGroup(
-                  policy: ReadingOrderTraversalPolicy(),
+                Focus(
+                  // 核心修复：拦截上下键，让焦点无法逃出底栏
+                  onKeyEvent: (node, event) {
+                    if (event is KeyDownEvent || event is KeyRepeatEvent) {
+                      if (event.logicalKey == LogicalKeyboardKey.arrowUp || 
+                          event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                        return KeyEventResult.handled;
+                      }
+                    }
+                    return KeyEventResult.ignored;
+                  },
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
