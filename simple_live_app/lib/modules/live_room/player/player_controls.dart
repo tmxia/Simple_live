@@ -1,8 +1,9 @@
-import 'package:simple_live_app/services/local_storage_service.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
 import 'package:remixicon/remixicon.dart';
@@ -13,11 +14,11 @@ import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/modules/live_room/live_room_controller.dart';
 import 'package:simple_live_app/modules/settings/danmu_settings_page.dart';
 import 'package:simple_live_app/services/follow_service.dart';
+import 'package:simple_live_app/services/local_storage_service.dart';
 import 'package:simple_live_app/widgets/desktop_refresh_button.dart';
 import 'package:simple_live_app/widgets/follow_user_item.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:simple_live_app/widgets/superchat_card.dart';
-import 'dart:async';
 import 'package:simple_live_core/simple_live_core.dart';
 
 Widget playerControls(
@@ -26,23 +27,13 @@ Widget playerControls(
 ) {
   return Obx(() {
     if (controller.fullScreenState.value) {
-      return buildFullControls(
-        videoState,
-        controller,
-      );
+      return buildFullControls(videoState, controller);
     }
-    return buildControls(
-      videoState.context.orientation == Orientation.portrait,
-      videoState,
-      controller,
-    );
+    return buildControls(videoState.context.orientation == Orientation.portrait, videoState, controller);
   });
 }
 
-Widget buildFullControls(
-  VideoState videoState,
-  LiveRoomController controller,
-) {
+Widget buildFullControls(VideoState videoState, LiveRoomController controller) {
   var padding = MediaQuery.of(videoState.context).padding;
   GlobalKey volumeButtonkey = GlobalKey();
   return DragToMoveArea(
@@ -50,31 +41,10 @@ Widget buildFullControls(
       children: [
         Container(),
         buildDanmuView(videoState, controller),
-        Obx(() {
-          if (!controller.isVod.value) return const SizedBox.shrink();
-          return Positioned(
-            left: 16,
-            right: 16,
-            bottom: controller.fullScreenState.value ? 70 : 50,
-            child: buildVodProgressBar(videoState, controller),
-          );
-        }),
-        
-        Obx(() {
-          if (!controller.isVod.value) return const SizedBox.shrink();
-          return Positioned(
-            left: 16,
-            right: 16,
-            bottom: controller.fullScreenState.value ? 70 : 50,
-            child: buildVodProgressBar(videoState, controller),
-          );
-        }),
-        
         Obx(
           () => Visibility(
             visible: AppSettingsController.instance.playershowSuperChat.value &&
-                ((!Platform.isAndroid && !Platform.isIOS) ||
-                    controller.fullScreenState.value),
+                ((!Platform.isAndroid && !Platform.isIOS) || controller.fullScreenState.value),
             child: Positioned(
               left: 24,
               bottom: 24,
@@ -88,9 +58,7 @@ Widget buildFullControls(
             initialData: videoState.widget.controller.player.state.buffering,
             builder: (_, s) => Visibility(
               visible: s.data ?? false,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
           ),
         ),
@@ -99,14 +67,15 @@ Widget buildFullControls(
             onTap: controller.onTap,
             onDoubleTapDown: controller.onDoubleTap,
             onLongPress: () {
-              if (controller.lockControlsState.value) {
-                return;
-              }
+              if (controller.lockControlsState.value) return;
               showFollowUser(controller);
             },
-            onVerticalDragStart: controller.onVerticalDragStart,
-            onVerticalDragUpdate: controller.onVerticalDragUpdate,
-            onVerticalDragEnd: controller.onVerticalDragEnd,
+            onHorizontalDragStart: controller.isVod.value ? controller.onHorizontalDragStart : null,
+            onHorizontalDragUpdate: controller.isVod.value ? controller.onHorizontalDragUpdate : null,
+            onHorizontalDragEnd: controller.isVod.value ? controller.onHorizontalDragEnd : null,
+            onVerticalDragStart: controller.isVod.value ? null : controller.onVerticalDragStart,
+            onVerticalDragUpdate: controller.isVod.value ? null : controller.onVerticalDragUpdate,
+            onVerticalDragEnd: controller.isVod.value ? null : controller.onVerticalDragEnd,
             child: MouseRegion(
               onHover: (PointerHoverEvent event) {
                 controller.onHover(event, videoState.context);
@@ -123,26 +92,18 @@ Widget buildFullControls(
           () => AnimatedPositioned(
             left: 0,
             right: 0,
-            top: (controller.showControlsState.value &&
-                    !controller.lockControlsState.value)
+            top: (controller.showControlsState.value && !controller.lockControlsState.value)
                 ? 0
                 : -(48 + padding.top),
             duration: const Duration(milliseconds: 200),
             child: Container(
               height: 48 + padding.top,
-              padding: EdgeInsets.only(
-                left: padding.left + 12,
-                right: padding.right + 12,
-                top: padding.top,
-              ),
+              padding: EdgeInsets.only(left: padding.left + 12, right: padding.right + 12, top: padding.top),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black87,
-                  ],
+                  colors: [Colors.transparent, Colors.black87],
                 ),
               ),
               child: Row(
@@ -155,11 +116,7 @@ Widget buildFullControls(
                         controller.exitFull();
                       }
                     },
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
                   ),
                   AppStyle.hGap12,
                   Expanded(
@@ -172,47 +129,23 @@ Widget buildFullControls(
                   ),
                   AppStyle.hGap12,
                   IconButton(
-                    onPressed: () {
-                      controller.saveScreenshot();
-                    },
-                    icon: const Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    onPressed: () => controller.saveScreenshot(),
+                    icon: const Icon(Icons.camera_alt_outlined, color: Colors.white, size: 24),
                   ),
                   IconButton(
-                    onPressed: () {
-                      showFollowUser(controller);
-                    },
-                    icon: const Icon(
-                      Remix.play_list_2_line,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    onPressed: () => showFollowUser(controller),
+                    icon: const Icon(Remix.play_list_2_line, color: Colors.white, size: 24),
                   ),
                   Visibility(
                     visible: Platform.isAndroid,
                     child: IconButton(
-                      onPressed: () {
-                        controller.enablePIP();
-                      },
-                      icon: const Icon(
-                        Icons.picture_in_picture,
-                        color: Colors.white,
-                        size: 24,
-                      ),
+                      onPressed: () => controller.enablePIP(),
+                      icon: const Icon(Icons.picture_in_picture, color: Colors.white, size: 24),
                     ),
                   ),
                   IconButton(
-                    onPressed: () {
-                      showPlayerSettings(controller);
-                    },
-                    icon: const Icon(
-                      Icons.more_horiz,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                    onPressed: () => showPlayerSettings(controller),
+                    icon: const Icon(Icons.more_horiz, color: Colors.white, size: 24),
                   ),
                 ],
               ),
@@ -223,131 +156,96 @@ Widget buildFullControls(
           () => AnimatedPositioned(
             left: 0,
             right: 0,
-            bottom: (controller.showControlsState.value &&
-                    !controller.lockControlsState.value)
+            bottom: (controller.showControlsState.value && !controller.lockControlsState.value)
                 ? 0
-                : -(80 + padding.bottom),
+                : -(110 + padding.bottom), // 增加隐藏位移，防止进度条露出
             duration: const Duration(milliseconds: 200),
             child: Container(
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black87,
-                  ],
+                  colors: [Colors.transparent, Colors.black87],
                 ),
               ),
-              padding: EdgeInsets.only(
-                left: padding.left + 12,
-                right: padding.right + 12,
-                bottom: padding.bottom,
-              ),
-              child: Row(
+              padding: EdgeInsets.only(left: padding.left + 12, right: padding.right + 12, bottom: padding.bottom),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    onPressed: () {
-                      controller.refreshRoom();
-                    },
-                    icon: const Icon(
-                      Remix.refresh_line,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Offstage(
-                    offstage: controller.showDanmakuState.value,
-                    child: IconButton(
-                      onPressed: () => controller.showDanmakuState.value =
-                          !controller.showDanmakuState.value,
-                      icon: const ImageIcon(
-                        AssetImage('assets/icons/icon_danmaku_open.png'),
-                        size: 24,
-                        color: Colors.white,
+                  // 回放进度条
+                  buildVodProgressBar(videoState, controller),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          controller.isVod.value = false;
+                          controller.refreshRoom();
+                        },
+                        icon: const Icon(Remix.refresh_line, color: Colors.white),
                       ),
-                    ),
-                  ),
-                  Offstage(
-                    offstage: !controller.showDanmakuState.value,
-                    child: IconButton(
-                      onPressed: () => controller.showDanmakuState.value =
-                          !controller.showDanmakuState.value,
-                      icon: const ImageIcon(
-                        AssetImage('assets/icons/icon_danmaku_close.png'),
-                        size: 24,
-                        color: Colors.white,
+                      Offstage(
+                        offstage: controller.showDanmakuState.value,
+                        child: IconButton(
+                          onPressed: () => controller.showDanmakuState.value = !controller.showDanmakuState.value,
+                          icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_open.png'), size: 24, color: Colors.white),
+                        ),
                       ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      showDanmakuSettings(controller);
-                    },
-                    icon: const ImageIcon(
-                      AssetImage('assets/icons/icon_danmaku_setting.png'),
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Obx(
-                    () => Padding(
-                      padding: const EdgeInsets.only(left: 8.0),
-                      child: Text(
-                        controller.liveDuration.value,
-                        style:
-                            const TextStyle(fontSize: 14, color: Colors.white),
+                      Offstage(
+                        offstage: !controller.showDanmakuState.value,
+                        child: IconButton(
+                          onPressed: () => controller.showDanmakuState.value = !controller.showDanmakuState.value,
+                          icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_close.png'), size: 24, color: Colors.white),
+                        ),
                       ),
-                    ),
-                  ),
-                  const Expanded(child: Center()),
-                  Visibility(
-                    visible: !Platform.isAndroid && !Platform.isIOS,
-                    child: IconButton(
-                      key: volumeButtonkey,
-                      onPressed: () {
-                        controller
-                            .showVolumeSlider(volumeButtonkey.currentContext!);
-                      },
-                      icon: const Icon(
-                        Icons.volume_down,
-                        size: 24,
-                        color: Colors.white,
+                      IconButton(
+                        onPressed: () => showDanmakuSettings(controller),
+                        icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_setting.png'), size: 24, color: Colors.white),
                       ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showQualitesInfo(controller);
-                    },
-                    child: Obx(
-                      () => Text(
-                        controller.currentQualityInfo.value,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 15),
+                      Obx(
+                        () => Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Text(
+                            controller.isVod.value ? "" : controller.liveDuration.value,
+                            style: const TextStyle(fontSize: 14, color: Colors.white),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      showLinesInfo(controller);
-                    },
-                    child: Text(
-                      controller.currentLineInfo.value,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      if (controller.smallWindowState.value) {
-                        controller.exitSmallWindow();
-                      } else {
-                        controller.exitFull();
-                      }
-                    },
-                    icon: const Icon(
-                      Remix.fullscreen_exit_fill,
-                      color: Colors.white,
-                    ),
+                      const Expanded(child: Center()),
+                      Visibility(
+                        visible: !Platform.isAndroid && !Platform.isIOS,
+                        child: IconButton(
+                          key: volumeButtonkey,
+                          onPressed: () => controller.showVolumeSlider(volumeButtonkey.currentContext!),
+                          icon: const Icon(Icons.volume_down, size: 24, color: Colors.white),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => showQualitesInfo(controller),
+                        child: Obx(
+                          () => Text(
+                            controller.currentQualityInfo.value,
+                            style: const TextStyle(color: Colors.white, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => showLinesInfo(controller),
+                        child: Text(
+                          controller.currentLineInfo.value,
+                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          if (controller.smallWindowState.value) {
+                            controller.exitSmallWindow();
+                          } else {
+                            controller.exitFull();
+                          }
+                        },
+                        icon: const Icon(Remix.fullscreen_exit_fill, color: Colors.white),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -358,9 +256,7 @@ Widget buildFullControls(
           () => AnimatedPositioned(
             top: 0,
             bottom: 0,
-            right: controller.showControlsState.value
-                ? padding.right + 12
-                : -(64 + padding.right),
+            right: controller.showControlsState.value ? padding.right + 12 : -(64 + padding.right),
             duration: const Duration(milliseconds: 200),
             child: buildLockButton(controller),
           ),
@@ -369,9 +265,7 @@ Widget buildFullControls(
           () => AnimatedPositioned(
             top: 0,
             bottom: 0,
-            left: controller.showControlsState.value
-                ? padding.left + 12
-                : -(64 + padding.right),
+            left: controller.showControlsState.value ? padding.left + 12 : -(64 + padding.right),
             duration: const Duration(milliseconds: 200),
             child: buildLockButton(controller),
           ),
@@ -382,14 +276,8 @@ Widget buildFullControls(
             child: Center(
               child: Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade900,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  controller.gestureTipText.value,
-                  style: const TextStyle(fontSize: 18, color: Colors.white),
-                ),
+                decoration: BoxDecoration(color: Colors.grey.shade900, borderRadius: BorderRadius.circular(12)),
+                child: Text(controller.gestureTipText.value, style: const TextStyle(fontSize: 18, color: Colors.white)),
               ),
             ),
           ),
@@ -402,21 +290,14 @@ Widget buildFullControls(
 Widget buildLockButton(LiveRoomController controller) {
   return Center(
     child: InkWell(
-      onTap: () {
-        controller.setLockState();
-      },
+      onTap: () => controller.setLockState(),
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.black45,
-          borderRadius: AppStyle.radius8,
-        ),
+        decoration: BoxDecoration(color: Colors.black45, borderRadius: AppStyle.radius8),
         width: 40,
         height: 40,
         child: Center(
           child: Icon(
-            controller.lockControlsState.value
-                ? Icons.lock_outline_rounded
-                : Icons.lock_open_outlined,
+            controller.lockControlsState.value ? Icons.lock_outline_rounded : Icons.lock_open_outlined,
             color: Colors.white,
             size: 20,
           ),
@@ -426,11 +307,7 @@ Widget buildLockButton(LiveRoomController controller) {
   );
 }
 
-Widget buildControls(
-  bool isPortrait,
-  VideoState videoState,
-  LiveRoomController controller,
-) {
+Widget buildControls(bool isPortrait, VideoState videoState, LiveRoomController controller) {
   GlobalKey volumeButtonkey = GlobalKey();
   return Stack(
     children: [
@@ -439,8 +316,7 @@ Widget buildControls(
       Obx(
         () => Visibility(
           visible: AppSettingsController.instance.playershowSuperChat.value &&
-              ((!Platform.isAndroid && !Platform.isIOS) ||
-                  controller.fullScreenState.value),
+              ((!Platform.isAndroid && !Platform.isIOS) || controller.fullScreenState.value),
           child: Positioned(
             left: 24,
             bottom: 24,
@@ -454,9 +330,7 @@ Widget buildControls(
           initialData: videoState.widget.controller.player.state.buffering,
           builder: (_, s) => Visibility(
             visible: s.data ?? false,
-            child: const Center(
-              child: CircularProgressIndicator(),
-            ),
+            child: const Center(child: CircularProgressIndicator()),
           ),
         ),
       ),
@@ -464,9 +338,12 @@ Widget buildControls(
         child: GestureDetector(
           onTap: controller.onTap,
           onDoubleTapDown: controller.onDoubleTap,
-          onVerticalDragStart: controller.onVerticalDragStart,
-          onVerticalDragUpdate: controller.onVerticalDragUpdate,
-          onVerticalDragEnd: controller.onVerticalDragEnd,
+          onHorizontalDragStart: controller.isVod.value ? controller.onHorizontalDragStart : null,
+          onHorizontalDragUpdate: controller.isVod.value ? controller.onHorizontalDragUpdate : null,
+          onHorizontalDragEnd: controller.isVod.value ? controller.onHorizontalDragEnd : null,
+          onVerticalDragStart: controller.isVod.value ? null : controller.onVerticalDragStart,
+          onVerticalDragUpdate: controller.isVod.value ? null : controller.onVerticalDragUpdate,
+          onVerticalDragEnd: controller.isVod.value ? null : controller.onVerticalDragEnd,
           child: MouseRegion(
             onEnter: controller.onEnter,
             child: Container(
@@ -481,138 +358,99 @@ Widget buildControls(
         () => AnimatedPositioned(
           left: 0,
           right: 0,
-          bottom: controller.showControlsState.value ? 0 : -48,
+          bottom: controller.showControlsState.value ? 0 : -80,
           duration: const Duration(milliseconds: 200),
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  Colors.transparent,
-                  Colors.black87,
-                ],
+                colors: [Colors.transparent, Colors.black87],
               ),
             ),
-            child: Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  onPressed: () {
-                    controller.refreshRoom();
-                  },
-                  icon: const Icon(
-                    Remix.refresh_line,
-                    color: Colors.white,
-                  ),
-                ),
-                Offstage(
-                  offstage: controller.showDanmakuState.value,
-                  child: IconButton(
-                    onPressed: () => controller.showDanmakuState.value =
-                        !controller.showDanmakuState.value,
-                    icon: const ImageIcon(
-                      AssetImage('assets/icons/icon_danmaku_open.png'),
-                      size: 24,
-                      color: Colors.white,
+                buildVodProgressBar(videoState, controller),
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: () {
+                        controller.isVod.value = false;
+                        controller.refreshRoom();
+                      },
+                      icon: const Icon(Remix.refresh_line, color: Colors.white),
                     ),
-                  ),
-                ),
-                Offstage(
-                  offstage: !controller.showDanmakuState.value,
-                  child: IconButton(
-                    onPressed: () => controller.showDanmakuState.value =
-                        !controller.showDanmakuState.value,
-                    icon: const ImageIcon(
-                      AssetImage('assets/icons/icon_danmaku_close.png'),
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    controller.showDanmuSettingsSheet();
-                  },
-                  icon: const ImageIcon(
-                    AssetImage('assets/icons/icon_danmaku_setting.png'),
-                    size: 24,
-                    color: Colors.white,
-                  ),
-                ),
-                Obx(
-                  () => Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Text(
-                      controller.liveDuration.value,
-                      style: const TextStyle(fontSize: 14, color: Colors.white),
-                    ),
-                  ),
-                ),
-                const Expanded(child: Center()),
-                Visibility(
-                  visible: !Platform.isAndroid && !Platform.isIOS,
-                  child: IconButton(
-                    key: volumeButtonkey,
-                    onPressed: () {
-                      controller.showVolumeSlider(
-                        volumeButtonkey.currentContext!,
-                      );
-                    },
-                    icon: const Icon(
-                      Icons.volume_down,
-                      size: 24,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                Offstage(
-                  offstage: isPortrait,
-                  child: TextButton(
-                    onPressed: () {
-                      controller.showQualitySheet();
-                    },
-                    child: Obx(
-                      () => Text(
-                        controller.currentQualityInfo.value,
-                        style:
-                            const TextStyle(color: Colors.white, fontSize: 15),
+                    Offstage(
+                      offstage: controller.showDanmakuState.value,
+                      child: IconButton(
+                        onPressed: () => controller.showDanmakuState.value = !controller.showDanmakuState.value,
+                        icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_open.png'), size: 24, color: Colors.white),
                       ),
                     ),
-                  ),
-                ),
-                Offstage(
-                  offstage: isPortrait,
-                  child: TextButton(
-                    onPressed: () {
-                      controller.showPlayUrlsSheet();
-                    },
-                    child: Text(
-                      controller.currentLineInfo.value,
-                      style: const TextStyle(color: Colors.white, fontSize: 15),
+                    Offstage(
+                      offstage: !controller.showDanmakuState.value,
+                      child: IconButton(
+                        onPressed: () => controller.showDanmakuState.value = !controller.showDanmakuState.value,
+                        icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_close.png'), size: 24, color: Colors.white),
+                      ),
                     ),
-                  ),
-                ),
-                Visibility(
-                  visible: !Platform.isAndroid && !Platform.isIOS,
-                  child: IconButton(
-                    onPressed: () {
-                      controller.enterSmallWindow();
-                    },
-                    icon: const Icon(
-                      Icons.picture_in_picture,
-                      color: Colors.white,
-                      size: 24,
+                    IconButton(
+                      onPressed: () => controller.showDanmuSettingsSheet(),
+                      icon: const ImageIcon(AssetImage('assets/icons/icon_danmaku_setting.png'), size: 24, color: Colors.white),
                     ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    controller.enterFullScreen();
-                  },
-                  icon: const Icon(
-                    Remix.fullscreen_line,
-                    color: Colors.white,
-                  ),
+                    Obx(
+                      () => Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          controller.isVod.value ? "" : controller.liveDuration.value,
+                          style: const TextStyle(fontSize: 14, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                    const Expanded(child: Center()),
+                    Visibility(
+                      visible: !Platform.isAndroid && !Platform.isIOS,
+                      child: IconButton(
+                        key: volumeButtonkey,
+                        onPressed: () => controller.showVolumeSlider(volumeButtonkey.currentContext!),
+                        icon: const Icon(Icons.volume_down, size: 24, color: Colors.white),
+                      ),
+                    ),
+                    Offstage(
+                      offstage: isPortrait,
+                      child: TextButton(
+                        onPressed: () => controller.showQualitySheet(),
+                        child: Obx(
+                          () => Text(
+                            controller.currentQualityInfo.value,
+                            style: const TextStyle(color: Colors.white, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Offstage(
+                      offstage: isPortrait,
+                      child: TextButton(
+                        onPressed: () => controller.showPlayUrlsSheet(),
+                        child: Text(
+                          controller.currentLineInfo.value,
+                          style: const TextStyle(color: Colors.white, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                    Visibility(
+                      visible: !Platform.isAndroid && !Platform.isIOS,
+                      child: IconButton(
+                        onPressed: () => controller.enterSmallWindow(),
+                        icon: const Icon(Icons.picture_in_picture, color: Colors.white, size: 24),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => controller.enterFullScreen(),
+                      icon: const Icon(Remix.fullscreen_line, color: Colors.white),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -625,14 +463,8 @@ Widget buildControls(
           child: Center(
             child: Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade900,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                controller.gestureTipText.value,
-                style: const TextStyle(fontSize: 18, color: Colors.white),
-              ),
+              decoration: BoxDecoration(color: Colors.grey.shade900, borderRadius: BorderRadius.circular(12)),
+              child: Text(controller.gestureTipText.value, style: const TextStyle(fontSize: 18, color: Colors.white)),
             ),
           ),
         ),
@@ -664,8 +496,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
           padding: controller.fullScreenState.value
               ? EdgeInsets.only(
                   top: AppSettingsController.instance.danmuTopMargin.value,
-                  bottom:
-                      AppSettingsController.instance.danmuBottomMargin.value,
+                  bottom: AppSettingsController.instance.danmuBottomMargin.value,
                 )
               : EdgeInsets.zero,
           child: controller.danmakuView!,
@@ -673,6 +504,62 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
       ),
     ),
   );
+}
+
+Widget buildVodProgressBar(VideoState videoState, LiveRoomController controller) {
+  return Obx(() {
+    if (!controller.isVod.value) return const SizedBox.shrink();
+    return StreamBuilder<Duration>(
+      stream: videoState.widget.controller.player.stream.position,
+      initialData: videoState.widget.controller.player.state.position,
+      builder: (context, snapshot) {
+        final position = controller.isDragging ? controller.dragTargetPosition : (snapshot.data ?? Duration.zero);
+        return StreamBuilder<Duration>(
+          stream: videoState.widget.controller.player.stream.duration,
+          initialData: videoState.widget.controller.player.state.duration,
+          builder: (context, durationSnapshot) {
+            final duration = durationSnapshot.data ?? Duration.zero;
+            final max = duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0;
+            String format(Duration d) => "${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
+            
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Row(
+                children: [
+                  Text(format(position), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                  Expanded(
+                    child: SliderTheme(
+                      data: SliderThemeData(
+                        trackHeight: 2.0,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
+                        activeTrackColor: Theme.of(context).colorScheme.primary,
+                        inactiveTrackColor: Colors.white30,
+                        thumbColor: Theme.of(context).colorScheme.primary,
+                      ),
+                      child: Slider(
+                        value: position.inSeconds.toDouble().clamp(0.0, max),
+                        max: max,
+                        onChanged: (value) {
+                          controller.isDragging = true;
+                          controller.dragTargetPosition = Duration(seconds: value.toInt());
+                          videoState.widget.controller.player.seek(Duration(seconds: value.toInt()));
+                        },
+                        onChangeEnd: (value) {
+                          controller.isDragging = false;
+                        },
+                      ),
+                    ),
+                  ),
+                  Text(format(duration), style: const TextStyle(color: Colors.white, fontSize: 11)),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  });
 }
 
 void showLinesInfo(LiveRoomController controller) {
@@ -695,19 +582,12 @@ void showLinesInfo(LiveRoomController controller) {
               children: [
                 WidgetSpan(
                   child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: AppStyle.radius4,
-                      border: Border.all(
-                        color: Colors.grey,
-                      ),
-                    ),
+                    decoration: BoxDecoration(borderRadius: AppStyle.radius4, border: Border.all(color: Colors.grey)),
                     padding: AppStyle.edgeInsetsH4,
                     margin: AppStyle.edgeInsetsL8,
                     child: Text(
                       controller.playUrls[i].contains(".flv") ? "FLV" : "HLS",
-                      style: const TextStyle(
-                        fontSize: 12,
-                      ),
+                      style: const TextStyle(fontSize: 12),
                     ),
                   ),
                 ),
@@ -741,19 +621,20 @@ void showQualitesInfo(LiveRoomController controller) {
         var item = controller.qualites[i];
         return ListTile(
           selected: controller.currentQuality == i,
-          title: Text(
-            item.quality,
-            style: const TextStyle(fontSize: 14),
-          ),
+          title: Text(item.quality, style: const TextStyle(fontSize: 14)),
           minLeadingWidth: 16,
           onTap: () async {
             Utils.hideRightDialog();
-            await LocalStorageService.instance.setValue(
-              LocalStorageService.kLastQuality,
-              item.quality,
-            );
-            controller.currentQuality = i;
-            controller.getPlayUrl();
+            if (controller.isVod.value) {
+              var url = controller.qualites[i].data["url"].toString();
+              controller.currentQuality = i;
+              controller.player.open(Media(url));
+              controller.player.play();
+            } else {
+              await LocalStorageService.instance.setValue(LocalStorageService.kLastQuality, item.quality);
+              controller.currentQuality = i;
+              controller.getPlayUrl();
+            }
           },
         );
       },
@@ -772,11 +653,7 @@ void showDanmakuSettings(LiveRoomController controller) {
     useSystem: true,
     child: ListView(
       padding: AppStyle.edgeInsetsA12,
-      children: [
-        DanmuSettingsView(
-          danmakuController: controller.danmakuController,
-        ),
-      ],
+      children: [DanmuSettingsView(danmakuController: controller.danmakuController)],
     ),
   );
 }
@@ -800,43 +677,12 @@ void showPlayerSettings(LiveRoomController controller) {
         child: ListView(
           padding: AppStyle.edgeInsetsV12,
           children: [
-            Padding(
-              padding: AppStyle.edgeInsetsH16,
-              child: Text(
-                "画面尺寸",
-                style: Get.textTheme.titleMedium,
-              ),
-            ),
-            const RadioListTile<int>(
-              value: 0,
-              contentPadding: AppStyle.edgeInsetsH4,
-              title: Text("适应"),
-              visualDensity: VisualDensity.compact,
-            ),
-            const RadioListTile<int>(
-              value: 1,
-              contentPadding: AppStyle.edgeInsetsH4,
-              title: Text("拉伸"),
-              visualDensity: VisualDensity.compact,
-            ),
-            const RadioListTile<int>(
-              value: 2,
-              contentPadding: AppStyle.edgeInsetsH4,
-              title: Text("铺满"),
-              visualDensity: VisualDensity.compact,
-            ),
-            const RadioListTile<int>(
-              value: 3,
-              contentPadding: AppStyle.edgeInsetsH4,
-              title: Text("16:9"),
-              visualDensity: VisualDensity.compact,
-            ),
-            const RadioListTile<int>(
-              value: 4,
-              contentPadding: AppStyle.edgeInsetsH4,
-              title: Text("4:3"),
-              visualDensity: VisualDensity.compact,
-            ),
+            Padding(padding: AppStyle.edgeInsetsH16, child: Text("画面尺寸", style: Get.textTheme.titleMedium)),
+            const RadioListTile<int>(value: 0, contentPadding: AppStyle.edgeInsetsH4, title: Text("适应"), visualDensity: VisualDensity.compact),
+            const RadioListTile<int>(value: 1, contentPadding: AppStyle.edgeInsetsH4, title: Text("拉伸"), visualDensity: VisualDensity.compact),
+            const RadioListTile<int>(value: 2, contentPadding: AppStyle.edgeInsetsH4, title: Text("铺满"), visualDensity: VisualDensity.compact),
+            const RadioListTile<int>(value: 3, contentPadding: AppStyle.edgeInsetsH4, title: Text("16:9"), visualDensity: VisualDensity.compact),
+            const RadioListTile<int>(value: 4, contentPadding: AppStyle.edgeInsetsH4, title: Text("4:3"), visualDensity: VisualDensity.compact),
           ],
         ),
       ),
@@ -865,14 +711,10 @@ void showFollowUser(LiveRoomController controller) {
                 return Obx(
                   () => FollowUserItem(
                     item: item,
-                    playing: controller.rxSite.value.id == item.siteId &&
-                        controller.rxRoomId.value == item.roomId,
+                    playing: controller.rxSite.value.id == item.siteId && controller.rxRoomId.value == item.roomId,
                     onTap: () {
                       Utils.hideRightDialog();
-                      controller.resetRoom(
-                        Sites.allSites[item.siteId]!,
-                        item.roomId,
-                      );
+                      controller.resetRoom(Sites.allSites[item.siteId]!, item.roomId);
                     },
                   ),
                 );
@@ -900,12 +742,7 @@ class PlayerSuperChatCard extends StatefulWidget {
   final LiveSuperChatMessage message;
   final VoidCallback onExpire;
   final int duration;
-  const PlayerSuperChatCard(
-      {required this.message,
-      required this.onExpire,
-      required this.duration,
-      Key? key})
-      : super(key: key);
+  const PlayerSuperChatCard({required this.message, required this.onExpire, required this.duration, Key? key}) : super(key: key);
   @override
   State<PlayerSuperChatCard> createState() => _PlayerSuperChatCardState();
 }
@@ -939,11 +776,7 @@ class _PlayerSuperChatCardState extends State<PlayerSuperChatCard> {
   Widget build(BuildContext context) {
     return Opacity(
       opacity: 0.65,
-      child: SuperChatCard(
-        widget.message,
-        onExpire: () {},
-        customCountdown: countdown,
-      ),
+      child: SuperChatCard(widget.message, onExpire: () {}, customCountdown: countdown),
     );
   }
 }
@@ -957,8 +790,7 @@ class LocalDisplaySC {
 
 class PlayerSuperChatOverlay extends StatefulWidget {
   final LiveRoomController controller;
-  const PlayerSuperChatOverlay({required this.controller, Key? key})
-      : super(key: key);
+  const PlayerSuperChatOverlay({required this.controller, Key? key}) : super(key: key);
   @override
   State<PlayerSuperChatOverlay> createState() => _PlayerSuperChatOverlayState();
 }
@@ -986,21 +818,14 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
   @override
   void initState() {
     super.initState();
-
     final now = DateTime.now().millisecondsSinceEpoch;
     for (var sc in widget.controller.superChats) {
       int remain = (sc.endTime.millisecondsSinceEpoch - now) ~/ 1000;
-      if (remain > 0) {
-        _addSC(sc, customSeconds: remain < 15 ? remain : 15);
-      }
+      if (remain > 0) _addSC(sc, customSeconds: remain < 15 ? remain : 15);
     }
-
-    _worker =
-        ever<List<LiveSuperChatMessage>>(widget.controller.superChats, (list) {
+    _worker = ever<List<LiveSuperChatMessage>>(widget.controller.superChats, (list) {
       for (var sc in list) {
-        if (!_displayed.any((e) => e.sc == sc)) {
-          _addSC(sc);
-        }
+        if (!_displayed.any((e) => e.sc == sc)) _addSC(sc);
       }
       _displayed.removeWhere((e) => !list.contains(e.sc));
       setState(() {});
@@ -1018,8 +843,7 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
 
   @override
   Widget build(BuildContext context) {
-    final sorted = _displayed.toList()
-      ..sort((a, b) => a.sc.endTime.compareTo(b.sc.endTime));
+    final sorted = _displayed.toList()..sort((a, b) => a.sc.endTime.compareTo(b.sc.endTime));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1028,50 +852,10 @@ class _PlayerSuperChatOverlayState extends State<PlayerSuperChatOverlay> {
             padding: const EdgeInsets.only(bottom: 12),
             child: SizedBox(
               width: 240,
-              child: PlayerSuperChatCard(
-                message: localSC.sc,
-                onExpire: () {},
-                duration: localSC.duration,
-              ),
+              child: PlayerSuperChatCard(message: localSC.sc, onExpire: () {}, duration: localSC.duration),
             ),
           ),
       ],
     );
   }
-}
-
-Widget buildVodProgressBar(VideoState videoState, LiveRoomController controller) {
-  return Obx(() {
-    if (!controller.isVod.value) return const SizedBox.shrink();
-    return StreamBuilder<Duration>(
-      stream: videoState.widget.controller.player.stream.position,
-      builder: (context, snapshot) {
-        final position = snapshot.data ?? Duration.zero;
-        return StreamBuilder<Duration>(
-          stream: videoState.widget.controller.player.stream.duration,
-          builder: (context, snapshot) {
-            final duration = snapshot.data ?? Duration.zero;
-            final max = duration.inSeconds > 0 ? duration.inSeconds.toDouble() : 1.0;
-            return SliderTheme(
-              data: SliderThemeData(
-                trackHeight: 2.0,
-                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
-                overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
-                activeTrackColor: Theme.of(context).colorScheme.primary,
-                inactiveTrackColor: Colors.white30,
-                thumbColor: Theme.of(context).colorScheme.primary,
-              ),
-              child: Slider(
-                value: position.inSeconds.toDouble().clamp(0.0, max),
-                max: max,
-                onChanged: (value) {
-                  videoState.widget.controller.player.seek(Duration(seconds: value.toInt()));
-                },
-              ),
-            );
-          },
-        );
-      },
-    );
-  });
 }

@@ -100,6 +100,10 @@ mixin PlayerMixin {
 }
 
 mixin PlayerStateMixin on PlayerMixin {
+  bool isDragging = false;
+  double dragStartX = 0.0;
+  Duration dragStartPosition = Duration.zero;
+  Duration dragTargetPosition = Duration.zero;
   ///音量控制条计时器
   Timer? hidevolumeTimer;
 
@@ -154,6 +158,35 @@ mixin PlayerStateMixin on PlayerMixin {
   var showLines = false.obs;
 
   /// 隐藏控制器
+  void onHorizontalDragStart(DragStartDetails details) {
+    if (!isVod.value) return;
+    isDragging = true;
+    dragStartX = details.globalPosition.dx;
+    dragStartPosition = player.state.position;
+    dragTargetPosition = dragStartPosition;
+  }
+
+  void onHorizontalDragUpdate(DragUpdateDetails details) {
+    if (!isVod.value || !isDragging) return;
+    final dx = details.globalPosition.dx - dragStartX;
+    final screenWidth = Get.width;
+    final seekSeconds = ((dx / screenWidth) * 120).toInt();
+    dragTargetPosition = dragStartPosition + Duration(seconds: seekSeconds);
+    if (dragTargetPosition < Duration.zero) dragTargetPosition = Duration.zero;
+    if (dragTargetPosition > player.state.duration) dragTargetPosition = player.state.duration;
+    
+    showGestureTip.value = true;
+    String format(Duration d) => "${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
+    gestureTipText.value = "${seekSeconds >= 0 ? '快进' : '快退'}  ${format(dragTargetPosition)}";
+  }
+
+  void onHorizontalDragEnd(DragEndDetails details) {
+    if (!isVod.value || !isDragging) return;
+    isDragging = false;
+    showGestureTip.value = false;
+    player.seek(dragTargetPosition);
+  }
+
   void hideControls() {
     showControlsState.value = false;
     hideControlsTimer?.cancel();
