@@ -3,6 +3,7 @@ import 'package:simple_live_tv_app/services/local_storage_service.dart';
 
 import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
+import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:media_kit/media_kit.dart';
