@@ -815,6 +815,8 @@ class HuyaSite implements LiveSite {
 
 
 
+}}
+
 class HuyaUrlDataModel {
   final String url;
   final String uid;
