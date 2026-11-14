@@ -687,7 +687,7 @@ class HuyaSite implements LiveSite {
       // "exsphd": query["exsphd"] ?? "",
       "dMod": "mseh-0",
       "sdkPcdn": "1_1",
-      "uid": uid,
+      
       "uuid": getUUid(),
       "t": query["t"]!,
       "sv": "202411221719",
@@ -735,35 +735,23 @@ class HuyaSite implements LiveSite {
       var escape = false;
       var endBrace = -1;
 
-      // 核心修复：完全使用 r'' 进行转义识别，和 PureLive 对齐
       for (var i = startBrace; i < response.length; i++) {
         var c = response[i];
         if (quote.isNotEmpty) {
-          if (escape) {
-            escape = false;
-          } else if (c == r'\') {
-            escape = true;
-          } else if (c == quote) {
-            quote = '';
-          }
-        } else if (c == '"' || c == "'") {
-          quote = c;
-        } else if (c == '{') {
-          depth++;
-        } else if (c == '}') {
+          if (escape) escape = false;
+          else if (c == r'\') escape = true;
+          else if (c == quote) quote = '';
+        } else if (c == '"' || c == "'") quote = c;
+        else if (c == '{') depth++;
+        else if (c == '}') {
           depth--;
-          if (depth == 0) {
-            endBrace = i;
-            break;
-          }
+          if (depth == 0) { endBrace = i; break; }
         }
       }
 
       if (endBrace == -1) return LiveReplayResult(items: [], hasMore: false);
 
       var jsonStr = response.substring(startBrace, endBrace + 1);
-      
-      // 精确替换，防止破坏结构
       jsonStr = jsonStr.replaceAllMapped(
         RegExp(r'"_(?:proto|write|read)"\s*:\s*function\s*\([^)]{0,128}\)\s*\{[^{}]{0,1024}\}'), 
         (m) => '"_proto":null'
@@ -794,42 +782,30 @@ class HuyaSite implements LiveSite {
     }
   }
 
-      Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
+  Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
       var response = await HttpClient.instance.getText(
         "https://liveapi.huya.com/moment/getMomentContent",
         queryParameters: {"videoId": videoId},
-        header: {
-          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-          "referer": "https://www.huya.com/"
-        },
+        header: {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", "referer": "https://www.huya.com/"},
       );
       
       var res = json.decode(response);
       var vMultiStreamInfo = res["data"]?["videoInfo"]?["vMultiStreamInfo"];
       
-      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) {
-        CoreLog.error("[虎牙回放] 找不到 vMultiStreamInfo 字段");
-        return [];
-      }
+      if (vMultiStreamInfo == null || vMultiStreamInfo is! List) return [];
 
       List<LivePlayQuality> qualities = [];
       for (var item in vMultiStreamInfo) {
         String? url = item["sUrl"]?.toString() ?? item["sStreamName"]?.toString();
-        
         if (url != null && url.isNotEmpty) {
-          if (!url.startsWith("http")) {
-            url = "https://al.flv.huya.com/$url";
-          }
-          
+          if (!url.startsWith("http")) url = "https://al.flv.huya.com/$url";
           qualities.add(LivePlayQuality(
             quality: item["sDisplayName"]?.toString() ?? "原画",
             data: {"url": url, "bitRate": item["iBitRate"] ?? 0},
           ));
         }
       }
-      
-      CoreLog.d("[虎牙回放] 成功解析到 ${qualities.length} 个播放地址");
       return qualities;
     } catch (e) {
       CoreLog.error("[虎牙回放] 解析异常: $e");
@@ -837,74 +813,6 @@ class HuyaSite implements LiveSite {
     }
   }
 
-@override
-  String toString() {
-    return json.encode({
-      "url": url,
-      "uid": uid,
-      "lines": lines.map((e) => e.toString()).toList(),
-      "bitRates": bitRates.map((e) => e.toString()).toList(),
-    });
-  }
-}
-
-enum HuyaLineType {
-  flv,
-  hls,
-}
-
-class HuyaLineModel {
-  final String line;
-  final String cdnType;
-  final String flvAntiCode;
-  final String hlsAntiCode;
-  final String streamName;
-  final HuyaLineType lineType;
-  int bitRate;
-  final int presenterUid; // topSid = subSid = presenterUid
-
-  HuyaLineModel({
-    required this.line,
-    required this.lineType,
-    required this.flvAntiCode,
-    required this.hlsAntiCode,
-    required this.streamName,
-    required this.cdnType,
-    this.bitRate = 0,
-    required this.presenterUid,
-  });
-
-  @override
-  String toString() {
-    return json.encode({
-      "line": line,
-      "cdnType": cdnType,
-      "flvAntiCode": flvAntiCode,
-      "hlsAntiCode": hlsAntiCode,
-      "streamName": streamName,
-      "lineType": lineType.toString(),
-      "presenterUid": presenterUid,
-    });
-  }
-}
-
-class HuyaBitRateModel {
-  final String name;
-  final int bitRate;
-
-  HuyaBitRateModel({
-    required this.bitRate,
-    required this.name,
-  });
-
-  @override
-  String toString() {
-    return json.encode({
-      "name": name,
-      "bitRate": bitRate,
-    });
-  }
-}
 
 
 class HuyaUrlDataModel {
