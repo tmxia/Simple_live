@@ -840,38 +840,62 @@ class BiliBiliSite implements LiveSite {
         CoreLog.error("[B站回放] 获取 cid 失败");
         return [];
       }
+
       List<dynamic> allPages = pagelist["data"] as List;
       List<Map<String, dynamic>> vodPages = [];
       for (var p in allPages) {
         vodPages.add({"cid": p["cid"].toString(), "title": (p["part"] ?? "第 ${vodPages.length + 1} 集").toString()});
       }
+
       var cid = pagelist["data"][0]["cid"];
 
+      // 核心修复：去掉 platform: html5 限制，加上 try_look 解锁权限
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
         queryParameters: {
           "bvid": videoId, 
           "cid": cid, 
           "fnval": 1, 
-          "qn": 80, 
-          "platform": "html5"
+          "qn": 80,       // 请求 1080P
+          "try_look": 1,  // B站 Web 端特权参数
         },
-        header: {"referer": "https://www.bilibili.com/", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"},
+        header: {
+          "referer": "https://www.bilibili.com/", 
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
       );
-      
+
       if (playurl["code"] != 0) {
         CoreLog.error("[B站回放] 获取播放流失败");
         return [];
       }
 
       List<LivePlayQuality> qualities = [];
-      
+
+      // 画质代码翻译器
+      String getQnName(int qn) {
+        switch (qn) {
+          case 127: return "8K 超高清";
+          case 126: return "杜比视界";
+          case 125: return "HDR 真彩";
+          case 120: return "4K 超清";
+          case 116: return "1080P60";
+          case 112: return "1080P+";
+          case 80: return "1080P 高清";
+          case 74: return "720P60";
+          case 64: return "720P 高清";
+          case 32: return "480P 标清";
+          case 16: return "360P 流畅";
+          default: return "默认画质 ($qn)";
+        }
+      }
+
       if (playurl["data"]["durl"] != null) {
         var durls = playurl["data"]["durl"] as List;
         if (durls.isNotEmpty) {
-          String qualityStr = playurl["data"]["quality"]?.toString() ?? "1080P";
+          int qnCode = playurl["data"]["quality"] ?? 64;
           qualities.add(LivePlayQuality(
-            quality: "画质: $qualityStr",
+            quality: getQnName(qnCode),
             data: {"url": durls[0]["url"].toString(), "bitRate": 0, "pages": vodPages, "bvid": videoId},
           ));
         }
@@ -881,9 +905,10 @@ class BiliBiliSite implements LiveSite {
           videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
           var bestVideo = videoStreams.first;
           var url = bestVideo["baseUrl"].toString();
-          
+          int qnCode = bestVideo["id"] ?? 80;
+
           qualities.add(LivePlayQuality(
-            quality: "B站原画",
+            quality: getQnName(qnCode),
             data: {"url": url, "bitRate": bestVideo["bandwidth"], "pages": vodPages, "bvid": videoId},
           ));
         }
