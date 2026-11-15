@@ -481,7 +481,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
             await (player.platform as NativePlayer).command(["audio-add", audioUrl]);
             Log.d("成功将分离的音频流合并到 1080P 视频中");
           } catch (e) {
-            Log.e("合并音频失败: $e");
+            Log.e("合并音频失败: $e", StackTrace.current);
           }
         });
       }
