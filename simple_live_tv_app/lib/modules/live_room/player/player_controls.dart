@@ -23,85 +23,55 @@ Widget playerControls(VideoState videoState, LiveRoomController controller) {
 }
 
 Widget buildControls(VideoState videoState, LiveRoomController controller) {
-  return Focus(
-    autofocus: true,
-    // 物理拦截全局上下方向键
-    onKeyEvent: (node, event) {
-      if (controller.showControlsState.value) {
-        if (event is KeyDownEvent) {
-          if (event.logicalKey == LogicalKeyboardKey.arrowUp || 
-              event.logicalKey == LogicalKeyboardKey.arrowDown) {
-            return KeyEventResult.handled; // 吃掉上下键，不让全局生效
-          }
-        }
-      }
-      return KeyEventResult.ignored;
-    },
-    child: Stack(
-      children: [
+  final progressFocus = FocusNode(debugLabel: "ProgressBar");
+  final buttonsFocus = FocusNode(debugLabel: "ControlButtons");
+
+  return Stack(
+    children: [
       Container(),
       buildDanmuView(videoState, controller),
       
+      // 背景点击拦截（彻底杜绝方向键触发点击）
       Positioned.fill(
-        child: GestureDetector(
-          onTap: () {
-            if (controller.showControlsState.value) {
-              // 如果底栏已经出来，按 OK 键绝不关闭底栏，而是强行把焦点给“观看回放”
-              FocusScope.of(videoState.context).requestFocus(controller.replayFocusNode);
-            } else {
-              // 底栏没出来，正常呼出
-              controller.showControls();
-              Future.delayed(const Duration(milliseconds: 100), () {
-                if (videoState.context.mounted) {
-                  FocusScope.of(videoState.context).requestFocus(controller.replayFocusNode);
-                }
-              });
-            }
-          },
+        child: IgnorePointer(
+          ignoring: controller.showControlsState.value, // 底栏显示时背景彻底失明
+          child: GestureDetector(
+            onTap: () {
+              if (!controller.showControlsState.value) {
+                controller.showControls();
+                Future.delayed(const Duration(milliseconds: 100), () {
+                  controller.replayFocusNode.requestFocus();
+                });
+              }
+            },
+          ),
         ),
       ),
+      
       Center(
-        child: 
-            StreamBuilder(
+        child: StreamBuilder(
           stream: videoState.widget.controller.player.stream.buffering,
           initialData: videoState.widget.controller.player.state.buffering,
           builder: (_, s) => Visibility(
             visible: s.data ?? false,
             child: SizedBox(
-              width: 64.w,
-              height: 64.w,
-              child: CircularProgressIndicator(
-                strokeWidth: 8.w,
-                color: Colors.white,
-              ),
+              width: 64.w, height: 64.w,
+              child: CircularProgressIndicator(strokeWidth: 8.w, color: Colors.white),
             ),
           ),
         ),
       ),
-
       
+      // 顶部信息
       Obx(
         () => AnimatedPositioned(
-          left: 0,
-          right: 0,
-          top: (controller.showControlsState.value &&
-                  !controller.lockControlsState.value)
-              ? 0
-              : -200.w,
+          left: 0, right: 0,
+          top: (controller.showControlsState.value && !controller.lockControlsState.value) ? 0 : -200.w,
           duration: const Duration(milliseconds: 200),
           child: Container(
-            padding: EdgeInsets.only(
-              left: 32.w,
-              right: 32.w,
-              top: 24.w,
-              bottom: 24.w,
-            ),
+            padding: EdgeInsets.only(left: 32.w, right: 32.w, top: 24.w, bottom: 24.w),
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-                colors: [Colors.transparent, Colors.black87],
-              ),
+              gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Colors.transparent, Colors.black87]),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,222 +80,175 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(
-                        controller.detail.value?.title ?? '正在读取直播信息...',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppStyle.textStyleWhite,
-                      ),
-                      Text(
-                        "${controller.detail.value?.userName} · ${controller.followed.value ? "已关注" : "未关注"}",
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w),
-                      ),
+                      Text(controller.detail.value?.title ?? '', maxLines: 1, style: AppStyle.textStyleWhite),
+                      Text(controller.detail.value?.userName ?? '', maxLines: 1, style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w)),
                     ],
                   ),
                 ),
-                Obx(
-                  () => Text(
-                    controller.datetime.value,
-                    style: AppStyle.titleStyleWhite,
-                  ),
-                ),
+                Obx(() => Text(controller.datetime.value, style: AppStyle.titleStyleWhite)),
               ],
             ),
           ),
         ),
       ),
-      // 底部
+      
+      // ================= 底部控制栏 =================
       Obx(
         () => AnimatedPositioned(
-          left: 0,
-          right: 0,
-          bottom: (controller.showControlsState.value &&
-                  !controller.lockControlsState.value)
-              ? 0
-              : -300.w,
+          left: 0, right: 0,
+          bottom: (controller.showControlsState.value && !controller.lockControlsState.value) ? 0 : -300.w,
           duration: const Duration(milliseconds: 200),
-          // 核心修复：动画结束回调。当底栏滑出完毕，立刻抢占焦点！
           onEnd: () {
-            if (controller.showControlsState.value && !controller.lockControlsState.value) {
+            if (controller.showControlsState.value) {
               controller.replayFocusNode.requestFocus();
             }
           },
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Colors.transparent, Colors.black87],
-              ),
-            ),
-            padding: EdgeInsets.only(
-              left: 32.w,
-              right: 32.w,
-              bottom: 24.w,
-              top: 24.w,
-            ),
-            child: Column(
-              children: [
-                // === 新增的进度条 (仅在回放时显示) ===
-                Obx(() {
-                  if (!controller.isVod.value) return const SizedBox.shrink();
-                  return StreamBuilder<Duration>(
-                    stream: controller.player.stream.position,
-                    initialData: controller.player.state.position,
-                    builder: (context, snapshot) {
-                      return StreamBuilder<Duration>(
-                        stream: controller.player.stream.duration,
-                        initialData: controller.player.state.duration,
-                        builder: (context, durationSnapshot) {
-                          final pos = snapshot.data ?? Duration.zero;
-                          final dur = durationSnapshot.data ?? Duration.zero;
-                          String format(Duration d) => "${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
-                          
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 16.w),
-                            child: Row(
-                              children: [
-                                Text(format(pos), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
-                                SizedBox(width: 16.w),
-                                Expanded(
-                                  child: SliderTheme(
-                                    data: SliderTheme.of(context).copyWith(
-                                      trackHeight: 4.w,
-                                      thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.w),
-                                      overlayShape: RoundSliderOverlayShape(overlayRadius: 16.w),
-                                      activeTrackColor: Theme.of(context).colorScheme.primary,
-                                      inactiveTrackColor: Colors.white30,
-                                      thumbColor: Theme.of(context).colorScheme.primary,
-                                    ),
-                                    child: Slider(
-                                      value: pos.inMilliseconds.toDouble().clamp(0.0, dur.inMilliseconds.toDouble()),
-                                      max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
-                                      onChanged: (val) {
-                                        controller.player.seek(Duration(milliseconds: val.toInt()));
-                                      },
+          // 核心修复：使用 Shortcuts 物理级拦截全局按键，彻底阻断冒泡
+          child: Shortcuts(
+            shortcuts: {
+              LogicalKeySet(LogicalKeyboardKey.arrowLeft): const PreviousFocusIntent(),
+              LogicalKeySet(LogicalKeyboardKey.arrowRight): const NextFocusIntent(),
+              LogicalKeySet(LogicalKeyboardKey.arrowUp): const DirectionalFocusIntent(TraversalDirection.up),
+              LogicalKeySet(LogicalKeyboardKey.arrowDown): const DirectionalFocusIntent(TraversalDirection.down),
+            },
+            child: FocusScope(
+              child: Focus(
+                onKeyEvent: (node, event) {
+                  if (event is KeyDownEvent) {
+                    final primary = FocusManager.instance.primaryFocus;
+                    // 手动控制上下键在 进度条 <-> 按钮 之间流转
+                    if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+                      if (controller.isVod.value && primary == buttonsFocus) {
+                        progressFocus.requestFocus();
+                        return KeyEventResult.handled;
+                      }
+                    } else if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
+                      if (primary == progressFocus) {
+                        buttonsFocus.requestFocus();
+                        return KeyEventResult.handled;
+                      }
+                    }
+                  }
+                  return KeyEventResult.ignored;
+                },
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black87]),
+                  ),
+                  padding: EdgeInsets.only(left: 32.w, right: 32.w, bottom: 24.w, top: 24.w),
+                  child: Column(
+                    children: [
+                      // 进度条
+                      Obx(() {
+                        if (!controller.isVod.value) return const SizedBox.shrink();
+                        return StreamBuilder<Duration>(
+                          stream: controller.player.stream.position,
+                          initialData: controller.player.state.position,
+                          builder: (context, snapshot) {
+                            return StreamBuilder<Duration>(
+                              stream: controller.player.stream.duration,
+                              initialData: controller.player.state.duration,
+                              builder: (context, durationSnapshot) {
+                                final pos = snapshot.data ?? Duration.zero;
+                                final dur = durationSnapshot.data ?? Duration.zero;
+                                String format(Duration d) => "${d.inMinutes.toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}";
+                                
+                                return Focus(
+                                  focusNode: progressFocus,
+                                  child: Padding(
+                                    padding: EdgeInsets.only(bottom: 16.w),
+                                    child: Row(
+                                      children: [
+                                        Text(format(pos), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
+                                        SizedBox(width: 16.w),
+                                        Expanded(
+                                          child: Focus(
+                                            onKeyEvent: (node, event) {
+                                              if (event is KeyDownEvent) {
+                                                if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+                                                  final newPos = controller.player.state.position - const Duration(seconds: 10);
+                                                  controller.player.seek(newPos < Duration.zero ? Duration.zero : newPos);
+                                                  return KeyEventResult.handled;
+                                                } else if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+                                                  final newPos = controller.player.state.position + const Duration(seconds: 10);
+                                                  controller.player.seek(newPos > dur ? dur : newPos);
+                                                  return KeyEventResult.handled;
+                                                }
+                                              }
+                                              return KeyEventResult.ignored;
+                                            },
+                                            child: SliderTheme(
+                                              data: SliderTheme.of(context).copyWith(
+                                                trackHeight: 4.w,
+                                                thumbShape: RoundSliderThumbShape(enabledThumbRadius: 8.w),
+                                                overlayShape: RoundSliderOverlayShape(overlayRadius: 16.w),
+                                                activeTrackColor: Theme.of(context).colorScheme.primary,
+                                                inactiveTrackColor: Colors.white30,
+                                                thumbColor: Theme.of(context).colorScheme.primary,
+                                              ),
+                                              child: Slider(
+                                                value: pos.inMilliseconds.toDouble().clamp(0.0, dur.inMilliseconds.toDouble()),
+                                                max: dur.inMilliseconds > 0 ? dur.inMilliseconds.toDouble() : 1.0,
+                                                onChanged: (val) {
+                                                  controller.player.seek(Duration(milliseconds: val.toInt()));
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: 16.w),
+                                        Text(format(dur), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
+                                      ],
                                     ),
                                   ),
-                                ),
-                                SizedBox(width: 16.w),
-                                Text(format(dur), style: AppStyle.textStyleWhite.copyWith(fontSize: 20.w)),
-                              ],
-                            ),
-                          );
-                        }
-                      );
-                    }
-                  );
-                }),
+                                );
+                              }
+                            );
+                          }
+                        );
+                      }),
 
-                Row(
-                  children: [
-                    //清晰度
-                    Obx(
-                      () => Text(
-                        "清晰度: ${controller.currentQualityInfo.value}",
-                        style: AppStyle.textStyleWhite,
-                      ),
-                    ),
-                    //线路
-                    AppStyle.hGap32,
-                    Obx(
-                      () => Text(
-                        "线路：${controller.currentLineInfo.value}",
-                        style: AppStyle.textStyleWhite,
-                      ),
-                    ),
-                    //弹幕开关
-                    AppStyle.hGap32,
-                    Obx(
-                      () => Text(
-                        "弹幕: ${controller.showDanmakuState.value ? "开" : "关"}",
-                        style: AppStyle.textStyleWhite,
-                      ),
-                    ),
-                    //分辨率
-                    AppStyle.hGap32,
-                    Obx(
-                      () => Text(
-                        "分辨率: ${controller.width.value}x${controller.height.value}",
-                        style: AppStyle.textStyleWhite,
-                      ),
-                    ),
-                  ],
-                ),
-                AppStyle.vGap12,
-                FocusTraversalGroup(
-                  policy: ReadingOrderTraversalPolicy(),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                    // === 1. 观看回放 (首位置) ===
-                    HighlightButton(
-                      focusNode: controller.replayFocusNode,
-                      iconData: Icons.history,
-                      text: "观看回放",
-                      onTap: () => showReplayDialog(controller),
-                    ),
-                    
-                    // === 2. 选集胶囊 (自适应显示) ===
-                    if (controller.isVod.value && controller.vodPages.length > 1) ...[
-                      AppStyle.hGap32,
-                      HighlightButton(
-                        focusNode: AppFocusNode(),
-                        iconData: Icons.playlist_play,
-                        text: "选集 ${controller.vodCurrentIndex.value + 1}/${controller.vodPages.length}",
-                        onTap: () => showVodListDialog(controller),
+                      // 按钮
+                      Focus(
+                        focusNode: buttonsFocus,
+                        child: FocusTraversalGroup(
+                          policy: ReadingOrderTraversalPolicy(),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              HighlightButton(
+                                focusNode: controller.replayFocusNode,
+                                iconData: Icons.history,
+                                text: "观看回放",
+                                onTap: () => showReplayDialog(controller),
+                              ),
+                              if (controller.isVod.value && controller.vodPages.length > 1) ...[
+                                AppStyle.hGap32,
+                                HighlightButton(
+                                  focusNode: AppFocusNode(),
+                                  iconData: Icons.playlist_play,
+                                  text: "选集 ${controller.vodCurrentIndex.value + 1}/${controller.vodPages.length}",
+                                  onTap: () => showVodListDialog(controller),
+                                ),
+                              ],
+                              AppStyle.hGap32,
+                              Text("设置", style: AppStyle.textStyleWhite),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                    AppStyle.hGap32,
-
-                    // === 3. 原有功能 (右移) ===
-                    Icon(
-                      Icons.arrow_circle_up_rounded,
-                      color: Colors.white,
-                      size: 40.w,
-                    ),
-                    AppStyle.hGap16,
-                    Text("上一频道", style: AppStyle.textStyleWhite),
-                    AppStyle.hGap32,
-                    Icon(
-                      Icons.arrow_circle_down_rounded,
-                      color: Colors.white,
-                      size: 40.w,
-                    ),
-                    AppStyle.hGap16,
-                    Text("下一频道", style: AppStyle.textStyleWhite),
-                    AppStyle.hGap32,
-                    Icon(
-                      Icons.arrow_circle_left_outlined,
-                      color: Colors.white,
-                      size: 40.w,
-                    ),
-                    AppStyle.hGap16,
-                    Text("关注列表", style: AppStyle.textStyleWhite),
-                    AppStyle.hGap32,
-                    Icon(
-                      Icons.arrow_circle_right_outlined,
-                      color: Colors.white,
-                      size: 40.w,
-                    ),
-                    AppStyle.hGap16,
-                    Icon(Icons.menu, color: Colors.white, size: 44.w),
-                    AppStyle.hGap16,
-                    Text("设置", style: AppStyle.textStyleWhite),
-                  ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     ],
-  ),
   );
 }
+
 
 Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   var padding = MediaQuery.of(videoState.context).padding;
