@@ -849,16 +849,15 @@ class BiliBiliSite implements LiveSite {
 
       var cid = pagelist["data"][0]["cid"];
 
-      // 核心修改：请求 fnval=16 (DASH格式) 并带上 qn=80 (1080P)
+      // 核心修复：fnval=17 同时请求 MP4(durl) 和 DASH，并请求 1080P
       var playurl = await HttpClient.instance.getJson(
         "https://api.bilibili.com/x/player/playurl",
         queryParameters: {
           "bvid": videoId, 
           "cid": cid, 
-          "fnval": 16,     // 必须为 16 才能获取 1080P 及以上
-          "fnver": 0,
-          "qn": 80,        // 请求 1080P
-          "try_look": 1,   // 试看特权
+          "fnval": 17, 
+          "qn": 80,
+          "try_look": 1,
         },
         header: {
           "referer": "https://www.bilibili.com/", 
@@ -872,52 +871,50 @@ class BiliBiliSite implements LiveSite {
       }
 
       List<LivePlayQuality> qualities = [];
-
       String getQnName(int qn) {
         switch (qn) {
           case 80: return "1080P 高清";
           case 64: return "720P 高清";
+          case 32: return "480P";
           default: return "画质 ($qn)";
         }
       }
 
-      // 此时如果返回 dash，说明有高清流
+      // 1. 解析 MP4 (durl)，这个带声音
+      if (playurl["data"]["durl"] != null) {
+        var durls = playurl["data"]["durl"] as List;
+        if (durls.isNotEmpty) {
+          int qnCode = playurl["data"]["quality"] ?? 64;
+          qualities.add(LivePlayQuality(
+            quality: getQnName(qnCode) + " (MP4)",
+            data: {"url": durls[0]["url"].toString(), "bitRate": 0, "pages": vodPages, "bvid": videoId},
+          ));
+        }
+      }
+
+      // 2. 解析 DASH (视频和音频分离)
       if (playurl["data"]["dash"] != null) {
         var videoStreams = playurl["data"]["dash"]["video"] as List;
         var audioStreams = playurl["data"]["dash"]["audio"] as List;
         
         if (videoStreams.isNotEmpty) {
-          // 按 id 降序（1080P 的 id 是 80，优先取）
-          videoStreams.sort((a, b) => (b["id"] ?? 0).compareTo(a["id"] ?? 0));
+          videoStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
           var bestVideo = videoStreams.first;
-          
-          // 获取最高码率的音频
-          String? bestAudioUrl;
+          String audioUrl = "";
           if (audioStreams.isNotEmpty) {
             audioStreams.sort((a, b) => (b["bandwidth"] ?? 0).compareTo(a["bandwidth"] ?? 0));
-            bestAudioUrl = audioStreams.first["baseUrl"].toString();
+            audioUrl = audioStreams.first["baseUrl"].toString();
           }
 
-          int qnCode = bestVideo["id"] ?? 80;
           qualities.add(LivePlayQuality(
-            quality: getQnName(qnCode),
+            quality: getQnName(bestVideo["id"] ?? 80) + " (DASH)",
             data: {
               "url": bestVideo["baseUrl"].toString(), 
-              "audioUrl": bestAudioUrl, // 将音频地址传给播放器，尝试合并
+              "audioUrl": audioUrl, 
               "bitRate": bestVideo["bandwidth"], 
               "pages": vodPages, 
               "bvid": videoId
             },
-          ));
-        }
-      } else if (playurl["data"]["durl"] != null) {
-        // 降级逻辑：如果没给 DASH，只能播 MP4
-        var durls = playurl["data"]["durl"] as List;
-        if (durls.isNotEmpty) {
-          int qnCode = playurl["data"]["quality"] ?? 64;
-          qualities.add(LivePlayQuality(
-            quality: getQnName(qnCode),
-            data: {"url": durls[0]["url"].toString(), "bitRate": 0, "pages": vodPages, "bvid": videoId},
           ));
         }
       }

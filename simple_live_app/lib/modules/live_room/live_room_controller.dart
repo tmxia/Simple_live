@@ -453,7 +453,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   
   void playReplayItem(LivePlayQuality quality) {
     isVod.value = true;
-    
+
     var qData = quality.data;
     if (qData["pages"] != null) {
       vodPages.assignAll((qData["pages"] as List).map((e) => Map<String, dynamic>.from(e)).toList());
@@ -463,12 +463,29 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     }
 
     String url = qData["url"].toString();
+    String? audioUrl = qData["audioUrl"]?.toString();
+    
     playUrls.clear();
     playUrls.add(url);
-    
+
     currentLineIndex = 0;
     currentLineInfo.value = "默认线路";
-    initPlaylist(); 
+    initPlaylist();
+
+    // 核心修复：如果是 DASH 流，且提取到了音频地址，我们通过 mpv 底层直接把音频加进去
+    if (audioUrl != null && audioUrl.isNotEmpty) {
+      if (player.platform is NativePlayer) {
+        // 延迟一下等播放器初始化完成，再挂载音频
+        Future.delayed(const Duration(milliseconds: 500), () async {
+          try {
+            await (player.platform as NativePlayer).command(["audio-add", audioUrl]);
+            Log.d("成功将分离的音频流合并到 1080P 视频中");
+          } catch (e) {
+            Log.e("合并音频失败: $e");
+          }
+        });
+      }
+    }
   }
 
   void initPlaylist() async {
