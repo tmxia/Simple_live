@@ -133,26 +133,24 @@ class LiveRoomPage extends GetView<LiveRoomController> {
           controller.videoRefreshTick.value; // 监听刷新信号
 
           return KeyedSubtree(
-
-            key: ValueKey(controller.globalPlayerKey),
-
+          key: ValueKey(controller.globalPlayerKey),
+          child: Container(
+            color: Colors.black, // 核心修复 2：背景强制全黑，彻底消灭左侧蓝边
             child: Video(
-          key: controller.globalPlayerKey,
-          controller: controller.videoController,
-          pauseUponEnteringBackgroundMode:
-              AppSettingsController.instance.playerAutoPause.value,
-          resumeUponEnteringForegroundMode:
-              AppSettingsController.instance.playerAutoPause.value,
-          controls: (state) {
-            return playerControls(state, controller);
-          },
-          aspectRatio: aspectRatio,
-          fit: boxFit,
-        )
-
-          );
-
-        }),
+              key: controller.globalPlayerKey,
+              controller: controller.videoController,
+              pauseUponEnteringBackgroundMode: AppSettingsController.instance.playerAutoPause.value,
+              resumeUponEnteringForegroundMode: AppSettingsController.instance.playerAutoPause.value,
+              controls: (state) {
+                return playerControls(state, controller);
+              },
+              // 核心修复 1：如果 aspectRatio 是 null（刚起播没拿到分辨率），给个 16:9 兜底，防止瞬间全屏放大
+              aspectRatio: aspectRatio ?? (16 / 9),
+              fit: boxFit,
+            ),
+          ),
+        );
+      }),
         Obx(
           () => Visibility(
             visible:
