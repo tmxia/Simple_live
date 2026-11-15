@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:simple_live_app/app/controller/base_controller.dart';
 import 'package:simple_live_app/widgets/status/app_empty_widget.dart';
@@ -19,6 +17,7 @@ class PageGridView extends StatelessWidget {
   final double crossAxisSpacing, mainAxisSpacing;
   final int crossAxisCount;
   final bool showPCRefreshButton;
+
   const PageGridView({
     required this.itemBuilder,
     required this.pageController,
@@ -42,13 +41,12 @@ class PageGridView extends StatelessWidget {
             header: MaterialHeader(
               completeDuration: const Duration(milliseconds: 400),
             ),
-            footer: MaterialFooter(
-              completeDuration: const Duration(milliseconds: 400),
-            ),
+            // 核心修复：彻底设为 null，切断一切上拉加载和底部悬浮球
+            footer: null,
+            onLoad: null,
             scrollController: pageController.scrollController,
             controller: pageController.easyRefreshController,
             firstRefresh: firstRefresh,
-            onLoad: pageController.loadData,
             onRefresh: pageController.refreshData,
             child: MasonryGridView.count(
               padding: padding,
@@ -57,52 +55,6 @@ class PageGridView extends StatelessWidget {
               crossAxisCount: crossAxisCount,
               crossAxisSpacing: crossAxisSpacing,
               mainAxisSpacing: mainAxisSpacing,
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: 
-                Visibility(
-              visible: (Platform.isWindows ||
-                      Platform.isLinux ||
-                      Platform.isMacOS) &&
-                  pageController.canLoadMore.value &&
-                  !pageController.pageLoadding.value &&
-                  !pageController.pageEmpty.value,
-              child: Center(
-                child: TextButton(
-                  onPressed: pageController.loadData,
-                  child: const Text("加载更多"),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 12,
-            right: 12,
-            child: 
-                Visibility(
-              visible: (Platform.isWindows ||
-                      Platform.isLinux ||
-                      Platform.isMacOS) &&
-                  pageController.canLoadMore.value &&
-                  !pageController.pageLoadding.value &&
-                  !pageController.pageEmpty.value &&
-                  showPCRefreshButton,
-              child: Center(
-                child: IconButton(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Get.theme.cardColor.withAlpha(200),
-                    elevation: 4,
-                  ),
-                  onPressed: () {
-                    pageController.refreshData();
-                  },
-                  icon: const Icon(Icons.refresh),
-                ),
-              ),
             ),
           ),
           Offstage(
