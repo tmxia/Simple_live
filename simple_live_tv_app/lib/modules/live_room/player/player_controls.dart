@@ -46,11 +46,16 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
         child: GestureDetector(
           onTap: () {
             if (controller.showControlsState.value) {
-              // 如果底栏已经出来，按 OK 键不要关闭底栏，而是强行让“观看回放”获得焦点
-              controller.replayFocusNode.requestFocus();
+              // 如果底栏已经出来，按 OK 键绝不关闭底栏，而是强行把焦点给“观看回放”
+              FocusScope.of(videoState.context).requestFocus(controller.replayFocusNode);
             } else {
-              // 底栏未显示时，正常呼出
+              // 底栏没出来，正常呼出
               controller.showControls();
+              Future.delayed(const Duration(milliseconds: 100), () {
+                if (videoState.context.mounted) {
+                  FocusScope.of(videoState.context).requestFocus(controller.replayFocusNode);
+                }
+              });
             }
           },
         ),
@@ -468,6 +473,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
                   var item = controller.replayList[i];
                   return ReplayCard(
                     item: item,
+                    autofocus: i == 0, // 第一项自动获取焦点
                     onTap: () {
                       Get.back();
                       controller.playReplay(item);
@@ -911,8 +917,9 @@ void showFollowUser(LiveRoomController controller) {
 class ReplayCard extends StatefulWidget {
   final LiveReplayItem item;
   final VoidCallback onTap;
+  final bool autofocus;
 
-  const ReplayCard({Key? key, required this.item, required this.onTap}) : super(key: key);
+  const ReplayCard({Key? key, required this.item, required this.onTap, this.autofocus = false}) : super(key: key);
 
   @override
   State<ReplayCard> createState() => _ReplayCardState();
@@ -925,6 +932,18 @@ class _ReplayCardState extends State<ReplayCard> {
   Widget build(BuildContext context) {
     return Focus(
       focusNode: focusNode,
+      autofocus: widget.autofocus,
+      // 核心修复：拦截遥控器 OK 键与回车键
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent) {
+          if (event.logicalKey == LogicalKeyboardKey.select || 
+              event.logicalKey == LogicalKeyboardKey.enter) {
+            widget.onTap();
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
       onFocusChange: (hasFocus) {
         focusNode.isFoucsed.value = hasFocus;
       },
