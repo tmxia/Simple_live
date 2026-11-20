@@ -6,6 +6,7 @@ import 'package:simple_live_tv_app/app/app_error.dart';
 import 'package:flutter_easyrefresh/easy_refresh.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
+import 'package:simple_live_core/simple_live_core.dart';
 
 class BaseController extends GetxController {
   /// 加载中，更新页面
@@ -66,8 +67,22 @@ class BasePageController<T> extends BaseController {
   var canLoadMore = false.obs;
   var list = <T>[].obs;
 
+  /// 翻页去重：部分站点忽略 page 参数，会一直返回同一批数据
+  final Set<String> _seenKeys = <String>{};
+
+  String _keyOf(T item) {
+    if (item is LiveRoomItem) {
+      return item.roomId.isNotEmpty ? item.roomId : item.toString();
+    }
+    if (item is LiveAnchorItem) {
+      return item.roomId.isNotEmpty ? item.roomId : item.toString();
+    }
+    return item.toString();
+  }
+
   Future refreshData() async {
     currentPage = 1;
+    _seenKeys.clear();
     list.value = [];
     await loadData();
   }
@@ -82,8 +97,13 @@ class BasePageController<T> extends BaseController {
       pageLoadding.value = currentPage == 1;
 
       var result = await getData(currentPage, pageSize);
-      
-      if (result.isNotEmpty) {
+
+      var freshItems = <T>[];
+      for (var item in result) {
+        if (_seenKeys.add(_keyOf(item))) freshItems.add(item);
+      }
+
+      if (freshItems.isNotEmpty) {
         currentPage++;
         canLoadMore.value = true;
         pageEmpty.value = false;
@@ -95,9 +115,9 @@ class BasePageController<T> extends BaseController {
       }
       
       if (currentPage == 1) {
-        list.value = result;
+        list.value = freshItems;
       } else {
-        list.addAll(result);
+        list.addAll(freshItems);
       }
     } catch (e) {
       handleError(e, showPageError: currentPage == 1);

@@ -205,6 +205,15 @@ class DouyinSite implements LiveSite {
     return "$serverUrl?$signed";
   }
 
+  /// 从 Cookie 字符串里取某个 key 的值（取不到返回空串）
+  static String _cookieValue(String cookieStr, String key) {
+    for (final part in cookieStr.split(";")) {
+      final kv = part.trim();
+      if (kv.startsWith("$key=")) return kv.substring(key.length + 1);
+    }
+    return "";
+  }
+
   /// 从首页 HTML 里精确截出 categoryData 数组（按括号配对，兼容任意排版）
   List<dynamic> _extractCategoryData(String html) {
     final norm = html.replaceAll('\\"', '"').replaceAll('\\\\', '\\');
@@ -373,15 +382,42 @@ class DouyinSite implements LiveSite {
     // 会直接 444（返回空列表）。所以按「用户 Cookie → 匿名 ttwid → 裸请求」依次回退，
     // 避免登录后热门反而变空。
     const url = "https://live.douyin.com/webcast/feed/";
-    const params = {
-      "aid": "6383",
-      "app_name": "douyin_web",
-      "need_map": "1",
-      "is_draw": "1",
-      "inner_from_drawer": "0",
-      "enter_source": "web_homepage_hot_web_live_card",
-      "source_key": "web_homepage_hot_web_live_card",
-    };
+    // 第 1 页 = 首页 SSR 同款参数；第 2 页起必须走网页真实的「加载更多」参数：
+    // action=load_more + action_type=loadmore + custom_count + max_time。
+    // max_time 传当前毫秒时间戳（网页源码就是这么干的），配合 a_bogus 才会返回
+    // 一批全新的房间（实测与首页 0 重复）。之前 page 参数被直接忽略，
+    // 导致无论下拉多少次都是同一批 20 条，看起来就是「只有一页」。
+    final params = page <= 1
+        ? <String, String>{
+            "aid": "6383",
+            "app_name": "douyin_web",
+            "need_map": "1",
+            "is_draw": "1",
+            "inner_from_drawer": "0",
+            "enter_source": "web_homepage_hot_web_live_card",
+            "source_key": "web_homepage_hot_web_live_card",
+          }
+        : <String, String>{
+            "aid": "6383",
+            "app_name": "douyin_web",
+            "live_id": "1",
+            "device_platform": "web",
+            "language": "zh-CN",
+            "cookie_enabled": "true",
+            "channel": "channel_pc_web",
+            "request_tag_from": "web",
+            "need_map": "1",
+            "liveid": "1",
+            "is_draw": "1",
+            "inner_from_drawer": "0",
+            "custom_count": "50",
+            "action": "load_more",
+            "action_type": "loadmore",
+            "enter_source": "web_homepage_hot_web_live_card",
+            "source_key": "web_homepage_hot_web_live_card",
+            "is_ssr": "true",
+            "max_time": "${DateTime.now().millisecondsSinceEpoch}",
+          };
 
     final cookieVariants = <String>[];
     if (cookie.isNotEmpty) cookieVariants.add(cookie);
@@ -389,14 +425,18 @@ class DouyinSite implements LiveSite {
     if (anon.isNotEmpty) cookieVariants.add(anon);
     cookieVariants.add("");
 
+    // 第 2 页起的 load_more 网页上是带 a_bogus 的，这里统一签名后再请求
+    final requestUrl =
+        page <= 1 ? url : buildSignedUrl(url, {...params, "msToken": generateMsToken()});
+
     for (var i = 0; i < cookieVariants.length; i++) {
       final cookieValue = cookieVariants[i];
       try {
         final reqHeader = Map<String, dynamic>.from(headers)..remove("cookie");
         if (cookieValue.isNotEmpty) reqHeader["cookie"] = cookieValue;
         var result = await HttpClient.instance.getJson(
-          url,
-          queryParameters: params,
+          requestUrl,
+          queryParameters: page <= 1 ? params : null,
           header: reqHeader,
         );
         final rawRooms = _extractRoomList(result);
@@ -406,13 +446,13 @@ class DouyinSite implements LiveSite {
           if (roomItem != null) items.add(roomItem);
         }
         _logDebug(
-            "抖音热门: cookie方式=${i == 0 && cookie.isNotEmpty ? "登录" : (cookieValue.isEmpty ? "裸请求" : "匿名ttwid")} "
+            "抖音热门 p$page: cookie方式=${i == 0 && cookie.isNotEmpty ? "登录" : (cookieValue.isEmpty ? "裸请求" : "匿名ttwid")} "
             "raw=${rawRooms.length} 解析=${items.length}");
         if (items.isNotEmpty) {
           return LiveCategoryResult(hasMore: items.length >= 10, items: items);
         }
       } catch (e) {
-        _logDebug("抖音热门请求失败(方式$i): $e");
+        _logDebug("抖音热门 p$page 请求失败(方式$i): $e");
       }
     }
     return LiveCategoryResult(hasMore: false, items: const []);
@@ -1024,53 +1064,6 @@ class DouyinSite implements LiveSite {
   }) async {
     String serverUrl = "https://www.douyin.com/aweme/v1/web/live/search/";
     var msToken = generateMsToken();
-    var params = <String, String>{
-        "device_platform": "webapp",
-        "aid": "6383",
-        "channel": "channel_pc_web",
-        "search_channel": "aweme_live",
-        "keyword": keyword,
-        "search_source": "switch_tab",
-        "query_correct_type": "1",
-        "is_filter_search": "0",
-        "from_group_id": "",
-        "offset": ((page - 1) * 10).toString(),
-        "count": "10",
-        "pc_client_type": "1",
-        "version_code": "170400",
-        "version_name": "17.4.0",
-        "cookie_enabled": "true",
-        "screen_width": "1980",
-        "screen_height": "1080",
-        "browser_language": "zh-CN",
-        "browser_platform": "Win32",
-        "browser_name": "Edge",
-        "browser_version": "125.0.0.0",
-        "browser_online": "true",
-        "engine_name": "Blink",
-        "engine_version": "125.0.0.0",
-        "os_name": "Windows",
-        "os_version": "10",
-        "cpu_core_num": "12",
-        "device_memory": "8",
-        "platform": "PC",
-        "downlink": "10",
-        "effective_type": "4g",
-        "round_trip_time": "100",
-        "webid": "7382872326016435738",
-      };
-    // 抖音网页搜索必须带 a_bogus 签名：只带 Cookie 不签名同样会被风控
-    // 判成匿名请求（status_code 2483「请先登录，再继续搜索吧」）。
-    var exParams = <String, String>{
-      ...params,
-      // 与原网页请求保持一致：device_platform 仍为 webapp，只补签名必需字段
-      "msToken": msToken,
-      "compress": "gzip",
-    };
-    var signed = ABogus(userAgent: kDefaultUserAgent)
-        .generateAbogus(Uri(queryParameters: exParams).query)
-        .first;
-    var requlestUrl = "$serverUrl?$signed";
     // live.douyin.com 对 HEAD 请求返回 404：既拿不到 set-cookie，又会在日志里刷错误。
     // 这里改走与首页抓取同一套匿名 cookie，取不到也不影响搜索（登录态下根本用不到）。
     var dyCookie = "";
@@ -1089,63 +1082,144 @@ class DouyinSite implements LiveSite {
           ? "msToken=$msToken"
           : "$cookieHeader; msToken=$msToken";
     }
-    var result = await HttpClient.instance.getJson(
-      requlestUrl,
-      queryParameters: {},
-      header: {
-        "Authority": 'www.douyin.com',
-        'accept': 'application/json, text/plain, */*',
-        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        // 搜索接口强制校验收号态：已登录则使用用户自己的 Cookie
-        'cookie': cookieHeader,
-        'priority': 'u=1, i',
-        'referer':
-            'https://www.douyin.com/search/${Uri.encodeComponent(keyword)}?type=live',
-        'sec-ch-ua':
-            '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-fetch-dest': 'empty',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-site': 'same-origin',
-        'user-agent': kDefaultUserAgent,
-      },
-    );
-    if (result == "" || result == 'blocked') {
-      throw Exception("抖音直播搜索被限制，请稍后再试");
-    }
-    if (result is Map) {
-      var code = result["status_code"];
-      var msg = result["message"] ?? result["status_msg"] ?? "";
-      // 2483 = 请先登录，再继续搜索吧
-      if (code == 2483 || "$msg".contains("登录")) {
-        if (cookie.isNotEmpty) {
-          throw Exception(
-              "抖音登录态已失效（status_code:$code $msg），请到「账号管理 - 抖音」重新登录");
-        }
-        throw Exception(
-            "抖音搜索接口要求登录（status_code:$code $msg），请到「账号管理 - 抖音」登录后再搜索");
-      }
-      if (code != null && code != 0) {
-        throw Exception("抖音搜索失败(status_code:$code $msg)");
-      }
-    }
-    final rawList = _extractSearchList(result);
+    // webid 必须和 Cookie 里的保持一致：写死别的设备的 webid 会被判成跨设备请求，
+    // 服务端虽然回 status_code=0，但直接把结果集清空（就是日志里的 dataLen=0）。
+    final webid = _cookieValue(cookieHeader, "webid");
+
+    var params = <String, String>{
+      "device_platform": "webapp",
+      "aid": "6383",
+      "channel": "channel_pc_web",
+      "search_channel": "aweme_live",
+      "keyword": keyword,
+      "query_correct_type": "1",
+      // 这两个是抖音搜索页 JS 里写死的：缺了服务端虽然回 status_code=0，
+      // 但 data 直接给空数组（上一版日志里的 dataLen=0）。
+      "need_filter_settings": "1",
+      "list_type": "single",
+      "offset": ((page - 1) * 20).toString(),
+      "count": "20",
+      "pc_client_type": "1",
+      "version_code": "170400",
+      "version_name": "17.4.0",
+      "cookie_enabled": "true",
+      "screen_width": "1980",
+      "screen_height": "1080",
+      "browser_language": "zh-CN",
+      "browser_platform": "Win32",
+      "browser_name": "Edge",
+      "browser_version": "125.0.0.0",
+      "browser_online": "true",
+      "engine_name": "Blink",
+      "engine_version": "125.0.0.0",
+      "os_name": "Windows",
+      "os_version": "10",
+      "cpu_core_num": "12",
+      "device_memory": "8",
+      "platform": "PC",
+      "downlink": "10",
+      "effective_type": "4g",
+      "round_trip_time": "100",
+    };
+    if (webid.isNotEmpty) params["webid"] = webid;
+
+    // 一次搜索 = 一组尝试：
+    // normal_search 是网页上「直接输入关键词搜索」用的值；
+    // switch_tab 是「从综合页切到直播页」用的值（会去找已有搜索会话）。
+    // 之前固定用 switch_tab，登录态正常也可能返回空，所以这里两种都试。
+    final sources = <String>[
+      "normal_search",
+      if (page <= 1) "switch_tab",
+    ];
+
     var items = <LiveRoomItem>[];
-    var fail = 0;
-    for (var item in rawList) {
-      final roomItem = _parseSearchItem(item);
-      if (roomItem != null) {
-        items.add(roomItem);
-      } else {
-        fail++;
+    for (final source in sources) {
+      final tryParams = {...params, "search_source": source};
+      final exParams = <String, String>{
+        ...tryParams,
+        "msToken": msToken,
+        "compress": "gzip",
+      };
+      // 抖音网页搜索必须带 a_bogus：只带 Cookie 不签名会被风控判成匿名（2483）
+      final signed = ABogus(userAgent: kDefaultUserAgent)
+          .generateAbogus(Uri(queryParameters: exParams).query)
+          .first;
+      final result = await HttpClient.instance.getJson(
+        "$serverUrl?$signed",
+        queryParameters: {},
+        header: {
+          "Authority": 'www.douyin.com',
+          'accept': 'application/json, text/plain, */*',
+          'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+          'cookie': cookieHeader,
+          'priority': 'u=1, i',
+          'referer':
+              'https://www.douyin.com/search/${Uri.encodeComponent(keyword)}?type=live',
+          'sec-ch-ua':
+              '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+          'sec-ch-ua-mobile': '?0',
+          'sec-ch-ua-platform': '"Windows"',
+          'sec-fetch-dest': 'empty',
+          'sec-fetch-mode': 'cors',
+          'sec-fetch-site': 'same-origin',
+          'user-agent': kDefaultUserAgent,
+        },
+      );
+      if (result == "" || result == 'blocked') {
+        throw Exception("抖音直播搜索被限制，请稍后再试");
+      }
+      if (result is Map) {
+        final code = result["status_code"];
+        final msg = result["message"] ?? result["status_msg"] ?? "";
+        // 2483 = 请先登录，再继续搜索吧
+        if (code == 2483 || "$msg".contains("登录")) {
+          if (cookie.isNotEmpty) {
+            throw Exception(
+                "抖音登录态已失效（status_code:$code $msg），请到「账号管理 - 抖音」重新登录");
+          }
+          throw Exception(
+              "抖音搜索接口要求登录（status_code:$code $msg），请到「账号管理 - 抖音」登录后再搜索");
+        }
+        if (code != null && code != 0) {
+          throw Exception("抖音搜索失败(status_code:$code $msg)");
+        }
+      }
+
+      final rawList = _extractSearchList(result);
+      final parsed = <LiveRoomItem>[];
+      var fail = 0;
+      for (final item in rawList) {
+        final roomItem = _parseSearchItem(item);
+        if (roomItem != null) {
+          parsed.add(roomItem);
+        } else {
+          fail++;
+        }
+      }
+      final nilInfo = result is Map ? result["search_nil_info"] : null;
+      _logDebug(
+          "抖音搜索「$keyword」p$page $source: status=${result is Map ? result["status_code"] : "-"} "
+          "dataLen=${rawList.length} 解析成功=${parsed.length} 失败=$fail "
+          "has_more=${result is Map ? result["has_more"] : "-"}"
+          "${nilInfo != null ? " nil_info=$nilInfo" : ""}");
+      if (parsed.isEmpty && result is Map) {
+        _logDebug("抖音搜索空结果($source): guide=${result["guide_search_words"]} "
+            "extra=${result["extra"]} log_pb=${result["log_pb"]}");
+      }
+      if (parsed.isNotEmpty) {
+        items = parsed;
+        break;
+      }
+      final nilType =
+          nilInfo is Map ? "${nilInfo["search_nil_type"]}" : "";
+      // 网页端遇到这个标记说明「请求被当成未登录处理」，即使 status_code 是 0
+      if (nilType == "web_need_login" || nilType == "antispam_check") {
+        throw Exception(
+            "抖音搜索未取得登录态（$nilType），请到「账号管理 - 抖音」重新登录后再搜索");
       }
     }
-    // 只留一行台账，方便后续定位（不再逐个打解析异常）
-    _logDebug("抖音搜索「$keyword」: status=${result is Map ? result["status_code"] : "-"} "
-        "dataLen=${rawList.length} 解析成功=${items.length} 失败=$fail"
-        "${rawList.isEmpty && result is Map ? " 顶层字段=${result.keys.toList()}" : ""}");
-    return LiveSearchRoomResult(hasMore: items.length >= 10, items: items);
+
+    return LiveSearchRoomResult(hasMore: items.length >= 20, items: items);
   }
 
   @override
