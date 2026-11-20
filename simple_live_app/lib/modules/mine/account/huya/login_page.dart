@@ -31,7 +31,8 @@ class HuyaLoginPage extends GetView<HuyaLoginController> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: const Text(
-              "在页面内用虎牙APP扫码或手机号登录，登录成功后会自动返回。",
+              "已自动打开虎牙官方登录面板：可扫码，也可用虎牙号密码或短信登录。\n"
+              "登录成功后会自动返回。",
               style: TextStyle(fontSize: 12),
             ),
           ),
@@ -40,13 +41,16 @@ class HuyaLoginPage extends GetView<HuyaLoginController> {
               onWebViewCreated: controller.onWebViewCreated,
               onLoadStop: controller.onLoadStop,
               initialSettings: InAppWebViewSettings(
-                userAgent: HuyaLoginController.kMobileUserAgent,
+                userAgent: HuyaLoginController.kUserAgent,
                 useShouldOverrideUrlLoading: true,
                 javaScriptEnabled: true,
                 domStorageEnabled: true,
                 thirdPartyCookiesEnabled: true,
                 sharedCookiesEnabled: true,
-                supportZoom: false,
+                useWideViewPort: true,
+                loadWithOverviewMode: true,
+                supportZoom: true,
+                initialScale: 88,
               ),
             ),
           ),

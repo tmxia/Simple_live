@@ -31,8 +31,8 @@ class DouyinLoginPage extends GetView<DouyinLoginController> {
             color: Theme.of(context).colorScheme.surfaceContainerHighest,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: const Text(
-              "在页面内用抖音APP扫码或手机号登录，登录成功后会自动返回。\n"
-              "抖音搜索接口必须登录才能使用。",
+              "已自动打开抖音官方登录面板：可扫码，也可切到“验证码登录”用手机号登录。\n"
+              "登录成功后会自动返回。抖音搜索接口必须登录才能使用。",
               style: TextStyle(fontSize: 12),
             ),
           ),
@@ -41,13 +41,16 @@ class DouyinLoginPage extends GetView<DouyinLoginController> {
               onWebViewCreated: controller.onWebViewCreated,
               onLoadStop: controller.onLoadStop,
               initialSettings: InAppWebViewSettings(
-                userAgent: DouyinLoginController.kMobileUserAgent,
+                userAgent: DouyinLoginController.kUserAgent,
                 useShouldOverrideUrlLoading: true,
                 javaScriptEnabled: true,
                 domStorageEnabled: true,
                 thirdPartyCookiesEnabled: true,
                 sharedCookiesEnabled: true,
-                supportZoom: false,
+                useWideViewPort: true,
+                loadWithOverviewMode: true,
+                supportZoom: true,
+                initialScale: 88,
               ),
             ),
           ),
