@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:canvas_danmaku/canvas_danmaku.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';

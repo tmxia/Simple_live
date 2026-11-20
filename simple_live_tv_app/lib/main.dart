@@ -21,7 +21,6 @@ import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
 import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'package:simple_live_tv_app/services/sync_service.dart';
 
 void main() async {
@@ -86,7 +85,10 @@ Future initServices() async {
   };
   
   Log.d("Init LocalStorage Service");
-  await Get.put(LocalStorageService()).init();
+  await Get.put(LocalStorageService()).init(
+    boxName: "TVLocalStorage",
+    shieldBoxName: "TVDanmuShield",
+  );
   await Get.put(DBService()).init();
   
   Get.put(AppSettingsController());

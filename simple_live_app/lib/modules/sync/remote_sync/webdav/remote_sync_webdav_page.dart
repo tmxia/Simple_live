@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_app/modules/sync/remote_sync/webdav/remote_sync_webdav_controller.dart';
-import 'package:simple_live_app/services/local_storage_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 
 class RemoteSyncWebDAVPage extends StatefulWidget {
   const RemoteSyncWebDAVPage({super.key});

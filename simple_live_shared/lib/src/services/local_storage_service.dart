@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:simple_live_tv_app/app/log.dart';
+import '../runtime.dart';
 
 class LocalStorageService extends GetxService {
   static LocalStorageService get instance => Get.find<LocalStorageService>();
@@ -59,6 +59,9 @@ class LocalStorageService extends GetxService {
   /// 弹幕开启
   static const String kDanmuEnable = "DanmuEnable";
 
+  /// 弹幕字重
+  static const String kDanmuFontWeight = "DanmuFontWeight";
+
   /// 硬件解码
   static const String kHardwareDecode = "HardwareDecode";
 
@@ -77,7 +80,6 @@ class LocalStorageService extends GetxService {
   /// 蜂窝网络下播放清晰度，0=低，1=中，2=高
   static const String kQualityLevelCellular = "QualityLevelCellular";
 
-  /// 上次手动选择的清晰度名称
   static const String kLastQuality = "LastQuality";
 
   /// 开启定时关闭
@@ -99,14 +101,26 @@ class LocalStorageService extends GetxService {
   /// 播放器缓冲区大小
   static const String kPlayerBufferSize = "PlayerBufferSize";
 
+  /// 播放器强制使用HTTPS
+  static const String kPlayerForceHttps = "PlayerForceHttps";
+
   /// 自动全屏
   static const String kAutoFullScreen = "AutoFullScreen";
+
+  /// 显示SC
+  static const String kPlayerShowSuperChat = "PlayerShowSuperChat";
+
+  /// 播放器音量
+  static const String kPlayerVolume = "PlayerVolume";
 
   /// 小窗隐藏弹幕
   static const String kPIPHideDanmu = "PIPHideDanmu";
 
   /// 哔哩哔哩cookie
   static const String kBilibiliCookie = "BilibiliCookie";
+
+  /// 抖音cookie
+  static const String kDouyinCookie = "DouyinCookie";
 
   ///主题色
   static const String kStyleColor = "kStyleColor";
@@ -117,6 +131,21 @@ class LocalStorageService extends GetxService {
   /// 提示哔哩哔哩登录
   static const String kBilibiliLoginTip = "BilibiliLoginTip";
 
+  /// 日志记录
+  static const String kLogEnable = "LogEnable";
+
+  /// 开启自定义播放器视频输出
+  static const String kCustomPlayerOutput = "CustomPlayerOutput";
+
+  /// 视频输出驱动
+  static const String kVideoOutputDriver = "VideoOutputDriver";
+
+  /// 视频硬件解码器
+  static const String kVideoHardwareDecoder = "VideoHardwareDecoder";
+
+  /// 音频输出驱动
+  static const String kAudioOutputDriver = "AudioOutputDriver";
+
   /// 开启自动更新关注
   static const String kAutoUpdateFollowEnable = "AutoUpdateFollowEnable";
 
@@ -126,39 +155,55 @@ class LocalStorageService extends GetxService {
   /// 开启多线程更新关注
   static const String kUpdateFollowThreadCount = "UpdateFollowThreadCount";
 
+  /// WebDAV_服务器地址
+  static const String kWebDAVUri = "WebDAVUri";
+
+  /// WebDAV_登录账号
+  static const String kWebDAVUser = "WebDAVUser";
+
+  /// WebDAV_登录密码
+  static const String kWebDAVPassword = "kWebDAVPassword";
+
+  /// WebDAV_最后一次上传时间
+  static const String kWebDAVLastUploadTime = "kWebDAVLastUploadTime";
+
+  /// WebDAV_最后一次备份时间
+  static const String kWebDAVLastRecoverTime = "kWebDAVLastRecoverTime";
+
   late Box settingsBox;
   late Box<String> shieldBox;
 
-  Future init() async {
-    settingsBox = await Hive.openBox(
-      "TVLocalStorage",
-    );
-    shieldBox = await Hive.openBox(
-      "TVDanmuShield",
-    );
+  /// 打开本地存储箱。
+  /// 两端箱名不同（app: LocalStorage / DanmuShield，tv: TVLocalStorage /
+  /// TVDanmuShield），箱名必须由宿主显式传入，否则升级后会读不到老数据。
+  Future init({
+    String boxName = "LocalStorage",
+    String shieldBoxName = "DanmuShield",
+  }) async {
+    settingsBox = await Hive.openBox(boxName);
+    shieldBox = await Hive.openBox<String>(shieldBoxName);
   }
 
   T getValue<T>(dynamic key, T defaultValue) {
     try {
       var value = settingsBox.get(key, defaultValue: defaultValue) as T;
-      Log.d("Get LocalStorage：$key\r\n$value");
+      SharedRuntime.d("Get LocalStorage：$key\r\n$value");
       return value;
     } catch (e) {
-      Log.logPrint(e);
+      SharedRuntime.d(e.toString());
       return defaultValue;
     }
   }
 
   Future setValue<T>(dynamic key, T value) async {
-    Log.d("Set LocalStorage：$key\r\n$value");
+    SharedRuntime.d("Set LocalStorage：$key\r\n$value");
     return await settingsBox.put(key, value);
   }
 
   Future removeValue<T>(dynamic key) async {
-    Log.d("Remove LocalStorage：$key");
+    SharedRuntime.d("Remove LocalStorage：$key");
     return await settingsBox.delete(key);
   }
-  static const String kDouyinCookie = "DouyinCookie";
   static const String kDouyuCookie = "DouyuCookie";
   static const String kHuyaCookie = "HuyaCookie";
   static const String kKuaishouCookie = "KuaishouCookie";

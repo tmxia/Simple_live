@@ -12,9 +12,8 @@ import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
-import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
+import 'package:simple_live_tv_app/services/db_service.dart';
 
 class RemoteSyncWebDAVController extends GetxController {
   var statusMsg = "".obs;

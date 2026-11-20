@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 
 import 'package:canvas_danmaku/models/danmaku_content_item.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +10,6 @@ import 'package:media_kit/media_kit.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
-import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_tv_app/app/utils.dart';

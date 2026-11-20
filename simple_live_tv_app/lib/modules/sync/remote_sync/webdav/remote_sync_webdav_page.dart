@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/modules/sync/remote_sync/webdav/remote_sync_webdav_controller.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
 

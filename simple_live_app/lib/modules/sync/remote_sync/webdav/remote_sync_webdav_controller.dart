@@ -9,9 +9,8 @@ import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
-import 'package:simple_live_app/services/local_storage_service.dart';
-import 'package:simple_live_app/services/db_service.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
+import 'package:simple_live_app/services/db_service.dart';
 
 class RemoteSyncWebDAVController extends GetxController {
   static const String kWebDAVUri = "WebDAVUri";

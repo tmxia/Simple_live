@@ -4,7 +4,6 @@ import 'package:simple_live_core/simple_live_core.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
 
 class BiliBiliAccountService extends GetxService {
   static BiliBiliAccountService get instance =>

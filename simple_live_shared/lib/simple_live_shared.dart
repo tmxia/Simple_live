@@ -12,3 +12,4 @@ export 'src/event_bus.dart';
 export 'src/requests/custom_log_interceptor.dart';
 export 'src/requests/http_client.dart';
 export 'src/services/signalr_service.dart';
+export 'src/services/local_storage_service.dart';

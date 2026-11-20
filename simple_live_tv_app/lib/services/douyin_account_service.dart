@@ -4,7 +4,6 @@ import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
-import 'package:simple_live_tv_app/services/local_storage_service.dart';
 
 /// 抖音账号服务（TV 端）
 ///

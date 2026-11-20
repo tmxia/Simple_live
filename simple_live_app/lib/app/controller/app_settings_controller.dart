@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:simple_live_app/app/constant.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/sites.dart';
-import 'package:simple_live_app/services/local_storage_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
