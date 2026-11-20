@@ -18,7 +18,7 @@ class IndexedSettingsController extends GetxController {
     final String item = siteSort.removeAt(oldIndex);
     siteSort.insert(newIndex, item);
     
-    AppSettingsController.instance.setSiteSort(siteSort.value);
+    AppSettingsController.instance.setSiteSort(siteSort.toList());
   }
 
   void updateHomeSort(int oldIndex, int newIndex) {
@@ -28,6 +28,6 @@ class IndexedSettingsController extends GetxController {
     final String item = homeSort.removeAt(oldIndex);
     homeSort.insert(newIndex, item);
     
-    AppSettingsController.instance.setHomeSort(homeSort.value);
+    AppSettingsController.instance.setHomeSort(homeSort.toList());
   }
 }

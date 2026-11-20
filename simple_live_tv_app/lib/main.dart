@@ -1,4 +1,4 @@
-import 'package:simple_live_tv_app/models/db/follow_user_tag.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,8 +14,6 @@ import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
-import 'package:simple_live_tv_app/models/db/follow_user.dart';
-import 'package:simple_live_tv_app/models/db/history.dart';
 import 'package:simple_live_tv_app/routes/app_pages.dart';
 import 'package:simple_live_tv_app/routes/route_path.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';

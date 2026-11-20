@@ -1,8 +1,6 @@
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:simple_live_app/models/db/follow_user.dart';
-import 'package:simple_live_app/models/db/follow_user_tag.dart';
-import 'package:simple_live_app/models/db/history.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:uuid/uuid.dart';
 import 'package:collection/collection.dart';
 

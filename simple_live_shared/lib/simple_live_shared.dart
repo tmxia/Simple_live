@@ -3,3 +3,6 @@ library simple_live_shared;
 
 export 'src/http_error.dart';
 export 'src/webdav_client.dart';
+export 'src/db/follow_user.dart';
+export 'src/db/history.dart';
+export 'src/db/follow_user_tag.dart';

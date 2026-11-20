@@ -127,7 +127,7 @@ class DouyinLoginController extends BaseController {
     WebResourceRequest request,
   ) async {
     try {
-      var url = request.url?.toString() ?? "";
+      var url = request.url.toString();
       if (url.contains("douyin.com")) {
         var headers = request.headers;
         if (headers != null) {

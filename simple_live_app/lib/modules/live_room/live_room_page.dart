@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:floating/floating.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
 import 'package:media_kit/media_kit.dart';
@@ -27,7 +26,6 @@ import 'package:simple_live_app/widgets/settings/settings_card.dart';
 import 'package:simple_live_app/widgets/settings/settings_number.dart';
 import 'package:simple_live_app/widgets/settings/settings_switch.dart';
 import 'package:simple_live_app/widgets/superchat_card.dart';
-import 'package:simple_live_app/widgets/replay_list_sheet.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 
 class LiveRoomPage extends GetView<LiveRoomController> {

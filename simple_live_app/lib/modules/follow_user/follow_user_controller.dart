@@ -7,8 +7,7 @@ import 'package:simple_live_app/app/controller/base_controller.dart';
 import 'package:simple_live_app/app/event_bus.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
-import 'package:simple_live_app/models/db/follow_user.dart';
-import 'package:simple_live_app/models/db/follow_user_tag.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_app/services/db_service.dart';
 import 'package:simple_live_app/services/follow_service.dart';
 
@@ -57,14 +56,14 @@ class FollowUserController extends BasePageController<FollowUser> {
       return Future.value([]);
     }
     if (filterMode.value.tag == "全部") {
-      return FollowService.instance.followList.value;
+      return FollowService.instance.followList.toList();
     } else if (filterMode.value.tag == "直播中") {
-      return FollowService.instance.liveList.value;
+      return FollowService.instance.liveList.toList();
     } else if (filterMode.value.tag == "未开播") {
-      return FollowService.instance.notLiveList.value;
+      return FollowService.instance.notLiveList.toList();
     } else {
       FollowService.instance.filterDataByTag(filterMode.value);
-      return FollowService.instance.curTagFollowList.value;
+      return FollowService.instance.curTagFollowList.toList();
     }
   }
 
@@ -80,11 +79,11 @@ class FollowUserController extends BasePageController<FollowUser> {
 
   void filterData() {
     if (filterMode.value.tag == "全部") {
-      list.assignAll(FollowService.instance.followList.value);
+      list.assignAll(FollowService.instance.followList.toList());
     } else if (filterMode.value.tag == "直播中") {
-      list.assignAll(FollowService.instance.liveList.value);
+      list.assignAll(FollowService.instance.liveList.toList());
     } else if (filterMode.value.tag == "未开播") {
-      list.assignAll(FollowService.instance.notLiveList.value);
+      list.assignAll(FollowService.instance.notLiveList.toList());
     } else {
       FollowService.instance.filterDataByTag(filterMode.value);
       list.assignAll(FollowService.instance.curTagFollowList);

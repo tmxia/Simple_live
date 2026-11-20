@@ -14,9 +14,6 @@ import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
 import 'package:simple_live_tv_app/services/db_service.dart';
-import 'package:simple_live_tv_app/models/db/follow_user.dart';
-import 'package:simple_live_tv_app/models/db/follow_user_tag.dart';
-import 'package:simple_live_tv_app/models/db/history.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 
 class RemoteSyncWebDAVController extends GetxController {
