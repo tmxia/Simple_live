@@ -455,7 +455,7 @@ class SettingsPage extends GetView<SettingsController> {
             title: "虎牙账号",
             subtitle: HuyaAccountService.instance.logined.value
                 ? "已登录：${HuyaAccountService.instance.name.value}"
-                : "未登录（账号由手机端同步/WebDAV恢复）",
+                : "未登录，点按查看登录方式",
             leading: Image.asset(
               "assets/images/huya.png",
               width: 64.w,
@@ -471,7 +471,7 @@ class SettingsPage extends GetView<SettingsController> {
             title: "抖音账号",
             subtitle: DouyinAccountService.instance.logined.value
                 ? "已登录：${DouyinAccountService.instance.name.value}"
-                : "未登录（账号由手机端同步/WebDAV恢复）",
+                : "未登录，点按查看登录方式",
             leading: Image.asset(
               "assets/images/douyin.png",
               width: 64.w,

@@ -78,23 +78,10 @@ class SettingsController extends BaseController
     }
   }
 
-  /// TV 端没有网页登录能力，提示从手机端同步
+  /// TV 端没有网页登录能力，用与斗鱼一致的一行提示（不再弹 Material 弹窗）
   void showSyncHint(String siteName) {
-    SmartDialog.show(
-      builder: (_) => AlertDialog(
-        title: Text("登录$siteName账号"),
-        content: Text(
-          "TV 端不支持直接扫码登录。\n\n"
-          "请在手机端「我的 - 账号管理」中登录$siteName，"
-          "然后在手机端做一次 WebDAV 备份，回到 TV 端执行「恢复」即可同步账号。",
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => SmartDialog.dismiss(),
-            child: const Text("知道了"),
-          ),
-        ],
-      ),
+    SmartDialog.showToast(
+      "请在手机端登录$siteName，再用 WebDAV 备份/恢复同步到 TV",
     );
   }
 

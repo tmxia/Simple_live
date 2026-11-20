@@ -10,15 +10,20 @@ import 'package:simple_live_app/services/douyin_account_service.dart';
 /// 抖音登录（官方扫码登录面板）
 ///
 /// 抖音的二维码接口 `passport/web/get_qrcode` 只在官方网页环境内可用：
-/// 非浏览器来源直接返回 `4031 安全风险拦截`，`sso.douyin.com` 则会下发
-/// 基于 `gfkadpd` / `sdk-glue` 的反爬挑战。因此无法在 Dart 里直接拿二维码，
-/// 这里改为在 WebView（真实浏览器内核）里加载抖音官网并**自动点开右上角
-/// 的“登录”**，由官方页面自己渲染二维码 / 验证码登录面板：
+/// 非浏览器来源直接返回 `4031 安全风险拦截`（即使用页面自身的 fetch 调也一样），
+/// `sso.douyin.com` 还会下发 `gfkadpd` / `sdk-glue` 反爬挑战，签名由官方
+/// secure-consumer-sdk 现场生成，无法在 Dart 里复刻。因此在 WebView（真实浏览器
+/// 内核）里直接打开抖音「我的」页——**未登录时该页本身就要求登录，进入即是
+/// 官方登录面板**（左侧扫码、右侧验证码/密码），无需再去找入口按钮：
 /// - 扫码登录：用抖音 APP 扫屏幕上的码；
 /// - 验证码登录：手机号 + 验证码，手机上也能独立完成。
 /// 登录完成后从 CookieManager 抓取 `sessionid` 等登录态并持久化。
 class DouyinLoginController extends BaseController {
-  static const String kLoginUrl = "https://www.douyin.com/";
+  /// 未登录访问「我的」会直接呈现官方登录面板（扫码 / 验证码 / 密码）
+  static const String kLoginUrl = "https://www.douyin.com/user/self";
+
+  /// 兜底入口：万一被挑战重定向到精选页，则加载首页再由脚本点开登录
+  static const String kFallbackUrl = "https://www.douyin.com/";
 
   /// 桌面 UA：抖音官网会按 UA 下发不同页面，移动端 UA 拿到的是极简壳页
   /// （没有登录入口），必须用桌面 UA 才会出现右上角“登录”与扫码面板。
@@ -80,6 +85,8 @@ class DouyinLoginController extends BaseController {
   int _panelHits = 0;
   int _clickCount = 0;
   int _tick = 0;
+  int _notFoundCount = 0;
+  bool _fallbackUsed = false;
 
   @override
   void onInit() {
@@ -142,6 +149,18 @@ class DouyinLoginController extends BaseController {
           if (_clickCount > 4) {
             timer.cancel();
             Log.i("抖音登录按钮点击已达上限，等待用户手动操作");
+          }
+        } else if (text.contains("notfound")) {
+          _notFoundCount++;
+          // 「我的」页被挑战重定向到精选页等异常情况：兜底回首页再点登录
+          if (_notFoundCount >= 4 && !_fallbackUsed) {
+            _fallbackUsed = true;
+            _notFoundCount = 0;
+            Log.i("抖音未找到登录入口，兜底加载首页");
+            webViewController?.loadUrl(
+              urlRequest: URLRequest(url: WebUri(kFallbackUrl)),
+            );
+            return;
           }
         }
       } catch (e) {
@@ -206,6 +225,8 @@ class DouyinLoginController extends BaseController {
     _panelOpened = false;
     _panelHits = 0;
     _clickCount = 0;
+    _notFoundCount = 0;
+    _fallbackUsed = false;
     webViewController?.loadUrl(urlRequest: URLRequest(url: WebUri(kLoginUrl)));
   }
 }
