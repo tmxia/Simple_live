@@ -70,14 +70,15 @@ class BasePageController<T> extends BaseController {
   /// 翻页去重：部分站点忽略 page 参数，会一直返回同一批数据
   final Set<String> _seenKeys = <String>{};
 
-  String _keyOf(T item) {
-    if (item is LiveRoomItem) {
-      return item.roomId.isNotEmpty ? item.roomId : item.toString();
-    }
-    if (item is LiveAnchorItem) {
-      return item.roomId.isNotEmpty ? item.roomId : item.toString();
-    }
-    return item.toString();
+  /// 返回去重键；返回 null 表示该类型不适合去重（直接放行）。
+  /// 不要回退到 toString()：LiveCategory / LiveSubCategory 的 toString
+  /// 内部会 json.encode(children)，而子项没有 toJson，会抛编码异常把整个分区页打成空白。
+  String? _keyOf(T item) {
+    if (item is LiveRoomItem) return "room:${item.roomId}";
+    if (item is LiveAnchorItem) return "anchor:${item.roomId}";
+    if (item is LiveSubCategory) return "sub:${item.parentId}/${item.id}";
+    if (item is LiveCategory) return "cat:${item.id}";
+    return null;
   }
 
   Future refreshData() async {
@@ -100,7 +101,8 @@ class BasePageController<T> extends BaseController {
 
       var freshItems = <T>[];
       for (var item in result) {
-        if (_seenKeys.add(_keyOf(item))) freshItems.add(item);
+        final key = _keyOf(item);
+        if (key == null || _seenKeys.add(key)) freshItems.add(item);
       }
 
       if (freshItems.isNotEmpty) {

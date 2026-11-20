@@ -214,6 +214,18 @@ class DouyinSite implements LiveSite {
     return "";
   }
 
+  static const _hexChars = "0123456789abcdef";
+
+  /// 生成 n 位十六进制随机串（用于兜底构造 s_v_web_id）
+  static String _randomHex(int n) {
+    final rnd = Random();
+    final sb = StringBuffer();
+    for (var i = 0; i < n; i++) {
+      sb.write(_hexChars[rnd.nextInt(16)]);
+    }
+    return sb.toString();
+  }
+
   /// 从首页 HTML 里精确截出 categoryData 数组（按括号配对，兼容任意排版）
   List<dynamic> _extractCategoryData(String html) {
     final norm = html.replaceAll('\\"', '"').replaceAll('\\\\', '\\');
@@ -1086,6 +1098,19 @@ class DouyinSite implements LiveSite {
     // 服务端虽然回 status_code=0，但直接把结果集清空（就是日志里的 dataLen=0）。
     final webid = _cookieValue(cookieHeader, "webid");
 
+    // 抖音网页会给每个 XHR 自动追加 verifyFp / fp（值就是 Cookie 里的 s_v_web_id，
+    // 由 verify-center SDK 下发）。缺了这两个参数搜索接口不会报错，
+    // 而是在 search_nil_info 里返回 verify_check —— 也就是「请完成安全验证」。
+    var verifyFp = _cookieValue(cookieHeader, "s_v_web_id");
+    if (verifyFp.isEmpty) {
+      verifyFp = "verify_${_randomHex(32)}";
+    }
+    if (!cookieHeader.contains("s_v_web_id")) {
+      cookieHeader = cookieHeader.isEmpty
+          ? "s_v_web_id=$verifyFp"
+          : "$cookieHeader; s_v_web_id=$verifyFp";
+    }
+
     var params = <String, String>{
       "device_platform": "webapp",
       "aid": "6383",
@@ -1122,6 +1147,8 @@ class DouyinSite implements LiveSite {
       "round_trip_time": "100",
     };
     if (webid.isNotEmpty) params["webid"] = webid;
+    params["verifyFp"] = verifyFp;
+    params["fp"] = verifyFp;
 
     // 一次搜索 = 一组尝试：
     // normal_search 是网页上「直接输入关键词搜索」用的值；
