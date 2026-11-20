@@ -10,23 +10,29 @@ import 'package:simple_live_core/simple_live_core.dart';
 
 /// 抖音搜索的「真实浏览器」传输层
 ///
-/// 三种「从 Dart 直连」为什么都不行（都已在真机实测）：
-///   - dio/OkHttp 直连        → verify_check（人机验证）
+/// 已实测的死路：
+///   - dio/OkHttp 直连        → verify_check
 ///   - 页面里自己写的 XHR     → 被抖音页面脚本 hook 吞掉，永不回调
-///   - 浏览器原生导航(Sec-Fetch-Mode: navigate) → {"status_code":0,"status_msg":"blocked"}
+///   - 浏览器原生导航         → {"status_code":0,"status_msg":"blocked"}
+///   - 只导航到搜索页等它自己发请求（v11）→ 18 秒一条请求都没有，因为
+///     `?type=live` 不会触发表格切换，直播搜索是 switch_tab 才发的
+///   - 主动点「直播」tab（v12）→ 日志显示 `no-tab`：搜索页在 Headless WebView
+///     里先被 verifycenter 人机验证拦住了（页面只加载了 verifycenter JS 与
+///     captcha/reportFrontend，普通接口一条没发）
 ///
-/// v12 的做法：**让抖音搜索页自己发那个请求，我们在旁边看**。
-///  1) 导航到 `https://www.douyin.com/search/<关键词>?type=live`；
-///  2) 页面加载后主动点一下「直播」tab —— 存档 JS 里直播搜索是
-///     `search_source:"switch_tab"` 触发的，光靠 URL 参数页面不会发这条请求
-///     （v11 就是这么 18 秒超时的）；
-///  3) 打开 `useShouldInterceptAjaxRequest`，旁听页面自己发出的
-///     `/aweme/v1/web/live/search` 请求，`readyState == DONE` 时取 responseText；
-///  4) 拦截不到就退一步：直接抓页面 DOM 里的直播间卡片
-///     （`live.douyin.com/<web_rid>` 链接 + 标题 + 封面），拼成 core 能解析的同构 JSON；
-///  5) 再不行才回退浏览器导航 → 页面内 XHR → dio。
-///
-/// 拦截是纯旁听（返回 PROCEED），请求一字节都不改。
+/// v13 的判断：那个 verifycenter 是被「指纹不一致」招来的 —— 我们给 Android
+/// WebView 挂了 Windows 桌面 UA，但 `navigator.platform` 还是 `Linux aarch64`、
+/// `maxTouchPoints` 还是 1、screen 还是手机尺寸，verifycenter 一比就露馅。
+/// 所以 v13 做三件事：
+///  1) `AT_DOCUMENT_START` 注入环境伪装脚本，把 platform / maxTouchPoints /
+///     userAgentData / screen / languages / chrome 全部对齐成桌面 Chrome；
+///  2) 先回首页像真人一样停一下、滚一下，再去搜索页（直接从首页跳搜索页更像
+///     正常路径，冷启动直奔 search 更容易被判）；
+///  3) 轮询最多 ~10 秒等「直播」tab 出现再点（v12 只等 1.6 秒就点，太急），
+///     点不到就把页面真实状态（title / href / 正文前 180 字 / tab 数量）打进
+///     日志，一眼看出是验证页还是登录墙；
+///  4) 页面被验证拦了就重载一次搜索页再试；
+///  5) 仍然拿不到才逐级回退：DOM 抓取 → 浏览器导航 → 页面内 XHR → dio。
 class DouyinWebTransport {
   DouyinWebTransport._();
 
@@ -58,6 +64,9 @@ class DouyinWebTransport {
 
   /// 导航模式（回退）
   Completer<String>? _navCompleter;
+
+  /// 等待某次主框架加载结束
+  Completer<void>? _loadCompleter;
 
   /// 页面内 XHR 模式（回退）
   final Map<String, Completer<String>> _pending = {};
@@ -111,42 +120,78 @@ class DouyinWebTransport {
     }
   }
 
-  /// 打开真实搜索页 → 点「直播」tab → 旁听页面自己发出的直播搜索请求
+  /// 打开真实搜索页 → 等「直播」tab 出现并点它 → 旁听页面自己发出的直播搜索请求
   Future<String> _getBySearchPage(
     InAppWebViewController controller,
     String keyword,
   ) async {
-    final completer = Completer<String>();
-    _pageCompleter = completer;
-    _loggedXhr.clear();
-
     final pageUrl = "https://www.douyin.com/search/"
         "${Uri.encodeComponent(keyword)}?type=live";
-    await controller.loadUrl(urlRequest: URLRequest(url: WebUri(pageUrl)));
 
-    // 等页面骨架加载出来再点 tab（Headless 不渲染到屏幕，但 DOM 与 JS 都正常）
-    await Future.delayed(const Duration(milliseconds: 1600));
-    final clickResult = await _clickLiveTab(controller);
-    Log.d("抖音搜索页点击直播 tab: $clickResult");
+    for (var round = 0; round < 2; round++) {
+      final completer = Completer<String>();
+      _pageCompleter = completer;
+      _loggedXhr.clear();
 
-    final body = await completer.future.timeout(
-      const Duration(seconds: 14),
-      onTimeout: () {
+      await _loadAndWait(controller, pageUrl, const Duration(seconds: 16));
+
+      // 轮询等「直播」tab 渲染出来（v12 只等 1.6 秒就点，太急）
+      var tapResult = <String, dynamic>{};
+      for (var i = 0; i < 14; i++) {
+        await Future.delayed(const Duration(milliseconds: 700));
+        tapResult = await _tapLiveTab(controller);
+        if (tapResult["found"] == true) {
+          Log.d("抖音搜索页找到直播 tab（第 ${i + 1} 次轮询），已点击");
+          break;
+        }
+        if (i == 13) {
+          Log.d("抖音搜索页没找到直播 tab：title=${tapResult["title"]} "
+              "href=${tapResult["href"]} tabs=${tapResult["tabs"]} "
+              "正文=${tapResult["text"]}");
+        }
+      }
+      if (tapResult["found"] != true) {
         _pageCompleter = null;
-        throw TimeoutException("抖音搜索页没有发出直播搜索请求");
-      },
-    );
-    _pageCompleter = null;
-    if (body.trim().isEmpty) {
-      throw Exception("抖音搜索页返回空响应");
+        final text = "${tapResult["text"]}";
+        final blockedPage = text.contains("验证") ||
+            text.contains("滑块") ||
+            text.contains("captcha") ||
+            text.contains("登录");
+        if (round == 0 && blockedPage) {
+          Log.d("抖音搜索页疑似被人机验证拦住，重载一次再试");
+          continue;
+        }
+        throw TimeoutException("抖音搜索页没有出现直播 tab（正文=${_short(text)}）");
+      }
+
+      final body = await completer.future.timeout(
+        const Duration(seconds: 12),
+        onTimeout: () {
+          _pageCompleter = null;
+          throw TimeoutException("抖音搜索页没有发出直播搜索请求");
+        },
+      );
+      _pageCompleter = null;
+      if (body.trim().isEmpty) {
+        throw Exception("抖音搜索页返回空响应");
+      }
+      Log.d("抖音搜索页拦截到 ${body.length} 字节: "
+          "${body.substring(0, math.min(160, body.length))}");
+      return body;
     }
-    Log.d("抖音搜索页拦截到 ${body.length} 字节: "
-        "${body.substring(0, math.min(160, body.length))}");
-    return body;
+
+    throw TimeoutException("抖音搜索页连续两次都没有出现直播 tab");
   }
 
-  /// 在页面里找文字为「直播」的 tab 并点它
-  Future<String> _clickLiveTab(InAppWebViewController controller) async {
+  static String _short(String text) {
+    final s = text.replaceAll(RegExp(r"\s+"), " ").trim();
+    return s.length > 120 ? s.substring(0, 120) : s;
+  }
+
+  /// 在页面里找「直播」tab 并点击；同时返回页面状态，供诊断
+  Future<Map<String, dynamic>> _tapLiveTab(
+    InAppWebViewController controller,
+  ) async {
     const script = r'''
 (function(){
   try{
@@ -158,16 +203,39 @@ class DouyinWebTransport {
       var t = (el.textContent || '').trim();
       if (t === '直播' || t === '直播中') { best = el; break; }
     }
-    if (!best) return 'no-tab';
-    best.click();
-    var a = best.closest ? best.closest('a') : null;
-    if (a) { a.click(); }
-    return 'clicked';
-  } catch (e) { return 'err:' + e; }
+    if (best) {
+      best.click();
+      var a = best.closest ? best.closest('a') : null;
+      if (a) { a.click(); }
+    }
+    var bodyText = document.body ? (document.body.innerText || '') : '';
+    bodyText = bodyText.replace(/\s+/g, ' ').slice(0, 180);
+    return JSON.stringify({
+      found: !!best,
+      tabs: document.querySelectorAll('[role="tab"]').length,
+      title: document.title || '',
+      href: location.href || '',
+      text: bodyText
+    });
+  } catch (e) {
+    return JSON.stringify({found:false, err:String(e)});
+  }
 })();
 ''';
-    final r = await controller.evaluateJavascript(source: script);
-    return r?.toString() ?? "";
+    try {
+      final raw = await controller.evaluateJavascript(source: script);
+      final text = raw?.toString() ?? "";
+      if (text.trim().isEmpty || text == "null") {
+        return {"found": false, "text": "页面无返回"};
+      }
+      final decoded = jsonDecode(text);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (e) {
+      return {"found": false, "text": "读取页面失败: $e"};
+    }
+    return {"found": false};
   }
 
   /// 抓页面 DOM 里的直播间卡片，拼成 core 能解析的同构 JSON
@@ -305,13 +373,32 @@ class DouyinWebTransport {
     );
   }
 
+  /// 加载一个 URL 并等到主框架触发的 onLoadStop（超时也继续）
+  Future<void> _loadAndWait(
+    InAppWebViewController controller,
+    String url,
+    Duration timeout,
+  ) async {
+    final completer = Completer<void>();
+    _loadCompleter = completer;
+    try {
+      await controller.loadUrl(urlRequest: URLRequest(url: WebUri(url)));
+    } catch (e) {
+      _loadCompleter = null;
+      rethrow;
+    }
+    await completer.future.timeout(timeout, onTimeout: () {});
+    if (identical(_loadCompleter, completer)) {
+      _loadCompleter = null;
+    }
+  }
+
   Future<void> _start() async {
     await _injectCookies();
 
-    final loaded = Completer<void>();
+    final created = Completer<void>();
 
     _headless = HeadlessInAppWebView(
-      initialUrlRequest: URLRequest(url: WebUri(kHomeUrl)),
       initialSettings: InAppWebViewSettings(
         userAgent: kUserAgent,
         javaScriptEnabled: true,
@@ -319,7 +406,7 @@ class DouyinWebTransport {
         // 旁听页面自己的 XHR（不修改请求）
         useShouldInterceptAjaxRequest: true,
       ),
-      onWebViewCreated: (controller) {
+      onWebViewCreated: (controller) async {
         controller.addJavaScriptHandler(
           handlerName: 'dyPost',
           callback: (args) {
@@ -341,6 +428,21 @@ class DouyinWebTransport {
             return null;
           },
         );
+        // 关键：把 WebView 的环境指纹对齐成「桌面 Chrome」，
+        // 否则 UA 说 Windows、platform 说 Linux aarch64，verifycenter 立刻拦。
+        try {
+          await controller.addUserScripts(userScripts: [
+            UserScript(
+              source: _envSpoofScript,
+              injectionTime: UserScriptInjectionTime.AT_DOCUMENT_START,
+            ),
+          ]);
+        } catch (e) {
+          Log.d("抖音环境伪装脚本注入失败: $e");
+        }
+        if (!created.isCompleted) {
+          created.complete();
+        }
       },
       onAjaxReadyStateChange: (controller, ajaxRequest) {
         final reqUrl = ajaxRequest.url?.toString() ?? "";
@@ -366,10 +468,11 @@ class DouyinWebTransport {
         if (nav != null && !nav.isCompleted) {
           unawaited(_readNavigationBody(controller, nav));
         }
-        _loaded = true;
-        if (!loaded.isCompleted) {
-          loaded.complete();
+        final load = _loadCompleter;
+        if (load != null && !load.isCompleted) {
+          load.complete();
         }
+        _loaded = true;
       },
       onReceivedError: (controller, request, error) {
         final nav = _navCompleter;
@@ -382,14 +485,63 @@ class DouyinWebTransport {
     );
 
     await _headless!.run();
-    await loaded.future.timeout(
-      const Duration(seconds: 10),
-      onTimeout: () {},
-    );
+    await created.future.timeout(const Duration(seconds: 3), onTimeout: () {});
+    final controller = _headless!.webViewController;
+    if (controller == null) {
+      throw Exception("抖音搜索浏览器创建失败");
+    }
+
+    // 先回首页，停一下、滚一下 —— 冷启动直奔 search 页更像机器
+    try {
+      await _loadAndWait(controller, kHomeUrl, const Duration(seconds: 12));
+      await Future.delayed(const Duration(milliseconds: 2000));
+      await controller.evaluateJavascript(
+        source: "window.scrollBy(0, 420);",
+      );
+      await Future.delayed(const Duration(milliseconds: 800));
+    } catch (e) {
+      Log.d("抖音首页预热失败（继续）: $e");
+    }
     if (!_loaded) {
-      Log.d("抖音搜索浏览器首页未在 10 秒内加载完成，仍尝试发起请求");
+      Log.d("抖音搜索浏览器首页未在 12 秒内加载完成，仍尝试发起请求");
     }
   }
+
+  /// 环境指纹伪装：把 Android WebView 装成桌面 Chrome
+  static const String _envSpoofScript = r'''
+(function(){
+  var define = function(obj, prop, val){
+    try { Object.defineProperty(obj, prop, {get: function(){return val;}, configurable: true}); } catch(e){}
+  };
+  try {
+    define(navigator, 'platform', 'Win32');
+    define(navigator, 'maxTouchPoints', 0);
+    define(navigator, 'webdriver', false);
+    define(navigator, 'hardwareConcurrency', 8);
+    define(navigator, 'deviceMemory', 8);
+    define(navigator, 'languages', ['zh-CN','zh']);
+    define(navigator, 'language', 'zh-CN');
+    define(navigator, 'vendor', 'Google Inc.');
+    define(navigator, 'userAgentData', {
+      brands: [
+        {brand: 'Chromium', version: '134'},
+        {brand: 'Google Chrome', version: '134'},
+        {brand: 'Not:A-Brand', version: '24'}
+      ],
+      mobile: false,
+      platform: 'Windows'
+    });
+    try { define(screen, 'width', 1920); define(screen, 'height', 1080); } catch(e){}
+    try { define(screen, 'availWidth', 1920); define(screen, 'availHeight', 1040); } catch(e){}
+    try { define(window, 'outerWidth', 1920); define(window, 'outerHeight', 1080); } catch(e){}
+    try { delete window.ontouchstart; } catch(e){}
+    try { delete document.ontouchstart; } catch(e){}
+    if (!window.chrome) {
+      window.chrome = {runtime: {}, app: {isInstalled: false}};
+    }
+  } catch(e){}
+})();
+''';
 
   Future<void> _readNavigationBody(
     InAppWebViewController controller,
@@ -460,13 +612,14 @@ class DouyinWebTransport {
       }
     }
     _pending.clear();
-    for (final c in [_pageCompleter, _navCompleter]) {
+    for (final c in [_pageCompleter, _navCompleter, _loadCompleter]) {
       if (c != null && !c.isCompleted) {
         c.completeError(Exception("浏览器已关闭"));
       }
     }
     _pageCompleter = null;
     _navCompleter = null;
+    _loadCompleter = null;
     await _headless?.dispose();
     _headless = null;
     _startFuture = null;
