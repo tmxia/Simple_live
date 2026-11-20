@@ -1,12 +1,13 @@
 import 'dart:async';
 
-import 'package:simple_live_app/app/log.dart';
+import 'runtime.dart';
 
-/// 全局事件
+/// 全局事件总线
 class EventBus {
   /// 点击了底部导航
   static const String kBottomNavigationBarClicked =
       "BottomNavigationBarClicked";
+
   static EventBus? _instance;
 
   static EventBus get instance {
@@ -21,8 +22,7 @@ class EventBus {
     if (!_streams.containsKey(name)) {
       _streams.addAll({name: StreamController.broadcast()});
     }
-    Log.d("Emit Event：$name\r\n$data");
-
+    SharedRuntime.d("Emit Event：$name\r\n$data");
     _streams[name]!.add(data);
   }
 

@@ -4,7 +4,7 @@ import 'package:remixicon/remixicon.dart';
 import 'package:simple_live_app/app/app_style.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/modules/sync/remote_sync/room/remote_sync_room_controller.dart';
-import 'package:simple_live_app/services/signalr_service.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_app/widgets/settings/settings_card.dart';
 
 class RemoteSyncRoomPage extends GetView<RemoteSyncRoomController> {

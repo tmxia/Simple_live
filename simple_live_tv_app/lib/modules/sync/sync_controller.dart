@@ -7,12 +7,10 @@ import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/controller/base_controller.dart';
-import 'package:simple_live_tv_app/app/event_bus.dart';
-import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
+import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
 import 'package:simple_live_tv_app/services/db_service.dart';
-import 'package:simple_live_tv_app/services/signalr_service.dart';
 
 class SyncController extends BaseController {
   final SignalRService signalR = SignalRService();

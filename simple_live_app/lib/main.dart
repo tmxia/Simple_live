@@ -123,6 +123,21 @@ Future initServices() async {
 
   
   Utils.packageInfo = await PackageInfo.fromPlatform();
+
+  // 共享层日志/上报信息桥接（simple_live_shared 不直接依赖本端 Log/Utils）
+  SharedRuntime.appName = "Simple Live";
+  SharedRuntime.platformName = Platform.operatingSystem;
+  SharedRuntime.appVersion = Utils.packageInfo.version;
+  SharedRuntime.onDebug = (message) => Log.d(message);
+  SharedRuntime.onInfo = (message) => Log.i(message);
+  SharedRuntime.onError = (message, stackTrace) {
+    final st = stackTrace ?? StackTrace.current;
+    if (kReleaseMode) {
+      CoreLog.e(message, st);
+    } else {
+      Log.e(message, st);
+    }
+  };
   
   Log.d("Init LocalStorage Service");
   await Get.put(LocalStorageService()).init();

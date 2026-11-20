@@ -1,7 +1,8 @@
 import 'dart:async';
+
 import 'package:signalr_netcore/signalr_client.dart';
-import 'package:simple_live_tv_app/app/log.dart';
-import 'package:simple_live_tv_app/app/utils.dart';
+
+import '../runtime.dart';
 
 enum SignalRConnectionState {
   connecting,
@@ -56,7 +57,7 @@ class SignalRService {
       _stateStreamController.add(state);
     });
     hubConnection!.onreconnected(({String? connectionId}) {
-      Log.d("reconnected: $connectionId");
+      SharedRuntime.d("reconnected: $connectionId");
       state = SignalRConnectionState.connected;
       _stateStreamController.add(state);
     });
@@ -98,9 +99,9 @@ class SignalRService {
     if (state != SignalRConnectionState.connected) {
       throw Exception("not connected");
     }
-    String app = "Simple Live TV";
-    String platform = 'tv';
-    String version = Utils.packageInfo.version;
+    String app = SharedRuntime.appName;
+    String platform = SharedRuntime.platformName;
+    String version = SharedRuntime.appVersion;
     var resp = await hubConnection
         ?.invoke("CreateRoom", args: [app, platform, version]);
     return Resp<String>.fromObject(resp);
@@ -110,9 +111,9 @@ class SignalRService {
     if (state != SignalRConnectionState.connected) {
       throw Exception("not connected");
     }
-    String app = "Simple Live TV";
-    String platform = 'tv';
-    String version = Utils.packageInfo.version;
+    String app = SharedRuntime.appName;
+    String platform = SharedRuntime.platformName;
+    String version = SharedRuntime.appVersion;
     var resp = await hubConnection
         ?.invoke("JoinRoom", args: [roomId, app, platform, version]);
     return Resp.fromObject(resp);

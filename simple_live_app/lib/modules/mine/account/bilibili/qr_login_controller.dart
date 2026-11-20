@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_app/app/log.dart';
-import 'package:simple_live_app/requests/http_client.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 
 enum QRStatus {

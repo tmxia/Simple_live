@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:simple_live_app/app/log.dart';
-import 'package:simple_live_core/simple_live_core.dart';
 
+import '../runtime.dart';
+
+/// Dio 日志拦截器：Debug 打全量（敏感头打码），Release 只打一行摘要。
 class CustomLogInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
@@ -16,7 +17,7 @@ class CustomLogInterceptor extends Interceptor {
     var time =
         DateTime.now().millisecondsSinceEpoch - err.requestOptions.extra["ts"];
     if (!kReleaseMode) {
-      Log.e('''【HTTP请求错误-${err.type}】 耗时:${time}ms
+      SharedRuntime.e('''【HTTP请求错误-${err.type}】 耗时:${time}ms
 ${err.message}
 
 Request Method：${err.requestOptions.method}
@@ -24,11 +25,11 @@ Response Code：${err.response?.statusCode}
 Request URL：${err.requestOptions.uri}
 Request Query：${err.requestOptions.queryParameters}
 Request Data：${err.requestOptions.data}
-Request Headers：${err.requestOptions.headers}
+Request Headers：${_maskHeader(err.requestOptions.headers)}
 Response Headers：${err.response?.headers.map}
 Response Data：${err.response?.data}''', err.stackTrace);
     } else {
-      CoreLog.e('''[HTTP Error] [${err.type}] [Time:${time}ms]
+      SharedRuntime.e('''[HTTP Error] [${err.type}] [Time:${time}ms]
 ${err.message}
 
 Request Method：${err.requestOptions.method}
@@ -49,26 +50,25 @@ Response Data：${err.response?.data}''', err.stackTrace);
     var time = DateTime.now().millisecondsSinceEpoch -
         response.requestOptions.extra["ts"];
     if (!kReleaseMode) {
-      Log.i(
+      SharedRuntime.i(
         '''【HTTP请求响应】 耗时:${time}ms
 Request Method：${response.requestOptions.method}
 Request Code：${response.statusCode}
 Request URL：${response.requestOptions.uri}
 Request Query：${response.requestOptions.queryParameters}
 Request Data：${response.requestOptions.data}
-Request Headers：${response.requestOptions.headers}
+Request Headers：${_maskHeader(response.requestOptions.headers)}
 Response Headers：${response.headers.map}
 Response Data：${response.data}''',
       );
     } else {
-      CoreLog.i(
+      SharedRuntime.i(
         "[HTTP Response] [time:${time}ms] [${response.statusCode}] ${response.requestOptions.uri}",
       );
     }
     super.onResponse(response, handler);
   }
 
-  
   String _maskHeader(Map<String, dynamic> header) {
     var result = <String, dynamic>{};
     header.forEach((key, value) {
