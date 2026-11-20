@@ -263,7 +263,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
       children: [
         Obx(() {
 
-          controller.videoRefreshTick.value; // 监听刷新信号
+          controller.videoRefreshTick.value; 
 
           return KeyedSubtree(
 
@@ -827,10 +827,10 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               onTap: () async {
                 Log.logPrint("[回放] 用户点击了查看回放，当前 Site ID: ${controller.site.id}");
                 
-                // 核心修复：精准关闭当前菜单，不使用延迟
+                
                 Navigator.pop(sheetContext);
                 
-                // 直接推入独立路由页面
+                
                 var result = await Get.to(() => ReplayPage(
                             roomId: controller.rxRoomId.value,
                             site: controller.site,

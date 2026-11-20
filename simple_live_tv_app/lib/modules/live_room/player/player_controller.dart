@@ -28,11 +28,11 @@ mixin PlayerMixin {
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
-    // media_kit 仓库更新导致的问题，临时解决办法
+    
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
     }
-    // 🌟 核心调教：TV 端底层参数
+    
     var lowEnd = Platform.numberOfProcessors <= 4;
     var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
     await pp.setProperty('demuxer-max-bytes', '$maxBytes');
@@ -347,7 +347,7 @@ void disposeStream() {
           );
           
           initStream();
-          update(); // 通知 UI 刷新
+          update(); 
           
           await initializePlayer();
           await player.open(Media(currentUri));
@@ -369,7 +369,7 @@ void disposeStream() {
     try {
       await player.stop();
     } catch (e) {
-      // ignore
+      
     }
     await player.dispose();
     await resetSystem();

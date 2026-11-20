@@ -72,18 +72,18 @@ class _ReplayPageState extends State<ReplayPage> {
 
     try {
       var qualities = await widget.site.liveSite.getReplayQualities(videoId: item.id);
-      if (mounted) Navigator.of(context).pop(); // 关闭 Loading
+      if (mounted) Navigator.of(context).pop(); 
       
       if (qualities.isNotEmpty) {
         var url = qualities.first.data["url"].toString();
         Log.logPrint("[回放] 获取到播放地址，返回直播间: $url");
-        // 返回上一页并携带播放地址
+        
         Navigator.of(context).pop(qualities.first);
       } else {
         _showMsg("未获取到播放地址");
       }
     } catch (e) {
-      if (mounted) Navigator.of(context).pop(); // 关闭 Loading
+      if (mounted) Navigator.of(context).pop(); 
       _showMsg("获取播放地址失败: $e");
     }
   }

@@ -31,10 +31,10 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
       Container(),
       buildDanmuView(videoState, controller),
       
-      // 背景点击拦截（彻底杜绝方向键触发点击）
+      
       Positioned.fill(
         child: IgnorePointer(
-          ignoring: controller.showControlsState.value, // 底栏显示时背景彻底失明
+          ignoring: controller.showControlsState.value, 
           child: GestureDetector(
             onTap: () {
               if (!controller.showControlsState.value) {
@@ -62,7 +62,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
         ),
       ),
       
-      // 顶部信息
+      
       Obx(
         () => AnimatedPositioned(
           left: 0, right: 0,
@@ -92,7 +92,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
         ),
       ),
       
-      // ================= 底部控制栏 =================
+      
       Obx(
         () => AnimatedPositioned(
           left: 0, right: 0,
@@ -103,7 +103,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
               controller.replayFocusNode.requestFocus();
             }
           },
-          // 核心修复：使用 Shortcuts 物理级拦截全局按键，彻底阻断冒泡
+          
           child: Shortcuts(
             shortcuts: {
               LogicalKeySet(LogicalKeyboardKey.arrowLeft): const PreviousFocusIntent(),
@@ -116,7 +116,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                 onKeyEvent: (node, event) {
                   if (event is KeyDownEvent) {
                     final primary = FocusManager.instance.primaryFocus;
-                    // 手动控制上下键在 进度条 <-> 按钮 之间流转
+                    
                     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
                       if (controller.isVod.value && primary == buttonsFocus) {
                         progressFocus.requestFocus();
@@ -138,7 +138,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                   padding: EdgeInsets.only(left: 32.w, right: 32.w, bottom: 24.w, top: 24.w),
                   child: Column(
                     children: [
-                      // 进度条
+                      
                       Obx(() {
                         if (!controller.isVod.value) return const SizedBox.shrink();
                         return StreamBuilder<Duration>(
@@ -208,7 +208,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                         );
                       }),
 
-                      // 按钮
+                      
                       Focus(
                         focusNode: buttonsFocus,
                         child: FocusTraversalGroup(
@@ -233,7 +233,7 @@ Widget buildControls(VideoState videoState, LiveRoomController controller) {
                               ],
                               AppStyle.hGap32,
                               
-                              // === 恢复原有的快捷键说明 ===
+                              
                               Icon(Icons.arrow_circle_up_rounded, color: Colors.white, size: 40.w),
                               AppStyle.hGap16,
                               Text("上一频道", style: AppStyle.textStyleWhite),
@@ -301,80 +301,80 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   );
 }
 
-// void showLinesInfo(LiveRoomController controller) {
-//   Utils.showRightDialog(
-//     title: "线路",
-//     useSystem: true,
-//     child: ListView.builder(
-//       padding: EdgeInsets.zero,
-//       itemCount: controller.playUrls.length,
-//       itemBuilder: (_, i) {
-//         return ListTile(
-//           selected: controller.currentLineIndex == i,
-//           title: Text.rich(
-//             TextSpan(
-//               text: "线路${i + 1}",
-//               children: [
-//                 WidgetSpan(
-//                     child: Container(
-//                   decoration: BoxDecoration(
-//                     borderRadius: AppStyle.radius4,
-//                     border: Border.all(
-//                       color: Colors.grey,
-//                     ),
-//                   ),
-//                   padding: AppStyle.edgeInsetsH4,
-//                   margin: AppStyle.edgeInsetsL8,
-//                   child: Text(
-//                     controller.playUrls[i].contains(".flv") ? "FLV" : "HLS",
-//                     style: const TextStyle(
-//                       fontSize: 12,
-//                     ),
-//                   ),
-//                 )),
-//               ],
-//             ),
-//             style: const TextStyle(fontSize: 14),
-//           ),
-//           minLeadingWidth: 16,
-//           onTap: () {
-//             Utils.hideRightDialog();
-//             //controller.currentLineIndex = i;
-//             //controller.setPlayer();
-//             controller.changePlayLine(i);
-//           },
-//         );
-//       },
-//     ),
-//   );
-// }
 
-// void showQualitesInfo(LiveRoomController controller) {
-//   Utils.showRightDialog(
-//     title: "清晰度",
-//     useSystem: true,
-//     child: ListView.builder(
-//       padding: EdgeInsets.zero,
-//       itemCount: controller.qualites.length,
-//       itemBuilder: (_, i) {
-//         var item = controller.qualites[i];
-//         return ListTile(
-//           selected: controller.currentQuality == i,
-//           title: Text(
-//             item.quality,
-//             style: const TextStyle(fontSize: 14),
-//           ),
-//           minLeadingWidth: 16,
-//           onTap: () {
-//             Utils.hideRightDialog();
-//             controller.currentQuality = i;
-//             controller.getPlayUrl();
-//           },
-//         );
-//       },
-//     ),
-//   );
-// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   void showReplayDialog(LiveRoomController controller) {
@@ -414,7 +414,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
                   var item = controller.replayList[i];
                   return ReplayCard(
                     item: item,
-                    autofocus: i == 0, // 第一项自动获取焦点
+                    autofocus: i == 0, 
                     onTap: () {
                       Get.back();
                       controller.playReplay(item);
@@ -482,7 +482,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   }
 
 void showPlayerSettings(LiveRoomController controller) {
-  // 移除焦点
+  
   controller.focusNode.unfocus();
 
   var followFocusNode = AppFocusNode()..isFoucsed.value = true;
@@ -508,7 +508,7 @@ void showPlayerSettings(LiveRoomController controller) {
               iconData: Icons.arrow_back,
               text: "返回",
               onTap: () {
-                //Utils.hideRightDialog();
+                
                 Get.back();
               },
             ),
@@ -558,7 +558,7 @@ void showPlayerSettings(LiveRoomController controller) {
               ),
               AppStyle.vGap24,
 
-              // 清晰度切换
+              
               Obx(
                 () => SettingsItemWidget(
                   title: "清晰度",
@@ -587,7 +587,7 @@ void showPlayerSettings(LiveRoomController controller) {
               ),
 
               AppStyle.vGap32,
-              // 线路切换
+              
               Obx(
                 () => SettingsItemWidget(
                   title: "线路",
@@ -758,7 +758,7 @@ void showPlayerSettings(LiveRoomController controller) {
       ],
     ),
   ).then((value) {
-    // 还原焦点
+    
     controller.focusNode.requestFocus();
   });
 }
@@ -792,7 +792,7 @@ void showFollowUser(LiveRoomController controller) {
               autofocus: currentIndex == 0 &&
                   FollowUserService.instance.livingList.isEmpty,
               onTap: () {
-                // Utils.hideRightDialog();
+                
                 Get.back();
               },
             ),
@@ -849,7 +849,7 @@ void showFollowUser(LiveRoomController controller) {
       ],
     ),
   ).then((value) {
-    // 还原焦点
+    
     controller.focusNode.requestFocus();
   });
 }
@@ -874,7 +874,7 @@ class _ReplayCardState extends State<ReplayCard> {
     return Focus(
       focusNode: focusNode,
       autofocus: widget.autofocus,
-      // 核心修复：拦截遥控器 OK 键与回车键
+      
       onKeyEvent: (node, event) {
         if (event is KeyDownEvent) {
           if (event.logicalKey == LogicalKeyboardKey.select || 

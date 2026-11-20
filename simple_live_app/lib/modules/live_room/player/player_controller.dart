@@ -40,7 +40,7 @@ mixin PlayerMixin {
   /// 初始化播放器并设置 ao 参数
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
-    // 设置音频输出驱动
+    
     if (AppSettingsController.instance.customPlayerOutput.value) {
       if (player.platform is NativePlayer) {
         await (player.platform as dynamic).setProperty(
@@ -49,11 +49,11 @@ mixin PlayerMixin {
         );
       }
     }
-    // media_kit 仓库更新导致的问题，临时解决办法
+    
     if(Platform.isAndroid){
       await pp.setProperty('force-seekable', 'yes');
     }
-    // 🌟 核心调教：直播缓存限制（参考 pure_live）
+    
     var lowEnd = Platform.numberOfProcessors <= 4;
     var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
     var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
@@ -64,9 +64,9 @@ mixin PlayerMixin {
     await pp.setProperty('cache-secs', '30');
     await pp.setProperty('cache-pause-wait', '4');
     await pp.setProperty('network-timeout', '15');
-    // 硬解异常帧时自动回退软解
+    
     await pp.setProperty('hwdec-software-fallback', '1');
-    // 丢帧而不是堆积延迟
+    
     await pp.setProperty('framedrop', 'decoder+vo');
     await pp.setProperty('demuxer-lavf-probesize', '2097152');
     await pp.setProperty('demuxer-lavf-analyzeduration', '2');
@@ -353,11 +353,11 @@ mixin PlayerSystemMixin on PlayerMixin, PlayerStateMixin, PlayerDanmakuMixin {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge,
           overlays: SystemUiOverlay.values);
       
-      // 核心修复：先触发系统屏幕旋转
+      
       setPortraitOrientation();
       
-      // 延迟 250 毫秒等待系统物理屏幕完全旋转至竖直状态，再通知 UI 切换
-      // 这样能彻底根除横竖屏切换时 UI 被异常拉伸导致的“跳闪”现象
+      
+      
       Future.delayed(const Duration(milliseconds: 250), () {
         fullScreenState.value = false;
       });
@@ -846,7 +846,7 @@ class PlayerController extends BaseController
           
           initStream();
           player.setVolume(AppSettingsController.instance.playerVolume.value);
-          update(); // 通知 UI 刷新
+          update(); 
           
           await initializePlayer();
           await player.open(Media(currentUri));
@@ -966,11 +966,11 @@ class PlayerController extends BaseController
     }
     disposeStream();
     disposeDanmakuController();
-    // 核心修复：先强制停止音频，再销毁实例，防止底层音频在后台残留
+    
     try {
       await player.stop();
     } catch (e) {
-      // ignore
+      
     }
     await player.dispose();
     await resetSystem();

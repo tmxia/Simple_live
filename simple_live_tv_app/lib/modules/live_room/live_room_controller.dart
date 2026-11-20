@@ -65,7 +65,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   var datetime = "00:00".obs;
   
-  // 回放相关
+  
   RxBool isVod = false.obs;
   RxList<Map<String, dynamic>> vodPages = <Map<String, dynamic>>[].obs;
   var vodCurrentIndex = 0.obs;

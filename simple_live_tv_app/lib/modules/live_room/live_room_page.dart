@@ -130,12 +130,12 @@ class LiveRoomPage extends GetView<LiveRoomController> {
       children: [
         Obx(() {
 
-          controller.videoRefreshTick.value; // 监听刷新信号
+          controller.videoRefreshTick.value; 
 
           return KeyedSubtree(
           key: ValueKey(controller.globalPlayerKey),
           child: Container(
-            color: Colors.black, // 核心修复 2：背景强制全黑，彻底消灭左侧蓝边
+            color: Colors.black, 
             child: Video(
               key: controller.globalPlayerKey,
               controller: controller.videoController,
@@ -144,7 +144,7 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               controls: (state) {
                 return playerControls(state, controller);
               },
-              // 核心修复 1：如果 aspectRatio 是 null（刚起播没拿到分辨率），给个 16:9 兜底，防止瞬间全屏放大
+              
               aspectRatio: aspectRatio ?? (16 / 9),
               fit: boxFit,
             ),

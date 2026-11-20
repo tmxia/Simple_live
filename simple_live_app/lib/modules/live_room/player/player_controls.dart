@@ -158,7 +158,7 @@ Widget buildFullControls(VideoState videoState, LiveRoomController controller) {
             right: 0,
             bottom: (controller.showControlsState.value && !controller.lockControlsState.value)
                 ? 0
-                : -(110 + padding.bottom), // 增加隐藏位移，防止进度条露出
+                : -(110 + padding.bottom), 
             duration: const Duration(milliseconds: 200),
             child: Container(
               decoration: const BoxDecoration(
@@ -172,7 +172,7 @@ Widget buildFullControls(VideoState videoState, LiveRoomController controller) {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // 回放进度条
+                  
                   buildVodProgressBar(videoState, controller),
                   Row(
                     children: [
@@ -506,7 +506,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
   void showPlaylistSheet(LiveRoomController controller) {
     if (controller.vodPages.isEmpty) return;
 
-    // 核心修复：判断物理屏幕是否为竖屏，而不是判断视频比例
+    
     final isPortraitScreen = MediaQuery.of(Get.context!).orientation == Orientation.portrait;
 
     Widget buildVodList() {
@@ -545,7 +545,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
     }
 
     if (isPortraitScreen) {
-      // 竖屏：底部滑出弹窗
+      
       Get.bottomSheet(
         backgroundColor: Colors.transparent,
         Container(
@@ -573,7 +573,7 @@ Widget buildDanmuView(VideoState videoState, LiveRoomController controller) {
         ),
       );
     } else {
-      // 横屏：右侧面板
+      
       Utils.showRightDialog(
         title: "视频选集",
         useSystem: true,

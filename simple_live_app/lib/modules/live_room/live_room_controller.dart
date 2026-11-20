@@ -472,10 +472,10 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     currentLineInfo.value = "默认线路";
     initPlaylist();
 
-    // 核心修复：如果是 DASH 流，且提取到了音频地址，我们通过 mpv 底层直接把音频加进去
+    
     if (audioUrl != null && audioUrl.isNotEmpty) {
       if (player.platform is NativePlayer) {
-        // 延迟一下等播放器初始化完成，再挂载音频
+        
         Future.delayed(const Duration(milliseconds: 500), () async {
           try {
             await (player.platform as NativePlayer).command(["audio-add", audioUrl]);
@@ -494,7 +494,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     final mediaList = playUrls.map((url) {
       var finalUrl = url;
-      // 核心修复：虎牙等平台的赛事流强转 https 会导致死连卡死，这里跳过强转
+      
       if (AppSettingsController.instance.playerForceHttps.value && !finalUrl.contains("huya.com")) {
         finalUrl = finalUrl.replaceAll("http://", "https://");
       }
@@ -514,7 +514,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     var targetCid = vodPages[index]["cid"].toString();
 
-    // 如果是物理切片，直接走 jump
+    
     if (targetCid.startsWith("durl_")) {
       vodCurrentIndex.value = index;
       await player.jump(index);
@@ -525,7 +525,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     SmartDialog.showLoading(msg: "正在加载选集...");
     
     try {
-      // 核心修复：site 是 Site 实例，它的 liveSite 才是 BiliBiliSite
+      
       if (site.liveSite is BiliBiliSite) {
         var url = await (site.liveSite as BiliBiliSite).getReplayUrlByCid(currentReplayBvid, targetCid);
         
@@ -781,7 +781,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
           Get.back();
           currentQuality = e ?? 0;
           if (isVod.value) {
-            // 直接切流，不需要重新发请求
+            
             playReplayItem(qualites[currentQuality]);
           } else {
             getPlayUrl();

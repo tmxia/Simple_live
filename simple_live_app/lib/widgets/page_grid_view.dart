@@ -41,7 +41,7 @@ class PageGridView extends StatelessWidget {
             header: MaterialHeader(
               completeDuration: const Duration(milliseconds: 400),
             ),
-            // 核心修复：彻底设为 null，切断一切上拉加载和底部悬浮球
+            
             footer: null,
             onLoad: null,
             scrollController: pageController.scrollController,
