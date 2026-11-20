@@ -34,6 +34,26 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: 对齐 NDK（优先复用预装，避免 sdkmanager 下载损坏）
+        shell: bash
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          NDK=""
+          if [ -d "$SDK/ndk" ]; then NDK=$(ls -1 "$SDK/ndk" 2>/dev/null | sort -V | tail -1); fi
+          if [ -z "$NDK" ]; then
+            echo "未检测到预装 NDK，尝试下载（最多 3 次，失败清理残留）"
+            for i in 1 2 3; do
+              rm -rf "$SDK/ndk/28.2.13676358" "$SDK/.temp" "$HOME/.android/cache" 2>/dev/null || true
+              if yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "ndk;28.2.13676358" >/dev/null 2>&1; then
+                NDK=28.2.13676358; break
+              fi
+              echo "第 $i 次下载失败，15 秒后重试"; sleep 15
+            done
+          fi
+          [ -n "$NDK" ] || { echo "❌ 无法获得可用 NDK"; exit 1; }
+          echo "✅ 使用 NDK: $NDK"
+          echo "NDK_VERSION=$NDK" >> "$GITHUB_ENV"
+
       - name: 读取 App 版本号
         id: get_ver
         run: |
@@ -56,6 +76,8 @@ jobs:
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
           sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_app/android/settings.gradle.kts || true
           sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_app/android/settings.gradle.kts || true
+          # NDK 版本钉到 CI 实际可用的那个，避免 AGP 现场下载 28.2 损坏整条构建
+          sed -i "s|ndkVersion *= *flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" simple_live_app/android/app/build.gradle.kts || true
           
           if ! grep -q "android.newDsl" simple_live_app/android/gradle.properties; then
             echo "android.newDsl=false" >> simple_live_app/android/gradle.properties
@@ -121,6 +143,26 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: 对齐 NDK（优先复用预装，避免 sdkmanager 下载损坏）
+        shell: bash
+        run: |
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          NDK=""
+          if [ -d "$SDK/ndk" ]; then NDK=$(ls -1 "$SDK/ndk" 2>/dev/null | sort -V | tail -1); fi
+          if [ -z "$NDK" ]; then
+            echo "未检测到预装 NDK，尝试下载（最多 3 次，失败清理残留）"
+            for i in 1 2 3; do
+              rm -rf "$SDK/ndk/28.2.13676358" "$SDK/.temp" "$HOME/.android/cache" 2>/dev/null || true
+              if yes | "$SDK/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK" "ndk;28.2.13676358" >/dev/null 2>&1; then
+                NDK=28.2.13676358; break
+              fi
+              echo "第 $i 次下载失败，15 秒后重试"; sleep 15
+            done
+          fi
+          [ -n "$NDK" ] || { echo "❌ 无法获得可用 NDK"; exit 1; }
+          echo "✅ 使用 NDK: $NDK"
+          echo "NDK_VERSION=$NDK" >> "$GITHUB_ENV"
+
       - name: 读取 TV 版本号
         id: get_ver
         run: |
@@ -143,6 +185,8 @@ jobs:
           sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
           sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_tv_app/android/settings.gradle.kts || true
           sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_tv_app/android/settings.gradle.kts || true
+          # NDK 版本钉到 CI 实际可用的那个，避免 AGP 现场下载 28.2 损坏整条构建
+          sed -i "s|ndkVersion *= *flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" simple_live_tv_app/android/app/build.gradle.kts || true
           
           if ! grep -q "android.newDsl" simple_live_tv_app/android/gradle.properties; then
             echo "android.newDsl=false" >> simple_live_tv_app/android/gradle.properties
