@@ -153,15 +153,21 @@ class DouyinWebTransport {
       if (tapResult["found"] != true) {
         _pageCompleter = null;
         final text = "${tapResult["text"]}";
-        final blockedPage = text.contains("验证") ||
-            text.contains("滑块") ||
-            text.contains("captcha") ||
-            text.contains("登录");
-        if (round == 0 && blockedPage) {
-          Log.d("抖音搜索页疑似被人机验证拦住，重载一次再试");
+        final title = "${tapResult["title"]}";
+        final captchaPage = title.contains("验证码") ||
+            title.contains("验证") ||
+            text.contains("请完成安全验证") ||
+            text.contains("滑块");
+        if (round == 0 && captchaPage) {
+          Log.d("抖音搜索页落在验证码中间页（title=$title），等 3 秒重载一次");
+          await Future.delayed(const Duration(seconds: 3));
           continue;
         }
-        throw TimeoutException("抖音搜索页没有出现直播 tab（正文=${_short(text)}）");
+        if (round == 0 && text.contains("登录")) {
+          Log.d("抖音搜索页落到登录墙，重载一次再试");
+          continue;
+        }
+        throw TimeoutException("抖音搜索页没有出现直播 tab（title=$title 正文=${_short(text)}）");
       }
 
       final body = await completer.future.timeout(
@@ -539,6 +545,15 @@ class DouyinWebTransport {
     if (!window.chrome) {
       window.chrome = {runtime: {}, app: {isInstalled: false}};
     }
+    // Headless WebView 的页面是「隐藏 + 失焦」状态，verifycenter 会据此判定非真人
+    try {
+      define(document, 'hidden', false);
+      define(document, 'visibilityState', 'visible');
+      define(document, 'webkitHidden', false);
+      define(document, 'webkitVisibilityState', 'visible');
+      document.hasFocus = function(){ return true; };
+      window.hasFocus = document.hasFocus;
+    } catch(e){}
   } catch(e){}
 })();
 ''';
