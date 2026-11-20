@@ -77,6 +77,9 @@ class DouyinLoginController extends BaseController {
   InAppWebViewController? webViewController;
   final CookieManager cookieManager = CookieManager.instance();
 
+  /// 通过拦截请求头抓到的 Cookie（含 HttpOnly 的 sessionid）
+  final Map<String, String> _capturedCookies = {};
+
   Timer? _pollTimer;
   Timer? _openTimer;
   var checking = false.obs;
@@ -114,6 +117,47 @@ class DouyinLoginController extends BaseController {
   void onLoadStop(InAppWebViewController controller, Uri? uri) {
     _startAutoOpen();
     checkLogin();
+  }
+
+  /// 抖音的 `sessionid` / `sessionid_ss` / `sid_tt` 都是 HttpOnly Cookie，
+  /// Android 的 CookieManager 读不到它们（只能拿到非 HttpOnly 的），
+  /// 因此在请求拦截里从 `Cookie` 请求头补齐——这是“登录了但抓不到登录态”的根因。
+  Future<WebResourceResponse?> onInterceptRequest(
+    InAppWebViewController controller,
+    WebResourceRequest request,
+  ) async {
+    try {
+      var url = request.url?.toString() ?? "";
+      if (url.contains("douyin.com")) {
+        var headers = request.headers;
+        if (headers != null) {
+          for (var entry in headers.entries) {
+            if (entry.key.toLowerCase() == "cookie") {
+              _absorbCookieHeader(entry.value);
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      Log.i("抖音 Cookie 拦截失败: $e");
+    }
+    return null; // 返回 null 表示不修改响应，继续正常请求
+  }
+
+  void _absorbCookieHeader(String header) {
+    for (var item in header.split(";")) {
+      var index = item.indexOf("=");
+      if (index <= 0) {
+        continue;
+      }
+      var key = item.substring(0, index).trim();
+      var value = item.substring(index + 1).trim();
+      if (key.isEmpty || value.isEmpty) {
+        continue;
+      }
+      _capturedCookies[key] = value;
+    }
   }
 
   /// 页面加载后反复尝试点开官方登录面板（页面是 SPA，按钮出现时机不定）
@@ -184,10 +228,16 @@ class DouyinLoginController extends BaseController {
         cookies = await cookieManager
             .getCookies(url: WebUri("https://www.douyin.com/"));
       }
-      var cookieStr = cookies
-          .where((e) => e.value.isNotEmpty)
-          .map((e) => "${e.name}=${e.value}")
-          .join(";");
+      // CookieManager 拿不到的 HttpOnly Cookie 由请求拦截补齐
+      var merged = <String, String>{};
+      for (var c in cookies) {
+        if (c.value.isNotEmpty) {
+          merged[c.name] = c.value;
+        }
+      }
+      merged.addAll(_capturedCookies);
+      var cookieStr =
+          merged.entries.map((e) => "${e.key}=${e.value}").join(";");
       if (!_isLogined(cookieStr)) {
         if (manual) {
           SmartDialog.showToast("尚未检测到登录，请先在页面内完成登录");
@@ -197,7 +247,10 @@ class DouyinLoginController extends BaseController {
       _done = true;
       _pollTimer?.cancel();
       _openTimer?.cancel();
-      Log.i("抖音登录 Cookie: $cookieStr");
+      var hasSession = merged.containsKey("sessionid");
+      var hasSidTt = merged.containsKey("sid_tt");
+      Log.i("抖音登录 Cookie：字段 ${merged.length} 个，"
+          "sessionid=$hasSession，sid_tt=$hasSidTt");
       DouyinAccountService.instance.setCookie(cookieStr);
       await DouyinAccountService.instance.loadUserInfo();
       SmartDialog.showToast("抖音登录成功");

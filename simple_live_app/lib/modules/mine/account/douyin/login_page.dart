@@ -40,7 +40,10 @@ class DouyinLoginPage extends GetView<DouyinLoginController> {
             child: InAppWebView(
               onWebViewCreated: controller.onWebViewCreated,
               onLoadStop: controller.onLoadStop,
+              // 拦截请求头，补齐 CookieManager 读不到的 HttpOnly 登录态
+              shouldInterceptRequest: controller.onInterceptRequest,
               initialSettings: InAppWebViewSettings(
+                useShouldInterceptRequest: true,
                 userAgent: DouyinLoginController.kUserAgent,
                 useShouldOverrideUrlLoading: true,
                 javaScriptEnabled: true,

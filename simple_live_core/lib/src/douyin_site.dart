@@ -874,10 +874,8 @@ class DouyinSite implements LiveSite {
     int page = 1,
   }) async {
     String serverUrl = "https://www.douyin.com/aweme/v1/web/live/search/";
-    var uri = Uri.parse(serverUrl).replace(
-      scheme: "https",
-      port: 443,
-      queryParameters: {
+    var msToken = generateMsToken();
+    var params = <String, String>{
         "device_platform": "webapp",
         "aid": "6383",
         "channel": "channel_pc_web",
@@ -911,10 +909,19 @@ class DouyinSite implements LiveSite {
         "effective_type": "4g",
         "round_trip_time": "100",
         "webid": "7382872326016435738",
-      },
-    );
-    //var requlestUrl = await getAbogusUrl(uri.toString());
-    var requlestUrl = uri.toString();
+      };
+    // 抖音网页搜索必须带 a_bogus 签名：只带 Cookie 不签名同样会被风控
+    // 判成匿名请求（status_code 2483「请先登录，再继续搜索吧」）。
+    var exParams = <String, String>{
+      ...params,
+      // 与原网页请求保持一致：device_platform 仍为 webapp，只补签名必需字段
+      "msToken": msToken,
+      "compress": "gzip",
+    };
+    var signed = ABogus(userAgent: kDefaultUserAgent)
+        .generateAbogus(Uri(queryParameters: exParams).query)
+        .first;
+    var requlestUrl = "$serverUrl?$signed";
     var headResp = await HttpClient.instance.head(
       'https://live.douyin.com',
       header: headers,
@@ -930,6 +937,13 @@ class DouyinSite implements LiveSite {
       }
     });
 
+    // 已登录用用户 Cookie，未登录退回匿名 ttwid；msToken 与签名里的保持一致
+    var cookieHeader = cookie.isNotEmpty ? cookie : dyCookie;
+    if (!cookieHeader.contains("msToken")) {
+      cookieHeader = cookieHeader.isEmpty
+          ? "msToken=$msToken"
+          : "$cookieHeader; msToken=$msToken";
+    }
     var result = await HttpClient.instance.getJson(
       requlestUrl,
       queryParameters: {},
@@ -938,7 +952,7 @@ class DouyinSite implements LiveSite {
         'accept': 'application/json, text/plain, */*',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
         // 搜索接口强制校验收号态：已登录则使用用户自己的 Cookie
-        'cookie': cookie.isNotEmpty ? cookie : dyCookie,
+        'cookie': cookieHeader,
         'priority': 'u=1, i',
         'referer':
             'https://www.douyin.com/search/${Uri.encodeComponent(keyword)}?type=live',
@@ -960,6 +974,10 @@ class DouyinSite implements LiveSite {
       var msg = result["message"] ?? result["status_msg"] ?? "";
       // 2483 = 请先登录，再继续搜索吧
       if (code == 2483 || "$msg".contains("登录")) {
+        if (cookie.isNotEmpty) {
+          throw Exception(
+              "抖音登录态已失效（status_code:$code $msg），请到「账号管理 - 抖音」重新登录");
+        }
         throw Exception(
             "抖音搜索接口要求登录（status_code:$code $msg），请到「账号管理 - 抖音」登录后再搜索");
       }

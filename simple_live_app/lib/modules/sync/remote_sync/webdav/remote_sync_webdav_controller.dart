@@ -161,16 +161,38 @@ class RemoteSyncWebDAVController extends GetxController {
       archive.addFile(ArchiveFile('backup_info.json', metaBytes.length, metaBytes));
       
       final accounts = <String, String>{};
-      final bili = LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, "");
+      // 优先读内存里的服务实例：登录刚完成时若写盘失败/被清，仍能备份到最新 Cookie
+      String pick(String stored, String memory) =>
+          memory.isNotEmpty ? memory : stored;
+
+      final bili = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, ""),
+        BiliBiliAccountService.instance.cookie,
+      );
       if (bili.isNotEmpty) accounts["bilibili"] = bili;
-      final douyin = LocalStorageService.instance.getValue(LocalStorageService.kDouyinCookie, "");
-      if (douyin.isNotEmpty) accounts["douyin"] = douyin;
+      final douyin = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kDouyinCookie, ""),
+        DouyinAccountService.instance.cookie,
+      );
+      if (douyin.isNotEmpty) {
+        accounts["douyin"] = douyin;
+        // 顺手回写，避免内存有值而本地存储为空导致下次启动丢失
+        LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, douyin);
+      }
       final douyu = LocalStorageService.instance.getValue(LocalStorageService.kDouyuCookie, "");
       if (douyu.isNotEmpty) accounts["douyu"] = douyu;
-      final huya = LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, "");
-      if (huya.isNotEmpty) accounts["huya"] = huya;
+      final huya = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, ""),
+        HuyaAccountService.instance.cookie,
+      );
+      if (huya.isNotEmpty) {
+        accounts["huya"] = huya;
+        LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, huya);
+      }
       final ks = LocalStorageService.instance.getValue(LocalStorageService.kKuaishouCookie, "");
       if (ks.isNotEmpty) accounts["kuaishou"] = ks;
+      var douyinLen = accounts["douyin"]?.length ?? 0;
+      Log.i("WebDAV 备份账号字段: ${accounts.keys.toList()}，douyin=$douyinLen 字节");
 
       if (accounts.isNotEmpty) {
         final accountBytes = utf8.encode(jsonEncode(accounts));

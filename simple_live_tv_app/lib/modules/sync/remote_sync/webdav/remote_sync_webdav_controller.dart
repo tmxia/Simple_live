@@ -164,14 +164,33 @@ class RemoteSyncWebDAVController extends GetxController {
       archive.addFile(ArchiveFile('backup_info.json', metaBytes.length, metaBytes));
       
       final accounts = <String, String>{};
-      final bili = LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, "");
+      // 优先读内存中的服务实例，避免“内存有值、本地存储为空”时备份不到账号
+      String pick(String stored, String memory) =>
+          memory.isNotEmpty ? memory : stored;
+
+      final bili = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kBilibiliCookie, ""),
+        BiliBiliAccountService.instance.cookie,
+      );
       if (bili.isNotEmpty) accounts["bilibili"] = bili;
-      final douyin = LocalStorageService.instance.getValue(LocalStorageService.kDouyinCookie, "");
-      if (douyin.isNotEmpty) accounts["douyin"] = douyin;
+      final douyin = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kDouyinCookie, ""),
+        DouyinAccountService.instance.cookie,
+      );
+      if (douyin.isNotEmpty) {
+        accounts["douyin"] = douyin;
+        LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, douyin);
+      }
       final douyu = LocalStorageService.instance.getValue(LocalStorageService.kDouyuCookie, "");
       if (douyu.isNotEmpty) accounts["douyu"] = douyu;
-      final huya = LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, "");
-      if (huya.isNotEmpty) accounts["huya"] = huya;
+      final huya = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, ""),
+        HuyaAccountService.instance.cookie,
+      );
+      if (huya.isNotEmpty) {
+        accounts["huya"] = huya;
+        LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, huya);
+      }
       final ks = LocalStorageService.instance.getValue(LocalStorageService.kKuaishouCookie, "");
       if (ks.isNotEmpty) accounts["kuaishou"] = ks;
 

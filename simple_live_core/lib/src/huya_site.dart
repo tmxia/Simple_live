@@ -33,6 +33,11 @@ class HuyaSite implements LiveSite {
     requestHeaders.remove("Cookie");
     if (value.isNotEmpty) {
       requestHeaders["Cookie"] = value;
+      // BaseTarsHttp 构造时把 headers 复制进了 dio.options，
+      // 只改 requestHeaders 不会生效——这正是“登录了但权限没生效”的原因。
+      tupClient.dio.options.headers["Cookie"] = value;
+    } else {
+      tupClient.dio.options.headers.remove("Cookie");
     }
   }
 
@@ -449,6 +454,10 @@ class HuyaSite implements LiveSite {
         "livestate": 0,
         "rows": 20,
         "start": (page - 1) * 20,
+      },
+      header: {
+        "User-Agent": HYSDK_UA,
+        if (_cookie.isNotEmpty) "Cookie": _cookie,
       },
     );
     var result = json.decode(resultText);
