@@ -17,7 +17,7 @@ import 'package:simple_live_app/services/db_service.dart';
 import 'package:simple_live_app/models/db/follow_user.dart';
 import 'package:simple_live_app/models/db/follow_user_tag.dart';
 import 'package:simple_live_app/models/db/history.dart';
-import 'webdav_client.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 
 class RemoteSyncWebDAVController extends GetxController {
   static const String kWebDAVUri = "WebDAVUri";

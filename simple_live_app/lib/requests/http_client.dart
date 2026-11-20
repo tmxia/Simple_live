@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:simple_live_app/requests/custom_log_interceptor.dart';
-import 'package:simple_live_app/requests/http_error.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 
 class HttpClient {
   static HttpClient? _httpUtil;
