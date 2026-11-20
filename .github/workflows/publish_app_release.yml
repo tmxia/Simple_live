@@ -72,32 +72,7 @@ jobs:
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_app/android/key.properties
 
       - name: 全面修复构建环境 & 代码语法
-        run: |
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_app/android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_app/android/settings.gradle.kts || true
-          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_app/android/settings.gradle.kts || true
-          # NDK 版本钉到 CI 实际可用的那个，避免 AGP 现场下载 28.2 损坏整条构建
-          sed -i "s|ndkVersion *= *flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" simple_live_app/android/app/build.gradle.kts || true
-          
-          if ! grep -q "android.newDsl" simple_live_app/android/gradle.properties; then
-            echo "android.newDsl=false" >> simple_live_app/android/gradle.properties
-          fi
-          
-          sed -i '/isV1SigningEnabled/d' simple_live_app/android/app/build.gradle.kts || true
-          sed -i '/isV2SigningEnabled/d' simple_live_app/android/app/build.gradle.kts || true
-          sed -i '/kotlinOptions/,/}/d' simple_live_app/android/app/build.gradle.kts || true
-          
-          echo "" >> simple_live_app/android/app/build.gradle.kts
-          echo "android {" >> simple_live_app/android/app/build.gradle.kts
-          echo "    lint {" >> simple_live_app/android/app/build.gradle.kts
-          echo "        checkReleaseBuilds = false" >> simple_live_app/android/app/build.gradle.kts
-          echo "        abortOnError = false" >> simple_live_app/android/app/build.gradle.kts
-          echo "    }" >> simple_live_app/android/app/build.gradle.kts
-          echo "    compileOptions {" >> simple_live_app/android/app/build.gradle.kts
-          echo "        sourceCompatibility = JavaVersion.VERSION_17" >> simple_live_app/android/app/build.gradle.kts
-          echo "        targetCompatibility = JavaVersion.VERSION_17" >> simple_live_app/android/app/build.gradle.kts
-          echo "    }" >> simple_live_app/android/app/build.gradle.kts
-          echo "}" >> simple_live_app/android/app/build.gradle.kts
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/patch_android_build.sh" simple_live_app
 
       - name: 编译 App 端 Release APK
         working-directory: ./simple_live_app
@@ -181,32 +156,7 @@ jobs:
             "${{ secrets.RELEASE_KEY_ALIAS }}" > simple_live_tv_app/android/key.properties
 
       - name: 全面修复构建环境 & 代码语法
-        run: |
-          sed -i 's|distributionUrl=.*|distributionUrl=https\://services.gradle.org/distributions/gradle-9.6.0-bin.zip|g' simple_live_tv_app/android/gradle/wrapper/gradle-wrapper.properties
-          sed -i 's/id("com.android.application") version ".*"/id("com.android.application") version "9.3.1"/g' simple_live_tv_app/android/settings.gradle.kts || true
-          sed -i 's/id("org.jetbrains.kotlin.android") version ".*"/id("org.jetbrains.kotlin.android") version "2.4.20"/g' simple_live_tv_app/android/settings.gradle.kts || true
-          # NDK 版本钉到 CI 实际可用的那个，避免 AGP 现场下载 28.2 损坏整条构建
-          sed -i "s|ndkVersion *= *flutter.ndkVersion|ndkVersion = \"$NDK_VERSION\"|" simple_live_tv_app/android/app/build.gradle.kts || true
-          
-          if ! grep -q "android.newDsl" simple_live_tv_app/android/gradle.properties; then
-            echo "android.newDsl=false" >> simple_live_tv_app/android/gradle.properties
-          fi
-          
-          sed -i '/isV1SigningEnabled/d' simple_live_tv_app/android/app/build.gradle.kts || true
-          sed -i '/isV2SigningEnabled/d' simple_live_tv_app/android/app/build.gradle.kts || true
-          sed -i '/kotlinOptions/,/}/d' simple_live_tv_app/android/app/build.gradle.kts || true
-          
-          echo "" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "android {" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "    lint {" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "        checkReleaseBuilds = false" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "        abortOnError = false" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "    }" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "    compileOptions {" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "        sourceCompatibility = JavaVersion.VERSION_17" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "        targetCompatibility = JavaVersion.VERSION_17" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "    }" >> simple_live_tv_app/android/app/build.gradle.kts
-          echo "}" >> simple_live_tv_app/android/app/build.gradle.kts
+        run: bash "$GITHUB_WORKSPACE/.github/scripts/patch_android_build.sh" simple_live_tv_app
 
       - name: 编译 TV 端 Release APK
         working-directory: ./simple_live_tv_app
