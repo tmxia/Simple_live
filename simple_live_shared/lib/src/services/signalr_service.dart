@@ -50,21 +50,87 @@ class SignalRService {
       _onRoomUserUpdatedStreamController.stream;
 
   HubConnection? hubConnection;
+
+  /// 重连退避序列（秒）。断线后按此逐级等待，用完即放弃。
+  static const List<int> kReconnectDelays = [1, 2, 4, 8, 16, 30, 30, 30];
+
+  /// 重连成功后的回调：由宿主注入“重新加入房间”等恢复逻辑。
+  Future<void> Function()? onReconnected;
+
+  Timer? _reconnectTimer;
+  int _reconnectAttempt = 0;
+  bool _connecting = false;
+  bool _closedByUser = false;
+
   Future<void> connect() async {
-    hubConnection = HubConnectionBuilder().withUrl(kUrl).build();
-    hubConnection!.onclose(({Exception? error}) {
-      state = SignalRConnectionState.disconnected;
-      _stateStreamController.add(state);
-    });
-    hubConnection!.onreconnected(({String? connectionId}) {
-      SharedRuntime.d("reconnected: $connectionId");
+    _closedByUser = false;
+    _reconnectAttempt = 0;
+    await _connectOnce(isReconnect: false);
+  }
+
+  Future<void> _connectOnce({required bool isReconnect}) async {
+    if (_connecting || _closedByUser) {
+      return;
+    }
+    _connecting = true;
+    try {
+      // 每次尝试都重建连接对象，避免复用已停止的 HubConnection
+      hubConnection = HubConnectionBuilder().withUrl(kUrl).build();
+      hubConnection!.onclose(({Exception? error}) {
+        SharedRuntime.e("SignalR 连接已断开: ${error ?? "unknown"}");
+        state = SignalRConnectionState.disconnected;
+        _stateStreamController.add(state);
+        _scheduleReconnect();
+      });
+      hubConnection!.onreconnected(({String? connectionId}) {
+        SharedRuntime.d("reconnected: $connectionId");
+        state = SignalRConnectionState.connected;
+        _stateStreamController.add(state);
+      });
+      // signalr_netcore 的 start() 返回可空 Future，个别平台为 null
+      var started = hubConnection!.start();
+      if (started != null) {
+        await started.timeout(const Duration(seconds: 15));
+      }
+      _listen();
       state = SignalRConnectionState.connected;
       _stateStreamController.add(state);
-    });
-    await hubConnection!.start();
-    state = SignalRConnectionState.connected;
+      _reconnectAttempt = 0;
+      _connecting = false;
+      if (isReconnect) {
+        SharedRuntime.d("SignalR 重连成功，触发恢复回调");
+        try {
+          await onReconnected?.call();
+        } catch (e, st) {
+          SharedRuntime.e("SignalR 重连恢复回调失败: $e", st);
+        }
+      }
+    } catch (e, st) {
+      _connecting = false;
+      SharedRuntime.e("SignalR 连接失败: $e", st);
+      state = SignalRConnectionState.disconnected;
+      _stateStreamController.add(state);
+      _scheduleReconnect();
+    }
+  }
+
+  void _scheduleReconnect() {
+    if (_closedByUser) {
+      return;
+    }
+    _reconnectTimer?.cancel();
+    if (_reconnectAttempt >= kReconnectDelays.length) {
+      SharedRuntime.e("SignalR 重连 ${kReconnectDelays.length} 次均失败，停止重试");
+      return;
+    }
+    var delay = kReconnectDelays[_reconnectAttempt];
+    _reconnectAttempt++;
+    SharedRuntime.d("SignalR ${delay}s 后进行第 $_reconnectAttempt 次重连");
+    state = SignalRConnectionState.connecting;
     _stateStreamController.add(state);
-    _listen();
+    _reconnectTimer = Timer(Duration(seconds: delay), () {
+      _connectOnce(isReconnect: true);
+    });
   }
 
   void _listen() {
@@ -90,6 +156,10 @@ class SignalRService {
   }
 
   Future<void> disconnect() async {
+    _closedByUser = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempt = 0;
     await hubConnection?.stop();
     state = SignalRConnectionState.disconnected;
     _stateStreamController.add(state);
@@ -134,6 +204,8 @@ class SignalRService {
   }
 
   void dispose() {
+    _closedByUser = true;
+    _reconnectTimer?.cancel();
     _stateStreamController.close();
     _onFavoriteStreamController.close();
     _onHistoryStreamController.close();

@@ -37,9 +37,33 @@ class SyncController extends BaseController {
 
   void connect() async {
     listenSignalR();
+    signalR.onReconnected = _restoreRoom;
     await signalR.connect();
     if (signalR.state == SignalRConnectionState.connected) {
       createRoom();
+    }
+  }
+
+  /// 重连成功后恢复房间状态：能回到原房间就回，回不去说明房间已随旧连接销毁，
+  /// 提示重新创建，避免停留在“已连接但同步不生效”的假状态。
+  Future<void> _restoreRoom() async {
+    var id = currentRoomId.value;
+    if (id.isEmpty || id == "--") {
+      createRoom();
+      return;
+    }
+    try {
+      var resp = await signalR.joinRoom(id);
+      if (resp.isSuccess) {
+        Log.i("重连成功，已回到房间 $id");
+      } else {
+        currentRoomId.value = "--";
+        SmartDialog.showToast("房间已失效，请重新创建房间");
+      }
+    } catch (e) {
+      currentRoomId.value = "--";
+      SmartDialog.showToast("房间已失效，请重新创建房间");
+      Log.e("重连恢复房间失败: $e", StackTrace.current);
     }
   }
 

@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:simple_live_core/simple_live_core.dart';
 import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
-import 'package:simple_live_tv_app/models/account/bilibili_user_info_page.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/services/local_storage_service.dart';
 

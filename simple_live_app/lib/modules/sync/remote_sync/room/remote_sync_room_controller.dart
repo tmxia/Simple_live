@@ -43,6 +43,7 @@ class RemoteSyncRoomController extends BaseController {
 
   void connect() async {
     listenSignalR();
+    signalR.onReconnected = _rejoinRoom;
     await signalR.connect();
     if (signalR.state == SignalRConnectionState.connected) {
       if (roomId.isEmpty) {
@@ -50,6 +51,26 @@ class RemoteSyncRoomController extends BaseController {
       } else {
         joinRoom(roomId);
       }
+    }
+  }
+
+  /// 断线重连成功后，服务端已经不认识旧连接（房间成员是按连接建立的），
+  /// 因此必须用原房间号重新加入，否则界面显示“已连接”但同步是静默失效的。
+  Future<void> _rejoinRoom() async {
+    var id = currentRoomId.value;
+    if (id.isEmpty || id == "--") {
+      return;
+    }
+    try {
+      var resp = await signalR.joinRoom(id);
+      if (!resp.isSuccess) {
+        SmartDialog.showToast("重连后重新加入房间失败：${resp.message}");
+      } else {
+        Log.i("重连成功，已重新加入房间 $id");
+      }
+    } catch (e) {
+      SmartDialog.showToast("重连后重新加入房间失败");
+      Log.e("重连后重新加入房间失败: $e", StackTrace.current);
     }
   }
 
