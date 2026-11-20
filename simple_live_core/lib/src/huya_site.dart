@@ -25,6 +25,17 @@ class HuyaSite implements LiveSite {
     'User-Agent': HYSDK_UA,
   };
 
+  /// 登录后的 Cookie（网页/扫码登录同步而来，为空时以游客身份请求）
+  String _cookie = "";
+  String get cookie => _cookie;
+  set cookie(String value) {
+    _cookie = value;
+    requestHeaders.remove("Cookie");
+    if (value.isNotEmpty) {
+      requestHeaders["Cookie"] = value;
+    }
+  }
+
   final BaseTarsHttp tupClient =
       BaseTarsHttp("https://wup.huya.com", "liveui", headers: requestHeaders);
 
@@ -191,7 +202,10 @@ class HuyaSite implements LiveSite {
     }
     return LivePlayUrl(
       urls: ls,
-      headers: {"user-agent": HYSDK_UA},
+      headers: {
+        "user-agent": HYSDK_UA,
+        if (_cookie.isNotEmpty) "Cookie": _cookie,
+      },
     );
   }
 

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
+import 'package:simple_live_app/services/huya_account_service.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:simple_live_app/app/log.dart';
@@ -308,7 +309,11 @@ class RemoteSyncWebDAVController extends GetxController {
             try { Get.find<DouyinAccountService>().setCookie(cookie); } catch (_) {}
           }
           if (accounts['douyu'] != null) LocalStorageService.instance.setValue(LocalStorageService.kDouyuCookie, accounts['douyu']);
-          if (accounts['huya'] != null) LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, accounts['huya']);
+          if (accounts['huya'] != null) {
+            final cookie = accounts['huya'] as String;
+            LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, cookie);
+            try { Get.find<HuyaAccountService>().setCookie(cookie); } catch (_) {}
+          }
           if (accounts['kuaishou'] != null) LocalStorageService.instance.setValue(LocalStorageService.kKuaishouCookie, accounts['kuaishou']);
           continue;
         }

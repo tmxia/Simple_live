@@ -24,6 +24,10 @@ import 'package:simple_live_app/modules/mine/parse/parse_page.dart';
 import 'package:simple_live_app/modules/sync/local_sync/local_sync_controller.dart';
 import 'package:simple_live_app/modules/sync/local_sync/local_sync_page.dart';
 import 'package:simple_live_app/modules/mine/account/account_controller.dart';
+import 'package:simple_live_app/modules/mine/account/douyin/login_controller.dart';
+import 'package:simple_live_app/modules/mine/account/douyin/login_page.dart';
+import 'package:simple_live_app/modules/mine/account/huya/login_controller.dart';
+import 'package:simple_live_app/modules/mine/account/huya/login_page.dart';
 import 'package:simple_live_app/modules/mine/account/account_page.dart';
 import 'package:simple_live_app/modules/mine/account/bilibili/qr_login_controller.dart';
 import 'package:simple_live_app/modules/mine/account/bilibili/qr_login_page.dart';
@@ -170,6 +174,22 @@ class AppPages {
       page: () => const BiliBiliQRLoginPage(),
       bindings: [
         BindingsBuilder.put(() => BiliBiliQRLoginController()),
+      ],
+    ),
+    
+    GetPage(
+      name: RoutePath.kDouyinLogin,
+      page: () => const DouyinLoginPage(),
+      bindings: [
+        BindingsBuilder.put(() => DouyinLoginController()),
+      ],
+    ),
+    
+    GetPage(
+      name: RoutePath.kHuyaLogin,
+      page: () => const HuyaLoginPage(),
+      bindings: [
+        BindingsBuilder.put(() => HuyaLoginController()),
       ],
     ),
     

@@ -94,6 +94,38 @@ class SyncClientRequest {
     }
   }
 
+  Future<bool> syncDouyinAccount(SyncClinet client, String cookie) async {
+    var url = "http://${client.address}:${client.port}/sync/account/douyin";
+    var data = await HttpClient.instance.postJson(
+      url,
+      data: {
+        "cookie": cookie,
+      },
+    );
+
+    if (data["status"]) {
+      return true;
+    } else {
+      throw data["message"];
+    }
+  }
+
+  Future<bool> syncHuyaAccount(SyncClinet client, String cookie) async {
+    var url = "http://${client.address}:${client.port}/sync/account/huya";
+    var data = await HttpClient.instance.postJson(
+      url,
+      data: {
+        "cookie": cookie,
+      },
+    );
+
+    if (data["status"]) {
+      return true;
+    } else {
+      throw data["message"];
+    }
+  }
+
   Future<bool> syncBiliAccount(SyncClinet client, String cookie) async {
     var url = "http://${client.address}:${client.port}/sync/account/bilibili";
     var data = await HttpClient.instance.postJson(

@@ -4,6 +4,7 @@ import 'package:simple_live_app/app/app_style.dart';
 import 'package:simple_live_app/modules/mine/account/account_controller.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
+import 'package:simple_live_app/services/huya_account_service.dart';
 
 class AccountPage extends GetView<AccountController> {
   const AccountPage({Key? key}) : super(key: key);
@@ -19,7 +20,7 @@ class AccountPage extends GetView<AccountController> {
           const Padding(
             padding: AppStyle.edgeInsetsA12,
             child: Text(
-              "哔哩哔哩账号需要登录才能看高清晰度的直播。",
+              "哔哩哔哩账号需要登录才能看高清晰度的直播；\n抖音搜索接口必须登录后才能使用。",
               textAlign: TextAlign.center,
             ),
           ),
@@ -49,16 +50,22 @@ class AccountPage extends GetView<AccountController> {
             enabled: false,
             trailing: const Icon(Icons.chevron_right),
           ),
-          ListTile(
-            leading: Image.asset(
-              'assets/images/huya.png',
-              width: 36,
-              height: 36,
+          Obx(
+            () => ListTile(
+              leading: Image.asset(
+                'assets/images/huya.png',
+                width: 36,
+                height: 36,
+              ),
+              title: const Text("虎牙直播"),
+              subtitle: Text(HuyaAccountService.instance.logined.value
+                  ? "已登录：${HuyaAccountService.instance.name.value}"
+                  : "未登录（登录后可携带账号态请求）"),
+              trailing: HuyaAccountService.instance.logined.value
+                  ? const Icon(Icons.logout)
+                  : const Icon(Icons.chevron_right),
+              onTap: controller.huyaTap,
             ),
-            title: const Text("虎牙直播"),
-            subtitle: const Text("无需登录"),
-            enabled: false,
-            trailing: const Icon(Icons.chevron_right),
           ),
           Obx(
             () => ListTile(
@@ -68,11 +75,11 @@ class AccountPage extends GetView<AccountController> {
                 height: 36,
               ),
               title: const Text("抖音直播"),
-              subtitle: Text(DouyinAccountService.instance.hasCookie.value
-                  ? "已自定义（${DouyinAccountService.instance.cookie.length} 字符）"
-                  : "使用默认 ttwid"),
-              trailing: DouyinAccountService.instance.hasCookie.value
-                  ? const Icon(Icons.delete_outline)
+              subtitle: Text(DouyinAccountService.instance.logined.value
+                  ? "已登录：${DouyinAccountService.instance.name.value}"
+                  : "未登录（搜索需要登录）"),
+              trailing: DouyinAccountService.instance.logined.value
+                  ? const Icon(Icons.logout)
                   : const Icon(Icons.chevron_right),
               onTap: controller.douyinTap,
             ),
