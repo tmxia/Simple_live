@@ -1,4 +1,3 @@
-import 'package:simple_live_core/src/interface/replay_site.dart';
 import 'package:simple_live_core/src/model/live_replay_model.dart';
 import 'dart:convert';
 
@@ -796,8 +795,7 @@ class BiliBiliSite implements LiveSite {
     return "${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}";
   }
 
-  @override
-    
+  /// 回放地址（不属于 LiveSite 接口，由两端回放逻辑直接调用）
   Future<String> getReplayUrlByCid(String videoId, String cid) async {
     try {
       var playurl = await HttpClient.instance.getJson(

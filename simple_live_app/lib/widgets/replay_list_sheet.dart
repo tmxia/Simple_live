@@ -78,7 +78,6 @@ class _ReplayListSheetState extends State<ReplayListSheet> {
       
       if (qualities.isNotEmpty) {
         var quality = qualities.first;
-        var url = quality.data["url"].toString();
         if (mounted) Navigator.of(context).pop(); 
         widget.onPlay(quality);
       } else {

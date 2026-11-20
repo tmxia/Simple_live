@@ -528,7 +528,7 @@ class DouyuSite implements LiveSite {
     return Future.value([]);
   }
 
-  @override
+  /// 贡献榜：接口已移除该方法，暂时保留实现供后续使用
   Future<List<LiveContributionRankItem>> getContributionRank({
     required String roomId,
     LiveRoomDetail? detail,

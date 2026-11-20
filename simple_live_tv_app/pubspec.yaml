@@ -59,8 +59,6 @@ dependency_overrides:
   fading_edge_scrollview: ^4.1.1
 
 dev_dependencies:
-  webdav_client: ^1.2.2
-  archive: ^4.0.7
   flutter_test:
     sdk: flutter
 

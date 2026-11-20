@@ -69,7 +69,11 @@ class AppSettingsController extends GetxController {
         .getValue(LocalStorageService.kAutoFullScreen, false);
 
     
-    shieldList.value = LocalStorageService.instance.shieldBox.values.toSet();
+    // RxSet 的 value 是 protected，改走公开的集合操作，Obs 更新行为不变
+    final loadedShield = LocalStorageService.instance.shieldBox.values.toSet();
+    shieldList
+      ..clear()
+      ..addAll(loadedShield);
 
     scaleMode.value = LocalStorageService.instance.getValue(
       LocalStorageService.kPlayerScaleMode,

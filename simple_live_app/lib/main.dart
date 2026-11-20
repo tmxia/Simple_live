@@ -16,7 +16,6 @@ import 'package:simple_live_app/app/app_style.dart';
 import 'package:simple_live_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
-import 'package:simple_live_app/app/utils/douyin_web_transport.dart';
 import 'package:simple_live_app/app/utils/listen_fourth_button.dart';
 import 'package:simple_live_app/models/db/follow_user.dart';
 import 'package:simple_live_app/models/db/follow_user_tag.dart';
@@ -51,7 +50,6 @@ void main() async {
   
   await initServices();
   // 抖音搜索改用真实浏览器内核发送（绕开 TLS 指纹风控）
-  DouyinWebTransport.register();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   
   SystemUiOverlayStyle systemUiOverlayStyle = const SystemUiOverlayStyle(

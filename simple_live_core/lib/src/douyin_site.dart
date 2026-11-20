@@ -28,14 +28,6 @@ class DouyinSite implements LiveSite {
   /// 用户设置的 cookie
   String cookie = "";
 
-  /// 可选的搜索传输层，由 App 端注入。
-  ///
-  /// 抖音 aweme 接口的风控判定里包含 TLS 指纹，dio/OkHttp 的握手指纹和 Chrome
-  /// 不一致，参数全对也会被回 `search_nil_info = verify_check`（要求人机验证）。
-  /// 交给 App 的 WebView（真实浏览器内核）发同一个 URL 就不会有这层差异。
-  /// 入参是完整 URL（已带 a_bogus）与请求头，返回响应体文本。
-  static Future<String> Function(String url, Map<String, String> headers)?
-      webTransport;
 
   /// 运行时获取的匿名cookie（ttwid等），跨请求复用
   static String _anonymousCookie = "";
@@ -1363,36 +1355,11 @@ class DouyinSite implements LiveSite {
         'user-agent': kDefaultUserAgent,
       };
       final fullUrl = "$serverUrl?$signed";
-      dynamic result;
-      if (webTransport != null && cookie.isNotEmpty) {
-        // 登录态下优先走真实浏览器内核（TLS 指纹与 Chrome 一致，不会被判风控）
-        var text = "";
-        try {
-          text = await webTransport!(fullUrl, headers);
-        } catch (e) {
-          _logDebug("抖音搜索 WebView 传输失败，回退直连: $e");
-          result = await HttpClient.instance.getJson(
-            fullUrl,
-            queryParameters: {},
-            header: headers,
-          );
-          text = "";
-        }
-        if (text.isNotEmpty) {
-          try {
-            result = jsonDecode(text);
-          } catch (e) {
-            _logDebug("抖音搜索 WebView 返回非 JSON: $text");
-            result = "";
-          }
-        }
-      } else {
-        result = await HttpClient.instance.getJson(
-          fullUrl,
-          queryParameters: {},
-          header: headers,
-        );
-      }
+      final result = await HttpClient.instance.getJson(
+        fullUrl,
+        queryParameters: {},
+        header: headers,
+      );
       if (result == "" || result == 'blocked') {
         throw Exception("抖音直播搜索被限制，请稍后再试");
       }
