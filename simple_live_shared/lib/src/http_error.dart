@@ -1,41 +1,10 @@
-class HttpError extends Error {
-  /// 错误码
-  final int statusCode;
+/// 共享层网络错误：直接复用 core 的 [CoreError]。
+///
+/// 原来 shared 和 core 各写了一份完全相同的状态码映射，两边文案会逐渐走样
+/// （例如 core 补充了抖音 444 风控文案，shared 那份没有）。这里改为别名，
+/// 保留 `HttpError` 这个名字让已有调用方不用改，语义统一由 core 维护。
+library;
 
-  /// 错误信息
-  final String message;
+import 'package:simple_live_core/simple_live_core.dart';
 
-  HttpError(
-    this.message, {
-    this.statusCode = 0,
-  });
-  @override
-  String toString() {
-    if (statusCode != 0) {
-      return statusCodeToString(statusCode);
-    }
-
-    return message;
-  }
-
-  String statusCodeToString(int statusCode) {
-    switch (statusCode) {
-      case 400:
-        return "错误的请求(400)";
-      case 401:
-        return "无权限访问资源(401)";
-      case 403:
-        return "无权限访问资源(403)";
-      case 404:
-        return "服务器找不到请求的资源(404)";
-      case 500:
-        return "服务器出现错误(500)";
-      case 502:
-        return "服务器出现错误(502)";
-      case 503:
-        return "服务器出现错误(503)";
-      default:
-        return "连接服务器失败，请稍后再试($statusCode)";
-    }
-  }
-}
+typedef HttpError = CoreError;

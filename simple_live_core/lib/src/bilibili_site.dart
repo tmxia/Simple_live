@@ -827,6 +827,7 @@ class BiliBiliSite implements LiveSite {
     return "";
   }
 
+  @override
   Future<List<LivePlayQuality>> getReplayQualities({required String videoId}) async {
     try {
       var pagelist = await HttpClient.instance.getJson(
