@@ -70,7 +70,7 @@ class RemoteSyncWebDAVController extends GetxController {
 
   Future<void> saveConfig(String uri, String user, String pass) async {
     if (uri.trim().isEmpty) {
-      Get.snackbar("提示", "服务器地址不能为空");
+      SmartDialog.showToast("服务器地址不能为空");
       return;
     }
     isLoading.value = true;
@@ -80,27 +80,33 @@ class RemoteSyncWebDAVController extends GetxController {
     LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
     LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
     
+    SmartDialog.showLoading(msg: "连接中...");
     try {
       davClient = DAVClient(uri.trim(), user.trim(), pass.trim());
       bool isOk = await davClient.pingCompleter.future;
       
       if (isOk) {
         notLogin.value = false;
-        SmartDialog.showToast("WebDAV 连接成功！");
+        SmartDialog.dismiss(status: SmartStatus.loading);
+        SmartDialog.showToast("WebDAV 已连接");
       } else {
         notLogin.value = true;
-        Get.snackbar("连接失败", "请检查地址、账号或密码是否正确", backgroundColor: Colors.red);
+        SmartDialog.dismiss(status: SmartStatus.loading);
+        SmartDialog.showToast("连接失败，请检查地址或账号密码");
       }
     } catch (e) {
       notLogin.value = true;
-      Get.snackbar("连接异常", "$e", backgroundColor: Colors.red);
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("连接异常：$e");
     } finally {
       isLoading.value = false;
+      SmartDialog.dismiss(status: SmartStatus.loading);
     }
   }
 
   Future<void> backup() async {
     isLoading.value = true;
+    SmartDialog.showLoading(msg: "上传中...");
     try {
       
       final remoteTime = await davClient.getRemoteFileMTime();
@@ -110,18 +116,19 @@ class RemoteSyncWebDAVController extends GetxController {
         final localMax = localUpload > localRecover ? localUpload : localRecover;
         
         if (remoteTime.millisecondsSinceEpoch > localMax + 60000) {
+          // 覆盖云端备份属于不可逆操作，保留一次轻量确认（单行文案）
           final confirm = await Get.dialog<bool>(
             AlertDialog(
-              title: const Text("冲突警告"),
-              content: Text("云端备份时间较新 (${Utils.parseTime(remoteTime)})\n继续上传将覆盖云端备份，是否继续？"),
+              content: Text("云端备份更新（${Utils.parseTime(remoteTime)}），继续上传会覆盖它"),
               actions: [
                 TextButton(onPressed: () => Get.back(result: false), child: const Text("取消")),
-                TextButton(onPressed: () => Get.back(result: true), child: const Text("覆盖上传", style: TextStyle(color: Colors.red))),
+                TextButton(onPressed: () => Get.back(result: true), child: const Text("覆盖", style: TextStyle(color: Colors.red))),
               ],
             ),
           );
           if (confirm != true) {
             isLoading.value = false;
+            SmartDialog.dismiss(status: SmartStatus.loading);
             return;
           }
         }
@@ -206,17 +213,21 @@ class RemoteSyncWebDAVController extends GetxController {
       
       lastUploadTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastUploadTime, DateTime.now().millisecondsSinceEpoch);
-      Get.snackbar("成功", "备份上传成功");
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("备份已上传");
     } catch (e, st) {
       Log.e("WebDAV Backup Error: $e", st);
-      Get.snackbar("失败", "备份上传失败: $e");
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("备份上传失败：$e");
     } finally {
       isLoading.value = false;
+      SmartDialog.dismiss(status: SmartStatus.loading);
     }
   }
 
   Future<void> recovery() async {
     isLoading.value = true;
+    SmartDialog.showLoading(msg: "恢复中...");
     try {
       
       final zipData = await davClient.recovery();
@@ -284,23 +295,20 @@ class RemoteSyncWebDAVController extends GetxController {
 
       
       if (isTimeOlder || onlyLocalFollows > 0 || onlyLocalHistories > 0 || onlyRemoteFollows > 0 || onlyRemoteHistories > 0) {
-        String msg = "⚠️ 云端备份与本地实际数据存在差异：\n\n";
-        if (onlyLocalFollows > 0) msg += "【关注】本地独有 ${onlyLocalFollows} 个（恢复将丢失）\n";
-        if (onlyRemoteFollows > 0) msg += "【关注】云端独有 ${onlyRemoteFollows} 个（恢复将增加）\n";
-        if (onlyLocalHistories > 0) msg += "【历史】本地独有 ${onlyLocalHistories} 条（恢复将丢失）\n";
-        if (onlyRemoteHistories > 0) msg += "【历史】云端独有 ${onlyRemoteHistories} 条（恢复将增加）\n";
-        
-        msg += "\n💡 汇总：\n本地共 ${localFollowCount} 个关注 / ${localHistoryCount} 条历史。\n云端共 ${remoteFollowCount} 个关注 / ${remoteHistoryCount} 条历史。\n\n继续恢复将完全覆盖本地数据，是否继续？";
+        // 差异明细只进日志，界面用一行提示 + 轻量确认
+        Log.i("WebDAV 恢复差异：本地独有 关注${onlyLocalFollows}/历史${onlyLocalHistories}，"
+            "云端独有 关注${onlyRemoteFollows}/历史${onlyRemoteHistories}；"
+            "本地共 ${localFollowCount}关注/${localHistoryCount}历史，"
+            "云端共 ${remoteFollowCount}关注/${remoteHistoryCount}历史");
 
         final confirm = await Get.dialog<bool>(
           AlertDialog(
-            title: const Text("数据差异警告"),
-            content: Text(msg),
+            content: const Text("云端与本地数据不一致，恢复会完全覆盖本地"),
             actions: [
               TextButton(onPressed: () => Get.back(result: false), child: const Text("取消")),
               TextButton(
                 onPressed: () => Get.back(result: true),
-                child: const Text("强制覆盖", style: TextStyle(color: Colors.red)),
+                child: const Text("覆盖", style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
@@ -308,6 +316,7 @@ class RemoteSyncWebDAVController extends GetxController {
 
         if (confirm != true) {
           isLoading.value = false;
+          SmartDialog.dismiss(status: SmartStatus.loading);
           return;
         }
       }
@@ -375,12 +384,15 @@ class RemoteSyncWebDAVController extends GetxController {
 
       lastRecoverTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
-      SmartDialog.showToast("恢复数据成功，请重启应用生效");
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("已恢复，重启应用后生效");
     } catch (e, st) {
       Log.e("WebDAV Recovery Error: $e", st);
-      Get.snackbar("失败", "恢复数据失败: $e");
+      SmartDialog.dismiss(status: SmartStatus.loading);
+      SmartDialog.showToast("恢复失败：$e");
     } finally {
       isLoading.value = false;
+      SmartDialog.dismiss(status: SmartStatus.loading);
     }
   }
 

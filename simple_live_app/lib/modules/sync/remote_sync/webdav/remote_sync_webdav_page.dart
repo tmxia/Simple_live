@@ -47,21 +47,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
         centerTitle: true,
       ),
       body: Obx(() {
-        
-        if (controller.isLoading.value) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text("正在测试连接，请稍候..."),
-              ],
-            ),
-          );
-        }
-
-        
+        // 连接/上传/恢复的加载态统一用一行 SmartDialog 提示，不再整页遮罩
         if (!controller.notLogin.value) {
           return _buildSyncPanel();
         }
