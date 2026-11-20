@@ -40,7 +40,7 @@ class DouyinSite implements LiveSite {
   static Future<String>? _anonymousCookieRequest;
 
   void _logDebug(String msg) {
-    // 同时使用 print 和 CoreLog 确保日志输出
+    
     print("[Douyin] $msg");
     CoreLog.d("[Douyin] $msg");
   }
@@ -55,7 +55,7 @@ class DouyinSite implements LiveSite {
   /// 优先：字节官方ttwid注册接口（不依赖首页下发，被风控时首页可能不发令牌）
   /// 兜底：从抖音首页抓取set-cookie
   Future<String> _fetchAnonymousCookie() async {
-    // [1] 官方注册接口
+    
     try {
       var resp = await HttpClient.instance.post(
         'https://ttwid.bytedance.com/ttwid/union/register/',
@@ -73,7 +73,7 @@ class DouyinSite implements LiveSite {
           "Content-Type": "application/json",
         },
       );
-      // 响应头中的set-cookie携带新ttwid
+      
       resp.headers["set-cookie"]?.forEach((element) {
         var pair = element.split(";").first.trim();
         if (pair.startsWith("ttwid=") && _anonymousCookie.isEmpty) {
@@ -84,7 +84,7 @@ class DouyinSite implements LiveSite {
     } catch (e) {
       CoreLog.error(e);
     }
-    // [2] 兜底：首页抓取
+    
     if (_anonymousCookie.isEmpty) {
       try {
         var resp = await HttpClient.instance.get(
