@@ -1078,12 +1078,177 @@ class DouyinSite implements LiveSite {
     return LivePlayUrl(urls: List<String>.from(quality.data));
   }
 
+  /// 同类实现（dart_simple_live 衍生仓库）里一直可用的「无签名搜索」：
+  /// 不生成 a_bogus、不追加 msToken / verifyFp / fp，唯一特殊处理是
+  /// 先用 HEAD 请求 https://live.douyin.com 让服务端当场签发 ttwid / __ac_nonce，
+  /// 再把这两个值合并进登录 Cookie 后再请求搜索接口。
+  Future<Map?> _searchUnsigned(String keyword, int page) async {
+    const serverUrl = "https://www.douyin.com/aweme/v1/web/live/search/";
+    var cookieHeader = cookie;
+    try {
+      final resp = await HttpClient.instance.head(
+        "https://live.douyin.com",
+        header: {
+          "user-agent": kDefaultUserAgent,
+          if (cookieHeader.isNotEmpty) "cookie": cookieHeader,
+        },
+      );
+      final fresh = <String>[];
+      final setCookies = resp.headers["set-cookie"];
+      setCookies?.forEach((element) {
+        final kv = element.split(";").first.trim();
+        final name = kv.split("=").first;
+        if (name == "ttwid" || name == "__ac_nonce") {
+          fresh.add(kv);
+        }
+      });
+      for (final kv in fresh) {
+        final name = kv.split("=").first;
+        final value = kv.substring(name.length + 1);
+        cookieHeader = _setCookieValue(cookieHeader, name, value);
+      }
+      if (fresh.isNotEmpty) {
+        _logDebug("抖音搜索预取 Cookie 成功: ${fresh.map((e) => e.split("=").first).join(",")}");
+      }
+    } catch (e) {
+      _logDebug("抖音搜索预取 ttwid 失败，继续用已有 Cookie: $e");
+    }
+    if (cookieHeader.isEmpty) return null;
+
+    final uri = Uri.parse(serverUrl).replace(
+      scheme: "https",
+      port: 443,
+      queryParameters: {
+        "device_platform": "webapp",
+        "aid": "6383",
+        "channel": "channel_pc_web",
+        "search_channel": "aweme_live",
+        "keyword": keyword,
+        "search_source": "switch_tab",
+        "query_correct_type": "1",
+        "is_filter_search": "0",
+        "from_group_id": "",
+        "offset": ((page - 1) * 10).toString(),
+        "count": "10",
+        "pc_client_type": "1",
+        "version_code": "170400",
+        "version_name": "17.4.0",
+        "cookie_enabled": "true",
+        "screen_width": "1980",
+        "screen_height": "1080",
+        "browser_language": "zh-CN",
+        "browser_platform": "Win32",
+        "browser_name": "Edge",
+        "browser_version": "125.0.0.0",
+        "browser_online": "true",
+        "engine_name": "Blink",
+        "engine_version": "125.0.0.0",
+        "os_name": "Windows",
+        "os_version": "10",
+        "cpu_core_num": "12",
+        "device_memory": "8",
+        "platform": "PC",
+        "downlink": "10",
+        "effective_type": "4g",
+        "round_trip_time": "100",
+        "webid": "7382872326016435738",
+      },
+    );
+    final result = await HttpClient.instance.getJson(
+      uri.toString(),
+      queryParameters: {},
+      header: {
+        "Authority": 'www.douyin.com',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'cookie': _ensureCookieSemicolon(cookieHeader),
+        'priority': 'u=1, i',
+        'referer':
+            'https://www.douyin.com/search/${Uri.encodeComponent(keyword)}?type=live',
+        'sec-ch-ua':
+            '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'user-agent': kDefaultUserAgent,
+      },
+    );
+    if (result is Map) return result;
+    if (result is String) {
+      try {
+        final decoded = jsonDecode(result);
+        if (decoded is Map) return decoded;
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  String _ensureCookieSemicolon(String value) {
+    final v = value.trim();
+    if (v.isEmpty || v.endsWith(";")) return v;
+    return "$v;";
+  }
+
+  /// 用新值覆盖（或追加）Cookie 头里的某一项，避免同名 Cookie 重复发送
+  String _setCookieValue(String header, String name, String value) {
+    final parts = header
+        .split(";")
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+    final kept = <String>[];
+    for (final part in parts) {
+      if (part.split("=").first == name) continue;
+      kept.add(part);
+    }
+    kept.add("$name=$value");
+    return kept.join("; ");
+  }
+
   @override
   Future<LiveSearchRoomResult> searchRooms(
     String keyword, {
     int page = 1,
   }) async {
     String serverUrl = "https://www.douyin.com/aweme/v1/web/live/search/";
+
+    // 第一优先级：同类实现的「无签名 + HEAD 现签 ttwid」路线，成功率最高
+    if (cookie.isNotEmpty) {
+      try {
+        final unsigned = await _searchUnsigned(keyword, page);
+        if (unsigned != null) {
+          final code = unsigned["status_code"];
+          final rawList = _extractSearchList(unsigned);
+          final parsed = <LiveRoomItem>[];
+          var fail = 0;
+          for (final item in rawList) {
+            final roomItem = _parseSearchItem(item);
+            if (roomItem != null) {
+              parsed.add(roomItem);
+            } else {
+              fail++;
+            }
+          }
+          _logDebug("抖音搜索「$keyword」p$page 无签名: status=$code "
+              "dataLen=${rawList.length} 解析成功=${parsed.length} 失败=$fail "
+              "has_more=${unsigned["has_more"]}");
+          if (parsed.isNotEmpty) {
+            return LiveSearchRoomResult(
+              hasMore: unsigned["has_more"] == 1 || unsigned["has_more"] == true,
+              items: parsed,
+            );
+          }
+          if (code == 2483) {
+            _logDebug("抖音搜索无签名路线要求登录（2483），继续尝试签名路线");
+          }
+        }
+      } catch (e) {
+        _logDebug("抖音搜索无签名路线失败，继续尝试签名路线: $e");
+      }
+    }
+
     var msToken = generateMsToken();
     // live.douyin.com 对 HEAD 请求返回 404：既拿不到 set-cookie，又会在日志里刷错误。
     // 这里改走与首页抓取同一套匿名 cookie，取不到也不影响搜索（登录态下根本用不到）。
