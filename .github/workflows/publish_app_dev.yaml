@@ -66,6 +66,10 @@ jobs:
       - name: Install flutter_distributor
         run: dart pub global activate flutter_distributor
 
+      # 修复 flutter_inappwebview_android 在 AGP 9 下的 proguard 报错
+      - name: Fix inappwebview proguard (AGP 9 compat)
+        run: bash .github/scripts/fix-inappwebview-proguard.sh
+
       # 打包APK
       - name: Build APK
         run: |

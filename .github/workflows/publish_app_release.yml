@@ -81,10 +81,7 @@ jobs:
         working-directory: ./simple_live_app
         run: |
           flutter pub get
-          INAPPWEBVIEW_GRADLE=$(find ~/.pub-cache -path "*flutter_inappwebview_android*/android/build.gradle" | head -n 1)
-          if [ -n "$INAPPWEBVIEW_GRADLE" ]; then
-            sed -i "s/getDefaultProguardFile('proguard-android.txt')/getDefaultProguardFile('proguard-android-optimize.txt')/g" "$INAPPWEBVIEW_GRADLE"
-          fi
+          bash "$GITHUB_WORKSPACE/.github/scripts/fix-inappwebview-proguard.sh"
           flutter build apk --release --split-per-abi
 
       - name: 收集 App 产物
