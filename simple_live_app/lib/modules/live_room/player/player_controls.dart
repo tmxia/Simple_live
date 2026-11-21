@@ -1,4 +1,3 @@
-import 'package:simple_live_app/modules/live_room/player/line_host_label.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
