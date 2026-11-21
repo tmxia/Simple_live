@@ -10,135 +10,86 @@ class SyncClientRequest {
     return SyncClientInfoModel.fromJson(data);
   }
 
+  /// 局域网同步的统一 POST：所有 /sync/* 接口都是「成功返回 true，失败带 message」，
+  /// 之前 7 个方法各抄一遍这段逻辑，且失败时抛的是裸 String（日志没有类型和堆栈）。
+  Future<bool> _postSync(
+    SyncClinet client,
+    String path, {
+    dynamic body,
+    bool? overlay,
+  }) async {
+    var url = "http://${client.address}:${client.port}$path";
+    var data = await HttpClient.instance.postJson(
+      url,
+      data: body,
+      queryParameters: overlay == null
+          ? null
+          : {
+              'overlay': overlay ? '1' : '0',
+            },
+    );
+
+    if (data is Map && data["status"] == true) {
+      return true;
+    }
+    throw HttpError(
+      (data is Map ? data["message"]?.toString() : data?.toString()) ?? "同步失败",
+    );
+  }
+
   Future<bool> syncFollow(
     SyncClinet client,
     dynamic body, {
     bool overlay = false,
-  }) async {
-    var url = "http://${client.address}:${client.port}/sync/follow";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: body,
-      queryParameters: {
-        'overlay': overlay ? '1' : '0',
-      },
-    );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
+  }) {
+    return _postSync(client, "/sync/follow", body: body, overlay: overlay);
   }
 
   Future<bool> syncTag(
-      SyncClinet client,
-      dynamic body, {
-        bool overlay = false,
-      }) async {
-    var url = "http://${client.address}:${client.port}/sync/tag";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: body,
-      queryParameters: {
-        'overlay': overlay ? '1' : '0',
-      },
-    );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
+    SyncClinet client,
+    dynamic body, {
+    bool overlay = false,
+  }) {
+    return _postSync(client, "/sync/tag", body: body, overlay: overlay);
   }
 
   Future<bool> syncHistory(
     SyncClinet client,
     dynamic body, {
     bool overlay = false,
-  }) async {
-    var url = "http://${client.address}:${client.port}/sync/history";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: body,
-      queryParameters: {
-        'overlay': overlay ? '1' : '0',
-      },
-    );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
+  }) {
+    return _postSync(client, "/sync/history", body: body, overlay: overlay);
   }
 
   Future<bool> syncBlockedWord(
     SyncClinet client,
     dynamic body, {
     bool overlay = false,
-  }) async {
-    var url = "http://${client.address}:${client.port}/sync/blocked_word";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: body,
-      queryParameters: {
-        'overlay': overlay ? '1' : '0',
-      },
-    );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
+  }) {
+    return _postSync(client, "/sync/blocked_word", body: body, overlay: overlay);
   }
 
-  Future<bool> syncDouyinAccount(SyncClinet client, String cookie) async {
-    var url = "http://${client.address}:${client.port}/sync/account/douyin";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: {
-        "cookie": cookie,
-      },
+  Future<bool> syncDouyinAccount(SyncClinet client, String cookie) {
+    return _postSync(
+      client,
+      "/sync/account/douyin",
+      body: {"cookie": cookie},
     );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
   }
 
-  Future<bool> syncHuyaAccount(SyncClinet client, String cookie) async {
-    var url = "http://${client.address}:${client.port}/sync/account/huya";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: {
-        "cookie": cookie,
-      },
+  Future<bool> syncHuyaAccount(SyncClinet client, String cookie) {
+    return _postSync(
+      client,
+      "/sync/account/huya",
+      body: {"cookie": cookie},
     );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
   }
 
-  Future<bool> syncBiliAccount(SyncClinet client, String cookie) async {
-    var url = "http://${client.address}:${client.port}/sync/account/bilibili";
-    var data = await HttpClient.instance.postJson(
-      url,
-      data: {
-        "cookie": cookie,
-      },
+  Future<bool> syncBiliAccount(SyncClinet client, String cookie) {
+    return _postSync(
+      client,
+      "/sync/account/bilibili",
+      body: {"cookie": cookie},
     );
-
-    if (data["status"]) {
-      return true;
-    } else {
-      throw data["message"];
-    }
   }
 }

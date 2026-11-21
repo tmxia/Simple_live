@@ -85,7 +85,9 @@ class RemoteSyncWebDAVController extends GetxController {
         notLogin.value = false;
       } else {
         notLogin.value = true;
-        Get.snackbar("连接失败", "请检查地址、账号或密码是否正确", backgroundColor: Colors.red);
+        Get.snackbar("连接失败",
+            davClient.lastError ?? "请检查地址、账号或密码是否正确",
+            backgroundColor: Colors.red);
       }
     } catch (e) {
       notLogin.value = true;

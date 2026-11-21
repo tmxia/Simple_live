@@ -85,7 +85,8 @@ class RemoteSyncWebDAVController extends GetxController {
       } else {
         notLogin.value = true;
         SmartDialog.dismiss(status: SmartStatus.loading);
-        SmartDialog.showToast("连接失败，请检查地址或账号密码");
+        SmartDialog.showToast(
+            "连接失败：${davClient.lastError ?? "请检查地址或账号密码"}");
       }
     } catch (e) {
       notLogin.value = true;
