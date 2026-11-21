@@ -16,4 +16,5 @@ export 'src/requests/http_client.dart';
 export 'src/services/signalr_service.dart';
 export 'src/services/playback_stall_policy.dart';
 export 'src/services/stream_line_label.dart';
+export 'src/services/picture_guard.dart';
 export 'src/services/local_storage_service.dart';

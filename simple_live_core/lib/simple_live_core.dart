@@ -10,6 +10,7 @@ export 'src/common/core_log.dart';
 export 'src/common/core_error.dart';
 export 'src/common/cookie_util.dart';
 export 'src/common/live_stream_expiry.dart';
+export 'src/common/hls_segment_relay.dart';
 export 'src/model/live_message.dart';
 export 'src/danmaku/bilibili_danmaku.dart';
 export 'src/danmaku/douyu_danmaku.dart';

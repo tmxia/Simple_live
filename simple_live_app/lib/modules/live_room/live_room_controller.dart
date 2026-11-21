@@ -124,6 +124,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     // 静默卡死判定：mediaError 只在播放器报错/结束时触发，一直转圈不会回调
     _bufferingSubscription = player.stream.buffering.listen(_onBufferingChanged);
+    // 画面花屏分级处理：只认视频解码持续出错（不认 duplicated MOOV）
+    _pictureLogSubscription = player.stream.log.listen(_onPlayerLog);
 
     super.onInit();
   }
@@ -447,6 +449,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     mediaErrorRetryCount = 0;
     _resetStallState();
+    _pictureStep = 0;
+    _softwareDecoded = false;
     initPlaylist();
     _scheduleUrlRefresh();
   }
@@ -525,18 +529,21 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     currentLineInfo.value = "线路${currentLineIndex + 1}";
     errorMsg.value = "";
 
-    final mediaList = playUrls.map((url) {
+    var tunedUrls = <String>[];
+    for (var url in playUrls) {
       var finalUrl = url;
-      
-      if (AppSettingsController.instance.playerForceHttps.value && !finalUrl.contains("huya.com")) {
+      if (AppSettingsController.instance.playerForceHttps.value &&
+          !finalUrl.contains("huya.com")) {
         finalUrl = finalUrl.replaceAll("http://", "https://");
       }
-      return Media(finalUrl, httpHeaders: playHeaders);
-    }).toList();
+      tunedUrls.add(await _maybeRelay(finalUrl));
+    }
+    final mediaList =
+        tunedUrls.map((url) => Media(url, httpHeaders: playHeaders)).toList();
 
-    
     await initializePlayer();
     await applyStreamTuning(mediaList.map((e) => e.uri).toList());
+    _pictureGuard.opened();
 
     await player.open(Playlist(mediaList));
   }
@@ -627,6 +634,116 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   // ---- 静默卡死判定（缓冲超时 + 慢网宽限）----
   StreamSubscription<bool>? _bufferingSubscription;
+  // ---- B 站 HLS 本机中转（分段并行下载，避免过期被跳过）----
+  DateTime? _relayRestartAt;
+
+  /// B 站 HLS 直播走本机中转：mpv 接管 IO 后 ffmpeg 会关掉长连接与并行下载，
+  /// 分段常常追不上码率、过期被跳过，缺参考帧导致持续花屏
+  Future<String> _maybeRelay(String url) async {
+    if (isVod.value ||
+        site.id != Constant.kBiliBili ||
+        !isHlsLiveUrl(url) ||
+        HlsSegmentRelay.isRelayUrl(url)) {
+      return url;
+    }
+    try {
+      return await HlsSegmentRelay.instance.register(
+        url,
+        headers: playHeaders,
+        onRestart: _onRelayRestart,
+      );
+    } catch (e) {
+      Log.logPrint("HLS 中转登记失败：$e");
+      return url;
+    }
+  }
+
+  /// 中转发现初始化分段换了（主播重新推流）：必须重新打开，
+  /// 否则 ffmpeg 会忽略新的初始化分段、按旧参数一直解码（表现为一直花屏）
+  void _onRelayRestart() {
+    if (_disposed || isVod.value || playUrls.isEmpty) {
+      return;
+    }
+    var now = DateTime.now();
+    var last = _relayRestartAt;
+    if (last != null && now.difference(last) < const Duration(seconds: 8)) {
+      return;
+    }
+    _relayRestartAt = now;
+    Log.d("HLS 中转：初始化分段变化，重新打开");
+    _resetStallState();
+    initPlaylist();
+  }
+
+  // ---- 画面花屏分级处理 ----
+  StreamSubscription<PlayerLog>? _pictureLogSubscription;
+  final PictureGuard _pictureGuard = PictureGuard();
+  int _pictureStep = 0;
+  DateTime? _pictureLastFix;
+  bool _softwareDecoded = false;
+
+  void _onPlayerLog(PlayerLog e) {
+    if (_disposed || isVod.value || playUrls.isEmpty) {
+      return;
+    }
+    if (_pictureGuard.onLog(e.prefix, e.level, e.text) != PictureFault.corrupt) {
+      return;
+    }
+    _fixPicture();
+  }
+
+  /// 花屏按级处理：重新拉流 → 换线路 → 软件解码 → 放弃。三分钟内没有再次触发就从头开始
+  Future<void> _fixPicture() async {
+    if (_disposed || isVod.value || playUrls.isEmpty) {
+      return;
+    }
+    var now = DateTime.now();
+    var last = _pictureLastFix;
+    if (last != null && now.difference(last) > const Duration(minutes: 3)) {
+      _pictureStep = 0;
+    }
+    _pictureLastFix = now;
+    _pictureStep++;
+    var line = currentLineIndex < 0 ? 0 : currentLineIndex;
+    var fix = PictureGuard.fixFor(
+      _pictureStep,
+      canSoftware: !_softwareDecoded,
+      lineCount: playUrls.length,
+    );
+    switch (fix) {
+      case PictureFix.reopen:
+        Log.d("画面花屏：重新拉流");
+        _resetStallState();
+        initPlaylist();
+      case PictureFix.nextLine:
+        var next = (line + 1) % playUrls.length;
+        Log.d("画面花屏：换到线路${next + 1}");
+        changePlayLine(next);
+      case PictureFix.software:
+        _softwareDecoded = true;
+        SmartDialog.showToast("画面持续花屏，已改用软件解码");
+        try {
+          if (player.platform is NativePlayer) {
+            await (player.platform as NativePlayer).setProperty('hwdec', 'no');
+          }
+        } catch (e) {
+          Log.logPrint("切换软件解码失败：$e");
+        }
+        _resetStallState();
+        initPlaylist();
+      case PictureFix.giveUp:
+        var previous = PictureGuard.fixFor(
+          _pictureStep - 1,
+          canSoftware: !_softwareDecoded,
+          lineCount: playUrls.length,
+        );
+        if (previous != PictureFix.giveUp) {
+          SmartDialog.showToast(
+              "画面一直花屏，重新拉流、换线路、软件解码都无效，可能是直播源本身的问题");
+        }
+    }
+  }
+
   Timer? _stallTimer;
   Timer? _stableTimer;
   DateTime? _bufferingSince;
@@ -1472,6 +1589,7 @@ ${error?.stackTrace}''');
     _disposed = true;
     _cancelUrlRefresh();
     _bufferingSubscription?.cancel();
+    _pictureLogSubscription?.cancel();
     _resetStallState();
     super.onClose();
   }

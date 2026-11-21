@@ -84,9 +84,22 @@ mixin PlayerMixin {
         return;
       }
       final pp = player.platform as NativePlayer;
+      final hls = isHlsLiveUrl(url);
+      await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
+      // 卡顿后缓冲多久再继续播：HLS 等两段左右再播，FLV 保持原来的值
+      await pp.setProperty('cache-pause-wait', hls ? '5' : '4');
+      // demuxer-lavf-o 是单个字符串属性，必须整串写（否则会把协议白名单覆盖掉）
       await pp.setProperty(
-        'cache-pause-initial',
-        isHlsLiveUrl(url) ? 'yes' : 'no',
+        'demuxer-lavf-o',
+        [
+          'seg_max_retry=${hls ? 10 : 5}',
+          if (hls) 'max_reload=20',
+          if (hls) 'http_persistent=1',
+          if (hls) 'http_multiple=1',
+          'strict=experimental',
+          'allowed_extensions=ALL',
+          'protocol_whitelist=[tcp,tls,http,https,crypto]',
+        ].join(','),
       );
     } catch (e) {
       Log.logPrint("applyStreamTuning: $e");

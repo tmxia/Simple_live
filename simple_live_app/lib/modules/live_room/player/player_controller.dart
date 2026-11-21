@@ -111,6 +111,25 @@ mixin PlayerMixin {
       final pp = player.platform as NativePlayer;
       final hls = urls.isNotEmpty && urls.every(isHlsLiveUrl);
       await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
+      // 卡顿后缓冲多久再继续播：HLS 按段下载，等两段左右（约 5 秒）再播，
+      // 一次停得稍久，之后不再一卡一卡；FLV 连续流保持原来的 4 秒
+      await pp.setProperty('cache-pause-wait', hls ? '5' : '4');
+      // 分段与列表失败时多重试几次。注意 demuxer-lavf-o 是**单个字符串属性**，
+      // 只能整串写，不能分多次 setProperty，否则后写的会把前面的覆盖掉，
+      // 协议白名单也就一起丢了
+      await pp.setProperty(
+        'demuxer-lavf-o',
+        [
+          'seg_max_retry=${hls ? 10 : 5}',
+          if (hls) 'max_reload=20',
+          if (hls) 'http_persistent=1',
+          if (hls) 'http_multiple=1',
+          'strict=experimental',
+          // 本机中转的分段地址没有扩展名，不给这个 fmp4 分段会被拒
+          'allowed_extensions=ALL',
+          'protocol_whitelist=[tcp,tls,http,https,crypto]',
+        ].join(','),
+      );
     } catch (e) {
       Log.logPrint("applyStreamTuning: $e");
     }
