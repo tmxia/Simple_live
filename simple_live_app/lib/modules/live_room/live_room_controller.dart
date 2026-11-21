@@ -122,6 +122,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     scrollController.addListener(scrollListener);
 
+    // 静默卡死判定：mediaError 只在播放器报错/结束时触发，一直转圈不会回调
+    _bufferingSubscription = player.stream.buffering.listen(_onBufferingChanged);
+
     super.onInit();
   }
 
@@ -443,6 +446,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     currentLineInfo.value = "线路${currentLineIndex + 1}";
 
     mediaErrorRetryCount = 0;
+    _resetStallState();
     initPlaylist();
     _scheduleUrlRefresh();
   }
@@ -474,6 +478,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     }
 
     mediaErrorRetryCount = 0;
+    _resetStallState();
     setPlayer();
     _scheduleUrlRefresh();
   }
@@ -531,6 +536,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     
     await initializePlayer();
+    await applyStreamTuning(mediaList.map((e) => e.uri).toList());
 
     await player.open(Playlist(mediaList));
   }
@@ -618,6 +624,99 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   }
 
   int mediaErrorRetryCount = 0;
+
+  // ---- 静默卡死判定（缓冲超时 + 慢网宽限）----
+  StreamSubscription<bool>? _bufferingSubscription;
+  Timer? _stallTimer;
+  Timer? _stableTimer;
+  DateTime? _bufferingSince;
+  int _stallRecoveries = 0;
+
+  void _onBufferingChanged(bool buffering) {
+    if (_disposed || isVod.value) {
+      return;
+    }
+    if (!buffering) {
+      _stallTimer?.cancel();
+      _stallTimer = null;
+      _bufferingSince = null;
+      if (player.state.playing) {
+        _armStableTimer();
+      }
+      return;
+    }
+    // 用户主动暂停时的缓冲不算卡死
+    if (!player.state.playing) {
+      return;
+    }
+    _bufferingSince ??= DateTime.now();
+    _armStallTimer(PlaybackStallPolicy.stallTimeout, _bufferingSince!);
+  }
+
+  void _armStallTimer(Duration timeout, DateTime since) {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(timeout, () async {
+      if (_disposed) {
+        return;
+      }
+      if (!(player.state.buffering && player.state.playing)) {
+        return;
+      }
+      final speed = await _cacheSpeed();
+      final waited = DateTime.now().difference(since);
+      if (PlaybackStallPolicy.keepWaiting(speed, waited)) {
+        // 数据还在进来，只是慢：重连会丢掉已缓冲内容，继续等
+        Log.d("缓冲中但仍有数据(${speed?.toStringAsFixed(0)}B/s)，"
+            "再等 ${PlaybackStallPolicy.slowNetworkStep.inSeconds}s");
+        _armStallTimer(PlaybackStallPolicy.slowNetworkStep, since);
+        return;
+      }
+      _recoverFromStall(speed);
+    });
+  }
+
+  Future<double?> _cacheSpeed() async {
+    final platform = player.platform;
+    if (platform is NativePlayer) {
+      try {
+        final raw = await platform.getProperty('cache-speed');
+        return double.tryParse(raw.trim());
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  void _recoverFromStall(double? speed) {
+    if (_stallRecoveries >= PlaybackStallPolicy.maxRecoveriesPerPlaylist) {
+      Log.d("卡死自动恢复已达上限，等待用户手动刷新");
+      return;
+    }
+    _stallRecoveries++;
+    Log.d("播放卡住超过阈值，开始恢复(第$_stallRecoveries次, "
+        "speed=${speed?.toStringAsFixed(0) ?? "-"})");
+    _bufferingSince = DateTime.now();
+    // 复用现有的错误恢复链路：同线路重试 → 换未失败线路 → 重新取流
+    mediaError("播放卡住太久");
+    _stallTimer?.cancel();
+    _armStallTimer(PlaybackStallPolicy.stallTimeout, _bufferingSince!);
+  }
+
+  void _armStableTimer() {
+    _stableTimer?.cancel();
+    _stableTimer = Timer(PlaybackStallPolicy.stableDuration, () {
+      mediaErrorRetryCount = 0;
+      _stallRecoveries = 0;
+    });
+  }
+
+  void _resetStallState() {
+    _stallTimer?.cancel();
+    _stallTimer = null;
+    _stableTimer?.cancel();
+    _stableTimer = null;
+    _bufferingSince = null;
+    _stallRecoveries = 0;
+  }
 
   /// 最近一次成功取到播放地址的时间（按 URL 里的 expire 安排主动续期）
   DateTime? _urlFetchedAt;
@@ -1002,7 +1101,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
               value: i,
               title: Text("线路${i + 1}"),
               secondary: Text(
-                playUrls[i].contains(".flv") ? "FLV" : "HLS",
+                StreamLineLabel.node(playUrls[i]).isEmpty
+                    ? (playUrls[i].contains(".flv") ? "FLV" : "HLS")
+                    : "${playUrls[i].contains(".flv") ? "FLV" : "HLS"} · ${StreamLineLabel.node(playUrls[i])}",
               ),
             );
           },
@@ -1370,6 +1471,8 @@ ${error?.stackTrace}''');
     _liveDurationTimer?.cancel();
     _disposed = true;
     _cancelUrlRefresh();
+    _bufferingSubscription?.cancel();
+    _resetStallState();
     super.onClose();
   }
 }

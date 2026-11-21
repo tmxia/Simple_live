@@ -274,13 +274,18 @@ class BiliBiliSite implements LiveSite {
       }
     }
     // 对链接进行排序，包含mcdn的在后
-    urls.sort((a, b) {
-      if (a.contains("mcdn")) {
-        return 1;
-      } else {
-        return -1;
-      }
-    });
+    // 原比较函数前后不一致（a、b 都不含 mcdn 时也返回 -1），排序结果要看具体
+    // 排序算法的实现细节，属于继承自上游的缺陷。改为显式分组：保持接口给的
+    // 顺序，只把 mcdn（PCDN）节点沉到最后。
+    //
+    // 说明：这里**不**采用「FLV 优先」。主播重新推流时 FLV 会带新的编码参数，
+    // ffmpeg 能接着正常解码；HLS（fMP4）换了初始化分段时 ffmpeg 会跳过，
+    // 之后一直按旧参数解码（表现为持续花屏、直到重新打开）。这一条只在对
+    // B 站默认线路有明确取舍需求时再评估——单纯换个顺序并不能消除该问题，
+    // 真正的解法是分段中转/重开（见后续 HLS 中转方案）。
+    final nonMcdn = urls.where((e) => !e.contains("mcdn")).toList();
+    final mcdnUrls = urls.where((e) => e.contains("mcdn")).toList();
+    urls = [...nonMcdn, ...mcdnUrls];
     // 拉流必须带上与账号绑定的 cookie（SESSDATA / buvid3 / buvid4）：
     // 只给 referer 与 UA 时，大会员清晰度、与账号绑定鉴权的流会被 CDN 拒绝。
     return LivePlayUrl(

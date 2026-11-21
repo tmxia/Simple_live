@@ -93,6 +93,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     loadData();
 
+    // 静默卡死判定：媒体错误有回调，一直转圈没有
+    _bufferingSubscription = player.stream.buffering.listen(_onBufferingChanged);
+
     super.onInit();
   }
 
@@ -262,6 +265,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     currentLineInfo.value = "线路${currentLineIndex + 1}";
     
     mediaErrorRetryCount = 0;
+    _resetStallState();
     setPlayer();
   }
 
@@ -288,6 +292,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     PlayerMemory.instance.setLastLine(site.id, index);
     
     mediaErrorRetryCount = 0;
+    _resetStallState();
     setPlayer();
   }
 
@@ -379,6 +384,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     errorMsg.value = "";
     
     await initializePlayer();
+    await applyStreamTuning(playUrls[currentLineIndex]);
 
     await player.open(
       Media(
@@ -416,6 +422,100 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   }
 
   int mediaErrorRetryCount = 0;
+
+  // ---- 静默卡死判定（缓冲超时 + 慢网宽限）----
+  StreamSubscription<bool>? _bufferingSubscription;
+  Timer? _stallTimer;
+  Timer? _stableTimer;
+  DateTime? _bufferingSince;
+  int _stallRecoveries = 0;
+  bool _stallDisposed = false;
+
+  void _onBufferingChanged(bool buffering) {
+    if (_stallDisposed) {
+      return;
+    }
+    if (!buffering) {
+      _stallTimer?.cancel();
+      _stallTimer = null;
+      _bufferingSince = null;
+      if (player.state.playing) {
+        _armStableTimer();
+      }
+      return;
+    }
+    // 用户主动暂停时的缓冲不算卡死
+    if (!player.state.playing) {
+      return;
+    }
+    _bufferingSince ??= DateTime.now();
+    _armStallTimer(PlaybackStallPolicy.stallTimeout, _bufferingSince!);
+  }
+
+  void _armStallTimer(Duration timeout, DateTime since) {
+    _stallTimer?.cancel();
+    _stallTimer = Timer(timeout, () async {
+      if (_stallDisposed) {
+        return;
+      }
+      if (!(player.state.buffering && player.state.playing)) {
+        return;
+      }
+      final speed = await _cacheSpeed();
+      final waited = DateTime.now().difference(since);
+      if (PlaybackStallPolicy.keepWaiting(speed, waited)) {
+        Log.d("缓冲中但仍有数据(${speed?.toStringAsFixed(0)}B/s)，"
+            "再等 ${PlaybackStallPolicy.slowNetworkStep.inSeconds}s");
+        _armStallTimer(PlaybackStallPolicy.slowNetworkStep, since);
+        return;
+      }
+      _recoverFromStall(speed);
+    });
+  }
+
+  Future<double?> _cacheSpeed() async {
+    final platform = player.platform;
+    if (platform is NativePlayer) {
+      try {
+        final raw = await platform.getProperty('cache-speed');
+        return double.tryParse(raw.trim());
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  void _recoverFromStall(double? speed) {
+    if (_stallRecoveries >= PlaybackStallPolicy.maxRecoveriesPerPlaylist) {
+      Log.d("卡死自动恢复已达上限，等待用户手动刷新");
+      return;
+    }
+    _stallRecoveries++;
+    Log.d("播放卡住超过阈值，开始恢复(第$_stallRecoveries次, "
+        "speed=${speed?.toStringAsFixed(0) ?? "-"})");
+    _bufferingSince = DateTime.now();
+    // 复用现有的错误恢复链路：同线路重试 → 换线路
+    mediaError("播放卡住太久");
+    _stallTimer?.cancel();
+    _armStallTimer(PlaybackStallPolicy.stallTimeout, _bufferingSince!);
+  }
+
+  void _armStableTimer() {
+    _stableTimer?.cancel();
+    _stableTimer = Timer(PlaybackStallPolicy.stableDuration, () {
+      mediaErrorRetryCount = 0;
+      _stallRecoveries = 0;
+    });
+  }
+
+  void _resetStallState() {
+    _stallTimer?.cancel();
+    _stallTimer = null;
+    _stableTimer?.cancel();
+    _stableTimer = null;
+    _bufferingSince = null;
+    _stallRecoveries = 0;
+  }
+
   @override
   void mediaError(String error) async {
     if (mediaErrorRetryCount < 2) {
@@ -589,6 +689,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   void onClose() {
     liveDanmaku.stop();
 
+    _stallDisposed = true;
+    _bufferingSubscription?.cancel();
+    _resetStallState();
     danmakuController = null;
     super.onClose();
   }

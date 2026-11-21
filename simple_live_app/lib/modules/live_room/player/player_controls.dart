@@ -1,3 +1,4 @@
+import 'package:simple_live_app/modules/live_room/player/line_host_label.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -689,6 +690,17 @@ void showLinesInfo(LiveRoomController controller) {
                     ),
                   ),
                 ),
+                if (StreamLineLabel.node(controller.playUrls[i]).isNotEmpty)
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Padding(
+                      padding: AppStyle.edgeInsetsL8,
+                      child: Text(
+                        StreamLineLabel.node(controller.playUrls[i]),
+                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ),
+                  ),
               ],
             ),
             style: const TextStyle(fontSize: 14),

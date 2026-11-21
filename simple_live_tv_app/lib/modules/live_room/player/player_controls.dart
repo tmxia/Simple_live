@@ -591,9 +591,12 @@ void showPlayerSettings(LiveRoomController controller) {
                   title: "线路",
                   foucsNode: lineFoucsNode,
                   autofocus: lineFoucsNode.isFoucsed.value,
-                  items: controller.playUrls
-                      .asMap()
-                      .map((i, e) => MapEntry(i, "线路${i + 1}"))
+                  items: controller.playUrls.asMap().map(
+                        (i, e) => MapEntry(
+                          i,
+                          StreamLineLabel.withNode("线路${i + 1}", e),
+                        ),
+                      )
                       .cast<int, String>(),
                   value: controller.currentLineIndex,
                   onChanged: (e) {

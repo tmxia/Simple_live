@@ -12,6 +12,13 @@ import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
+/// 是否是 HLS 直播地址（.m3u8 结尾或带查询参数）
+bool isHlsLiveUrl(String url) {
+  final lower = url.toLowerCase();
+  final path = Uri.tryParse(lower)?.path ?? lower;
+  return path.endsWith('.m3u8') || lower.contains('.m3u8?');
+}
+
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
   RxInt videoRefreshTick = 0.obs;
@@ -55,12 +62,34 @@ mixin PlayerMixin {
     await pp.setProperty('framedrop', 'decoder+vo');
     await pp.setProperty('demuxer-lavf-probesize', '2097152');
     await pp.setProperty('demuxer-lavf-analyzeduration', '2');
+    // 与移动端一致：缓存只放内存（默认写临时文件且只增不减），并限制协议白名单
+    await pp.setProperty('cache-on-disk', 'no');
+    await pp.setProperty(
+      'demuxer-lavf-o',
+      'protocol_whitelist=[tcp,tls,http,https,crypto]',
+    );
     if (Platform.isAndroid) {
       // mediacodec 直接输出到 Surface，少一次 GPU 纹理拷贝，低端盒子更稳
       await pp.setProperty('mediacodec-surface-iostream', 'yes');
     }
     if (lowEnd) {
       await pp.setProperty('vd-lavc-threads', '2');
+    }
+  }
+
+  /// 按直播流类型补参数（打开新地址前调用）：HLS 先攒缓冲再播，FLV 直接开播
+  Future<void> applyStreamTuning(String url) async {
+    try {
+      if (player.platform is! NativePlayer) {
+        return;
+      }
+      final pp = player.platform as NativePlayer;
+      await pp.setProperty(
+        'cache-pause-initial',
+        isHlsLiveUrl(url) ? 'yes' : 'no',
+      );
+    } catch (e) {
+      Log.logPrint("applyStreamTuning: $e");
     }
   }
 

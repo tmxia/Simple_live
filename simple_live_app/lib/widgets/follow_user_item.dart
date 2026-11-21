@@ -6,7 +6,6 @@ import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/sites.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_app/widgets/net_image.dart';
-import 'dart:ui' as ui;
 
 class FollowUserItem extends StatelessWidget {
   final FollowUser item;
@@ -34,54 +33,26 @@ class FollowUserItem extends StatelessWidget {
         height: 48,
         borderRadius: 24,
       ),
-      title: Text.rich(
-        TextSpan(
-          children: [
-            if (item.isPinned)
-              WidgetSpan(
-                alignment: ui.PlaceholderAlignment.middle,
-                child: Padding(
-                  padding: EdgeInsets.only(right: 4),
-                  child: Icon(Icons.favorite, color: Colors.red, size: 18),
-                ),
-              ),
-            TextSpan(text: item.userName),
-            WidgetSpan(
-              alignment: ui.PlaceholderAlignment.middle,
-              child: Obx(
-                () => Offstage(
-                  offstage: item.liveStatus.value == 0,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AppStyle.hGap12,
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: item.liveStatus.value == 2
-                              ? Colors.green
-                              : Colors.grey,
-                          borderRadius: AppStyle.radius12,
-                        ),
-                      ),
-                      AppStyle.hGap4,
-                      Text(
-                        getStatus(item.liveStatus.value),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.normal,
-                          color:
-                              item.liveStatus.value == 2 ? null : Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+      // 名字、置顶星标与「● 直播中」放在同一行：名字用 Flexible + 省略号，
+      // 状态用不换行的最小 Row。此前用 Text.rich + WidgetSpan，名字一长
+      // 「直播中」就被挤到下一行（侧栏、全屏关注列表这些窄的地方最明显）。
+      title: Row(
+        children: [
+          if (item.isPinned)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(Icons.favorite, color: Colors.red, size: 18),
             ),
-          ],
-        ),
+          Flexible(
+            child: Text(
+              item.userName,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          _buildStatus(),
+        ],
       ),
       subtitle: Wrap(
         runSpacing: 1.0,
@@ -143,6 +114,40 @@ class FollowUserItem extends StatelessWidget {
                 )),
       onTap: onTap,
       onLongPress: onLongPress,
+    );
+  }
+
+  /// 名字后面的「● 直播中」：固定最小宽度、不换行，名字放不下时由名字省略
+  Widget _buildStatus() {
+    return Obx(
+      () => Offstage(
+        offstage: item.liveStatus.value == 0,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppStyle.hGap12,
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: item.liveStatus.value == 2 ? Colors.green : Colors.grey,
+                borderRadius: AppStyle.radius12,
+              ),
+            ),
+            AppStyle.hGap4,
+            Text(
+              getStatus(item.liveStatus.value),
+              maxLines: 1,
+              softWrap: false,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.normal,
+                color: item.liveStatus.value == 2 ? null : Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

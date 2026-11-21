@@ -22,6 +22,13 @@ import 'package:simple_live_app/app/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
+/// 是否是 HLS 直播地址（.m3u8 结尾或带查询参数）
+bool isHlsLiveUrl(String url) {
+  final lower = url.toLowerCase();
+  final path = Uri.tryParse(lower)?.path ?? lower;
+  return path.endsWith('.m3u8') || lower.contains('.m3u8?');
+}
+
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
   RxInt videoRefreshTick = 0.obs;
@@ -74,11 +81,38 @@ mixin PlayerMixin {
     await pp.setProperty('framedrop', 'decoder+vo');
     await pp.setProperty('demuxer-lavf-probesize', '2097152');
     await pp.setProperty('demuxer-lavf-analyzeduration', '2');
+    // 直播缓存只放内存。media_kit 默认把缓存写进临时文件，文件只增不减、
+    // 内存上限只管元数据，挂得越久占得越多（实测每路少占约 36 MB）。
+    await pp.setProperty('cache-on-disk', 'no');
+    // 协议白名单：播放地址来自平台接口与第三方订阅源，列表里若写 file:///、
+    // data:、concat: 之类，ffmpeg 直接拒绝，不会去读本机文件（已知的 HLS 攻击手法）。
+    // 直播只需要 http(s) 及底层 tcp/tls，AES-128 加密的 HLS 还要 crypto。
+    await pp.setProperty(
+      'demuxer-lavf-o',
+      'protocol_whitelist=[tcp,tls,http,https,crypto]',
+    );
     if (Platform.isAndroid) {
       await pp.setProperty('mediacodec-surface-iostream', 'yes');
     }
     if (lowEnd) {
       await pp.setProperty('vd-lavc-threads', '2');
+    }
+  }
+
+  /// 按直播流类型补参数（打开新地址前调用）
+  ///
+  /// HLS 按整段（2~6 秒）下载：先攒够 `cache-pause-wait` 再播，避免「一开播卡一下」；
+  /// FLV 是连续流，保持直接开播、尽快出画面。
+  Future<void> applyStreamTuning(List<String> urls) async {
+    try {
+      if (player.platform is! NativePlayer) {
+        return;
+      }
+      final pp = player.platform as NativePlayer;
+      final hls = urls.isNotEmpty && urls.every(isHlsLiveUrl);
+      await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
+    } catch (e) {
+      Log.logPrint("applyStreamTuning: $e");
     }
   }
 
