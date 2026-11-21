@@ -3,7 +3,9 @@ import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
 import 'package:simple_live_core/src/common/convert_helper.dart';
+import 'package:simple_live_core/src/common/core_error.dart';
 import 'package:simple_live_core/src/common/core_log.dart';
+import 'package:simple_live_core/src/common/cookie_util.dart';
 import 'package:simple_live_core/src/common/http_client.dart';
 import 'package:simple_live_core/src/danmaku/bilibili_danmaku.dart';
 import 'package:simple_live_core/src/interface/live_danmaku.dart';
@@ -91,18 +93,24 @@ class BiliBiliSite implements LiveSite {
       buvid4 = buvidInfo["b_4"] ?? "";
     }
     var fullCookie = await _getLiveCookie();
-    // 用户已登录：以用户cookie（含SESSDATA）为主，补齐缺失的附加风控cookie字段
-    var finalCookie = fullCookie;
+    // 所有拼装点都必须先规范化：浏览器复制出来的 cookie 常见「值尾部带空格」
+    // （`buvid3=xxx ; buvid4=yyy ;`），服务端对 `key=value ` 直接返回 412 风控，
+    // 表现为「登录成功但一进直播间就 412」，因为 WBI 签名要先请求 nav。
+    var normalizedFull = normalizeCookie(fullCookie);
+    // 用户已登录：以用户 cookie（含 SESSDATA）为主，补齐缺失的附加风控字段
+    var finalCookie = normalizedFull;
     if (cookie.isNotEmpty) {
-      finalCookie = cookie;
-      for (var pair in fullCookie.split(";")) {
+      var userCookie = normalizeCookie(cookie);
+      var merged = StringBuffer(userCookie);
+      for (var pair in normalizedFull.split(";")) {
         var p = pair.trim();
-        if (p.isEmpty || !p.contains("=")) continue;
-        var name = p.split("=").first;
-        if (!finalCookie.contains("$name=")) {
-          finalCookie += ";$p";
-        }
+        if (p.isEmpty) continue;
+        var name = p.split("=").first.trim();
+        // 用 hasCookieValue 而不是 contains，避免 `buvid3=` 空值被当成「已有」
+        if (hasCookieValue(userCookie, name)) continue;
+        merged.write(p.endsWith(";") ? p : "$p;");
       }
+      finalCookie = normalizeCookie(merged.toString());
     }
     return {
       "user-agent": kDefaultUserAgent,
@@ -240,7 +248,16 @@ class BiliBiliSite implements LiveSite {
       },
       header: await getHeader(),
     );
-    var streamList = result["data"]["playurl_info"]["playurl"]["stream"];
+    // 房间未开播或该清晰度无权限时 playurl_info 为空，原来的链式下标会抛
+    // 「type 'Null' is not a subtype of type 'Map'」，用户只看到一个莫名弹窗。
+    var playUrlInfo = result["data"]?["playurl_info"];
+    if (playUrlInfo is! Map) {
+      throw CoreError("哔哩哔哩取流失败：该清晰度无法播放${_biliErrHint(result)}");
+    }
+    var streamList = playUrlInfo["playurl"]?["stream"];
+    if (streamList is! List) {
+      throw CoreError("哔哩哔哩取流失败：接口未返回播放流${_biliErrHint(result)}");
+    }
     for (var streamItem in streamList) {
       var formatList = streamItem["format"];
       for (var formatItem in formatList) {
@@ -264,14 +281,26 @@ class BiliBiliSite implements LiveSite {
         return -1;
       }
     });
+    // 拉流必须带上与账号绑定的 cookie（SESSDATA / buvid3 / buvid4）：
+    // 只给 referer 与 UA 时，大会员清晰度、与账号绑定鉴权的流会被 CDN 拒绝。
     return LivePlayUrl(
       urls: urls,
-      headers: {
-        "referer": "https://live.bilibili.com",
-        "user-agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.188"
-      },
+      headers: await getHeader(),
     );
+  }
+
+  /// 取流失败时把接口给出的 code / message 拼进提示，方便区分
+  /// 「未开播」「无权限」「风控」这几种看起来一样的失败。
+  String _biliErrHint(Map result) {
+    var code = result["code"]?.toString() ?? "";
+    var msg = result["message"]?.toString().trim() ?? "";
+    if (code.isEmpty && msg.isEmpty) {
+      return "";
+    }
+    if (msg.isEmpty) {
+      return "（code=$code）";
+    }
+    return "（code=$code $msg）";
   }
 
   @override
