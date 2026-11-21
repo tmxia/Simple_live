@@ -1066,7 +1066,15 @@ class DouyinSite implements LiveSite {
     required LivePlayQuality quality,
   }) async {
     // 返回列表的副本，防止外部 clear() 影响原始数据
-    return LivePlayUrl(urls: List<String>.from(quality.data));
+    return LivePlayUrl(
+      urls: List<String>.from(quality.data),
+      // 拉流补上 UA / Referer：缺少这两个头时抖音 CDN 会按“弱客户端”调度，
+      // 更容易出现码率抖动与卡顿；这里刻意不带 cookie，避免 CDN 侧鉴权冲突。
+      headers: {
+        "User-Agent": kDefaultUserAgent,
+        "Referer": kDefaultReferer,
+      },
+    );
   }
 
   /// 同类实现（dart_simple_live 衍生仓库）里一直可用的「无签名搜索」：

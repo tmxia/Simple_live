@@ -25,34 +25,52 @@ mixin PlayerMixin {
     ),
   );
 
-  /// 初始化播放器并设置 ao 参数
+  /// 初始化播放器并设置 mpv 属性
+  ///
+  /// 这套参数与移动端保持一致：移动端当初为直播流掉帧/起播慢专门调过，
+  /// TV 端此前缺了 mediacodec-surface-iostream（Android 零拷贝直贴 Surface）、
+  /// back-bytes 上限、探测大小与 cache-pause-wait，导致大码率直播（抖音原画）
+  /// 更容易掉帧。
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
-    
+
     if (Platform.isAndroid) {
       await pp.setProperty('force-seekable', 'yes');
     }
-    
+
     var lowEnd = Platform.numberOfProcessors <= 4;
     var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
+    var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
     await pp.setProperty('demuxer-max-bytes', '$maxBytes');
+    await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
     await pp.setProperty('demuxer-readahead-secs', '8');
     await pp.setProperty('cache', 'yes');
     await pp.setProperty('cache-secs', '30');
+    await pp.setProperty('cache-pause-wait', '4');
     await pp.setProperty('network-timeout', '15');
     await pp.setProperty('hwdec-software-fallback', '1');
     await pp.setProperty('framedrop', 'decoder+vo');
+    await pp.setProperty('demuxer-lavf-probesize', '2097152');
+    await pp.setProperty('demuxer-lavf-analyzeduration', '2');
+    if (Platform.isAndroid) {
+      // mediacodec 直接输出到 Surface，少一次 GPU 纹理拷贝，低端盒子更稳
+      await pp.setProperty('mediacodec-surface-iostream', 'yes');
+    }
+    if (lowEnd) {
+      await pp.setProperty('vd-lavc-threads', '2');
+    }
   }
 
   /// 视频控制器
   late var videoController = VideoController(
     player,
-    configuration: const VideoControllerConfiguration(
-      enableHardwareAcceleration: true, 
-      androidAttachSurfaceAfterVideoParameters: false, 
-        width: 1920,
-        height: 1080, 
-      ),
+    configuration: VideoControllerConfiguration(
+      enableHardwareAcceleration:
+          AppSettingsController.instance.hardwareDecode.value,
+      androidAttachSurfaceAfterVideoParameters: false,
+      width: 1920,
+      height: 1080,
+    ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
@@ -338,8 +356,9 @@ void disposeStream() {
           
           videoController = VideoController(
             player,
-            configuration: const VideoControllerConfiguration(
-              enableHardwareAcceleration: true,
+            configuration: VideoControllerConfiguration(
+              enableHardwareAcceleration:
+                  AppSettingsController.instance.hardwareDecode.value,
               androidAttachSurfaceAfterVideoParameters: false,
               width: 1920,
               height: 1080,
