@@ -25,6 +25,10 @@ class FollowUserController extends BasePageController<FollowUser> {
   
   RxList<FollowUserTag> userTagList = <FollowUserTag>[].obs;
 
+  /// 内置标签名与长度上限统一由 shared 的 FollowTagRules 提供
+  static const List<String> reservedTagNames = FollowTagRules.reservedNames;
+  static const int maxTagNameLength = FollowTagRules.maxNameLength;
+
   @override
   void onInit() {
     onUpdatedIndexedStream = EventBus.instance.listen(
@@ -68,12 +72,37 @@ class FollowUserController extends BasePageController<FollowUser> {
 
   void updateTagList() {
     userTagList.assignAll(FollowService.instance.followTagList);
-    tagList.value = tagList.take(3).toList();
-    for (var i in userTagList) {
-      if (!tagList.contains(i)) {
-        tagList.add(i);
+    // 旧实现用 tagList.contains(object) 去重，而 FollowUserTag 没有重写 ==，
+    // 每次刷新从 Hive 读出的都是新实例，chip 会一路堆积重复标签而且清不掉；
+    // 这里改成「内置 3 个 + 按名字去重的自定义标签」整体重建。
+    var merged = <FollowUserTag>[];
+    var seen = <String>{};
+    for (var item in FollowService.instance.followTagList) {
+      var name = item.tag.trim();
+      if (name.isEmpty) {
+        continue;
       }
+      if (reservedTagNames.contains(name)) {
+        continue;
+      }
+      if (!seen.add(name)) {
+        continue;
+      }
+      merged.add(item);
     }
+    tagList.assignAll([
+      FollowUserTag(id: "0", tag: "全部", userId: []),
+      FollowUserTag(id: "1", tag: "直播中", userId: []),
+      FollowUserTag(id: "2", tag: "未开播", userId: []),
+      ...merged,
+    ]);
+    // 列表对象换新后要重新挂上选中态（UI 用 == 判断高亮，靠的是同一个实例）
+    var currentId = filterMode.value.id;
+    var currentTag = filterMode.value.tag;
+    filterMode.value =
+        tagList.firstWhereOrNull((e) => e.id == currentId) ??
+            tagList.firstWhereOrNull((e) => e.tag == currentTag) ??
+            tagList.first;
   }
 
   void filterData() {
@@ -174,9 +203,18 @@ class FollowUserController extends BasePageController<FollowUser> {
   }
 
   void addTag(String tag) async {
-    FollowService.instance
-        .addFollowUserTag(tag)
-        .then((value) => updateTagList());
+    var invalid = FollowTagRules.invalidReason(tag);
+    if (invalid != null) {
+      SmartDialog.showToast(invalid);
+      return;
+    }
+    var name = FollowTagRules.normalize(tag);
+    if (userTagList.any((item) => item.tag.trim() == name)) {
+      SmartDialog.showToast("标签「$name」已存在");
+      return;
+    }
+    await FollowService.instance.addFollowUserTag(name);
+    updateTagList();
   }
 
   void updateTag(FollowUserTag followUserTag) {
@@ -187,22 +225,27 @@ class FollowUserController extends BasePageController<FollowUser> {
   }
 
   void updateTagName(FollowUserTag followUserTag, String newTagName) {
-    
-    if (followUserTag.tag == newTagName) {
+    var name = FollowTagRules.normalize(newTagName);
+    if (followUserTag.tag == name) {
       return;
     }
-    
-    if (tagList.any((item) => item.tag == newTagName)) {
-      SmartDialog.showToast("标签名重复，修改失败");
+    var invalid = FollowTagRules.invalidReason(name);
+    if (invalid != null) {
+      SmartDialog.showToast(invalid);
       return;
     }
-    final FollowUserTag newTag = followUserTag.copyWith(tag: newTagName);
+    // 只和自定义标签比，排除自己；旧实现拿整条 chip 列表比，会被同名内置标签挡住
+    if (userTagList.any((item) => item.id != followUserTag.id && item.tag.trim() == name)) {
+      SmartDialog.showToast("标签「$name」已存在");
+      return;
+    }
+    final FollowUserTag newTag = followUserTag.copyWith(tag: name);
     updateTag(newTag);
     
     for(var i in newTag.userId){
       var follow = DBService.instance.followBox.get(i);
       if(follow != null){
-        follow.tag = newTagName;
+        follow.tag = name;
         updateItem(follow);
       }
     }
@@ -215,9 +258,8 @@ class FollowUserController extends BasePageController<FollowUser> {
     if (newIndex > oldIndex) newIndex -= 1; 
     final item = userTagList.removeAt(oldIndex);
     userTagList.insert(newIndex, item);
-    tagList.value = tagList.take(3).toList();
-    tagList.addAll(userTagList);
     DBService.instance.updateFollowTagOrder(userTagList);
+    updateTagList();
   }
 
   @override

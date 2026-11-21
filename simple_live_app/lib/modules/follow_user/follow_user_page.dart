@@ -346,6 +346,10 @@ class FollowUserPage extends GetView<FollowUserController> {
                 controller: tagEditController,
                 minLines: 1,
                 maxLines: 1,
+                // 与控制器侧上限保持一致，避免超长标签写进同步与备份
+                maxLength: FollowTagRules.maxNameLength,
+                autofocus: true,
+                textInputAction: TextInputAction.done,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
                   contentPadding: AppStyle.edgeInsetsA12,

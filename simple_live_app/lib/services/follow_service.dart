@@ -57,13 +57,20 @@ class FollowService extends GetxService {
 
   
   Future<void> addFollowUserTag(String tag) async {
-    
-    if (followTagList.any((item) => item.tag == tag)) {
-      SmartDialog.showToast("标签名重复，修改失败");
+    var name = FollowTagRules.normalize(tag);
+    if (!FollowTagRules.isValid(name)) {
       return;
     }
-    FollowUserTag item = await DBService.instance.addFollowTag(tag);
-    followTagList.add(item);
+    // 与已有标签（含同步进来的）按去空格后的名字判重
+    if (followTagList.any((item) => item.tag.trim() == name)) {
+      SmartDialog.showToast("标签「$name」已存在");
+      return;
+    }
+    FollowUserTag item = await DBService.instance.addFollowTag(name);
+    if (!followTagList.any((e) => e.id == item.id)) {
+      followTagList.add(item);
+    }
+    SmartDialog.showToast("已添加标签「$name」");
   }
 
   

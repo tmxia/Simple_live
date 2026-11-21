@@ -4,6 +4,7 @@ library simple_live_shared;
 export 'src/http_error.dart';
 export 'src/models/bilibili_user_info.dart';
 export 'src/player_memory.dart';
+export 'src/follow_tag_rules.dart';
 export 'src/webdav_client.dart';
 export 'src/db/follow_user.dart';
 export 'src/db/history.dart';

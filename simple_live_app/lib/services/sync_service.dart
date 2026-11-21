@@ -286,8 +286,26 @@ class SyncService extends GetxService {
       if (overlay == 1) {
         await DBService.instance.tagBox.clear();
       }
+      // 同步进来的标签同样要去重：同名标签合并成员，而不是各存一份
+      var byName = <String, FollowUserTag>{};
       for (var item in jsonBody) {
         var tag = FollowUserTag.fromJson(item);
+        tag.tag = FollowTagRules.normalize(tag.tag);
+        if (!FollowTagRules.isValid(tag.tag)) {
+          continue;
+        }
+        var exist = byName[tag.tag];
+        if (exist == null) {
+          byName[tag.tag] = tag;
+          continue;
+        }
+        for (var id in tag.userId) {
+          if (!exist.userId.contains(id)) {
+            exist.userId.add(id);
+          }
+        }
+      }
+      for (var tag in byName.values) {
         await DBService.instance.tagBox.put(tag.id, tag);
       }
 

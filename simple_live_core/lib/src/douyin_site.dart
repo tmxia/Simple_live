@@ -995,14 +995,16 @@ class DouyinSite implements LiveSite {
         var hlsList = hlsMap.values.cast<String>().toList();
         for (var quality in qualityOptions) {
           int level = asT<int?>(quality["level"]) ?? 0;
+          // 抖音默认走线路 2（HLS）：FLV 是大码率裸流，电视盒子软/硬解容易掉帧，
+          // HLS 分片码率平滑、起播更稳；线路 1 仍保留 FLV 供手动切换。
           List<String> urls = [];
-          var flvIndex = flvList.length - level;
-          if (flvIndex >= 0 && flvIndex < flvList.length) {
-            urls.add(flvList[flvIndex]);
-          }
           var hlsIndex = hlsList.length - level;
           if (hlsIndex >= 0 && hlsIndex < hlsList.length) {
             urls.add(hlsList[hlsIndex]);
+          }
+          var flvIndex = flvList.length - level;
+          if (flvIndex >= 0 && flvIndex < flvList.length) {
+            urls.add(flvList[flvIndex]);
           }
           var qualityItem = LivePlayQuality(
             quality: quality["name"]?.toString() ?? "",
@@ -1031,13 +1033,14 @@ class DouyinSite implements LiveSite {
           var main = node is Map ? node["main"] : null;
           var mainMap = main is Map ? main : const {};
 
-          var flvUrl = mainMap["flv"]?.toString();
-          if (flvUrl != null && flvUrl.isNotEmpty) {
-            urls.add(flvUrl);
-          }
+          // 同上：HLS 排第一，默认线路走 HLS
           var hlsUrl = mainMap["hls"]?.toString();
           if (hlsUrl != null && hlsUrl.isNotEmpty) {
             urls.add(hlsUrl);
+          }
+          var flvUrl = mainMap["flv"]?.toString();
+          if (flvUrl != null && flvUrl.isNotEmpty) {
+            urls.add(flvUrl);
           }
 
           var qualityItem = LivePlayQuality(

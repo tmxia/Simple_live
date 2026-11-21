@@ -48,12 +48,15 @@ class DBService extends GetxService {
 
   
   Future<FollowUserTag> addFollowTag(String tag) async {
-    
-    if (getFollowTagExistByTag(tag) && tag.length > 8) {
-      return getFollowTag(tag)!;
+    var name = tag.trim();
+    // 旧实现写成「已存在且名字超过 8 个字」才复用，8 字以内的同名标签
+    // 会被重复新建；同名（去空格后）一律复用已有标签。
+    var exist = getFollowTag(name);
+    if (exist != null) {
+      return exist;
     }
     final String uniqueId = uuid.v4();
-    final followUserTag = FollowUserTag(id: uniqueId, tag: tag, userId: []);
+    final followUserTag = FollowUserTag(id: uniqueId, tag: name, userId: []);
     await tagBox.put(uniqueId, followUserTag);
     return followUserTag;
   }
