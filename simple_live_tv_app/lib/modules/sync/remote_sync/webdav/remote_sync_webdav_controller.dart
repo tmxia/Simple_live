@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
+import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
 import 'package:simple_live_tv_app/app/log.dart';
@@ -183,7 +184,13 @@ class RemoteSyncWebDAVController extends GetxController {
         accounts["douyin"] = douyin;
         LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, douyin);
       }
-      final douyu = LocalStorageService.instance.getValue(LocalStorageService.kDouyuCookie, "");
+      // 斗鱼只存票据：优先内存态（刚同步/粘贴过），再回退持久化
+      final douyu = LocalStorageService.instance
+              .getValue(LocalStorageService.kDouyuAuth, "")
+              .isNotEmpty
+          ? LocalStorageService.instance
+              .getValue(LocalStorageService.kDouyuAuth, "")
+          : DouyuAccountService.instance.auth;
       if (douyu.isNotEmpty) accounts["douyu"] = douyu;
       final huya = pick(
         LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, ""),
@@ -366,7 +373,15 @@ class RemoteSyncWebDAVController extends GetxController {
             LocalStorageService.instance.setValue(LocalStorageService.kBilibiliCookie, cookie);
             try { Get.find<BiliBiliAccountService>().setCookie(cookie); } catch (_) {}
           }
-          if (accounts['douyu'] != null) LocalStorageService.instance.setValue(LocalStorageService.kDouyuCookie, accounts['douyu']);
+          if (accounts['douyu'] != null) {
+            final auth = accounts['douyu'] as String;
+            try {
+              Get.find<DouyuAccountService>().setAuth(auth);
+            } catch (_) {
+              LocalStorageService.instance
+                  .setValue(LocalStorageService.kDouyuAuth, auth);
+            }
+          }
           if (accounts['douyin'] != null) {
             final cookie = accounts['douyin'] as String;
             LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, cookie);

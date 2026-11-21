@@ -205,6 +205,10 @@ class LocalStorageService extends GetxService {
     return await settingsBox.delete(key);
   }
   static const String kDouyuCookie = "DouyuCookie";
+
+  /// 斗鱼登录票据 dy_auth（HttpOnly 值，与上面的整段 Cookie 分开存，
+  /// 因为取流只需要这一个字段，存整段反而增大泄露面）
+  static const String kDouyuAuth = "DouyuAuth";
   static const String kHuyaCookie = "HuyaCookie";
   static const String kKuaishouCookie = "KuaishouCookie";
 }

@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:simple_live_app/app/app_style.dart';
 import 'package:simple_live_app/modules/mine/account/account_controller.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 
@@ -20,7 +21,7 @@ class AccountPage extends GetView<AccountController> {
           const Padding(
             padding: AppStyle.edgeInsetsA12,
             child: Text(
-              "哔哩哔哩账号需要登录才能看高清晰度的直播；\n抖音搜索接口必须登录后才能使用。",
+              "哔哩哔哩账号需要登录才能看高清晰度的直播；\n抖音搜索接口必须登录后才能使用；\n斗鱼登录后可取原画，匿名只能拿到降档画质。",
               textAlign: TextAlign.center,
             ),
           ),
@@ -39,16 +40,26 @@ class AccountPage extends GetView<AccountController> {
               onTap: controller.bilibiliTap,
             ),
           ),
-          ListTile(
-            leading: Image.asset(
-              'assets/images/douyu.png',
-              width: 36,
-              height: 36,
+          Obx(
+            () => ListTile(
+              leading: Image.asset(
+                'assets/images/douyu.png',
+                width: 36,
+                height: 36,
+              ),
+              title: const Text("斗鱼直播"),
+              subtitle: Text(
+                !DouyuAccountService.instance.hasAuth.value
+                    ? "未登录（登录后可取原画，匿名只给降档流）"
+                    : DouyuAccountService.instance.authInvalid.value
+                        ? "授权已失效，建议重新登录"
+                        : "已填写授权（dy_auth）",
+              ),
+              trailing: DouyuAccountService.instance.hasAuth.value
+                  ? const Icon(Icons.logout)
+                  : const Icon(Icons.chevron_right),
+              onTap: controller.douyuTap,
             ),
-            title: const Text("斗鱼直播"),
-            subtitle: const Text("无需登录"),
-            enabled: false,
-            trailing: const Icon(Icons.chevron_right),
           ),
           Obx(
             () => ListTile(

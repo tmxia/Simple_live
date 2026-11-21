@@ -11,6 +11,7 @@ import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
+import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:udp/udp.dart';
 import 'package:shelf/shelf.dart' as shelf;
@@ -147,6 +148,7 @@ class SyncService extends GetxService {
       serverRouter.post('/sync/history', _syncHistoryReuqest);
       serverRouter.post('/sync/blocked_word', _syncBlockedWordReuqest);
       serverRouter.post('/sync/account/bilibili', _syncBiliAccountReuqest);
+      serverRouter.post('/sync/account/douyu', _syncDouyuAccountRequest);
 
       var server = await shelf_io.serve(
         serverRouter,
@@ -306,6 +308,25 @@ class SyncService extends GetxService {
         'status': false,
         'message': e.toString(),
       });
+    }
+  }
+
+  /// 同步斗鱼票据（手机端网页登录后一键下发到 TV）
+  Future<shelf.Response> _syncDouyuAccountRequest(shelf.Request request) async {
+    try {
+      var body = await request.readAsString();
+      Log.d('_syncDouyuAccountRequest: $body');
+      var jsonBody = json.decode(body);
+      var auth = (jsonBody['auth'] ?? jsonBody['cookie'] ?? "").toString();
+      var value = DouyuAccountService.parseAuth(auth);
+      if (value.isEmpty) {
+        return toJsonResponse({'status': false, 'message': '未识别到 dy_auth'});
+      }
+      DouyuAccountService.instance.setAuth(value);
+      SmartDialog.showToast('已同步斗鱼账号');
+      return toJsonResponse({'status': true, 'message': 'success'});
+    } catch (e) {
+      return toJsonResponse({'status': false, 'message': e.toString()});
     }
   }
 

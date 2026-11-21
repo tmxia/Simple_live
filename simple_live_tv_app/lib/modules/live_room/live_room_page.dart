@@ -145,7 +145,10 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                 return playerControls(state, controller);
               },
               
-              aspectRatio: aspectRatio ?? (16 / 9),
+              // 自适应（scaleMode=0）必须传 null：media_kit 会按码流的
+              // 真实宽高比渲染。这里曾经兜成 `16 / 9`，导致抖音这类
+              // 竖屏 / 非 16:9 直播源被强行塞进 16:9 容器而拉伸变形。
+              aspectRatio: aspectRatio,
               fit: boxFit,
             ),
           ),

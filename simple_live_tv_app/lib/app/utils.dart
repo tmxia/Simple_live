@@ -254,4 +254,39 @@ class Utils {
     }
     return num.toString();
   }
+
+  /// 文本输入弹窗（TV 端手动粘贴 dy_auth 等场景）
+  ///
+  /// TV 遥控器没有软键盘习惯，但设置页允许用户外接键盘或用手机远控输入；
+  /// 这里保持与移动端一致的交互，只是文案更短、按钮更少。
+  static Future<String?> showEditTextDialog(
+    String content, {
+    String title = '',
+    String? hintText,
+  }) async {
+    final TextEditingController textEditingController =
+        TextEditingController(text: content);
+    var result = await Get.dialog(
+      AlertDialog(
+        title: Text(title),
+        content: TextField(
+          controller: textEditingController,
+          autofocus: true,
+          maxLines: 1,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(),
+            hintText: hintText ?? title,
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text("取消")),
+          TextButton(
+            onPressed: () => Get.back(result: textEditingController.text),
+            child: const Text("确定"),
+          ),
+        ],
+      ),
+    );
+    return result;
+  }
 }

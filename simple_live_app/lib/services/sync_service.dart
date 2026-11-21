@@ -12,6 +12,7 @@ import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 import 'package:simple_live_app/services/db_service.dart';
 import 'package:udp/udp.dart';
@@ -198,6 +199,7 @@ class SyncService extends GetxService {
       serverRouter.post('/sync/account/bilibili', _syncBiliAccountReuqest);
       serverRouter.post('/sync/account/douyin', _syncDouyinAccountRequest);
       serverRouter.post('/sync/account/huya', _syncHuyaAccountRequest);
+      serverRouter.post('/sync/account/douyu', _syncDouyuAccountRequest);
 
       var server = await shelf_io.serve(
         serverRouter,
@@ -441,6 +443,28 @@ class SyncService extends GetxService {
       HuyaAccountService.instance.setCookie(cookie);
       await HuyaAccountService.instance.loadUserInfo();
       SmartDialog.showToast('已同步虎牙账号');
+      return toJsonResponse({'status': true, 'message': 'success'});
+    } catch (e) {
+      return toJsonResponse({'status': false, 'message': e.toString()});
+    }
+  }
+
+  /// 局域网同步斗鱼票据
+  ///
+  /// 斗鱼只同步一个字段 dy_auth：手机端网页登录后，TV 端不必再登录。
+  Future<shelf.Response> _syncDouyuAccountRequest(shelf.Request request) async {
+    try {
+      var body = await request.readAsString();
+      Log.d('_syncDouyuAccountRequest: $body');
+      var jsonBody = json.decode(body);
+      // 兼容两种键名：auth（新）与 cookie（整段 Cookie 也能解析出 dy_auth）
+      var auth = (jsonBody['auth'] ?? jsonBody['cookie'] ?? "").toString();
+      var value = DouyuAccountService.parseAuth(auth);
+      if (value.isEmpty) {
+        return toJsonResponse({'status': false, 'message': '未识别到 dy_auth'});
+      }
+      DouyuAccountService.instance.setAuth(value);
+      SmartDialog.showToast('已同步斗鱼账号');
       return toJsonResponse({'status': true, 'message': 'success'});
     } catch (e) {
       return toJsonResponse({'status': false, 'message': e.toString()});

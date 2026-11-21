@@ -85,6 +85,14 @@ class SyncClientRequest {
     );
   }
 
+  Future<bool> syncDouyuAccount(SyncClinet client, String auth) {
+    return _postSync(
+      client,
+      "/sync/account/douyu",
+      body: {"auth": auth},
+    );
+  }
+
   Future<bool> syncBiliAccount(SyncClinet client, String cookie) {
     return _postSync(
       client,

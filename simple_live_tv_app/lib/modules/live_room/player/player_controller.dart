@@ -163,8 +163,15 @@ mixin PlayerStateMixin on PlayerMixin {
   void updateScaleMode() {
     var boxFit = BoxFit.contain;
     double? aspectRatio;
-    if (player.state.width != null && player.state.height != null) {
-      aspectRatio = player.state.width! / player.state.height!;
+    // 只有拿到有效的宽高才用真实比例；0 / 异常值一律交给 media_kit
+    // 自己判断（传 null），否则会算出 NaN / Infinity 把画面撑坏。
+    final width = player.state.width;
+    final height = player.state.height;
+    if (width != null && height != null && width > 0 && height > 0) {
+      final ratio = width / height;
+      if (ratio.isFinite && ratio > 0.1 && ratio < 10) {
+        aspectRatio = ratio;
+      }
     }
 
     if (AppSettingsController.instance.scaleMode.value == 0) {

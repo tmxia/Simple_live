@@ -26,6 +26,8 @@ import 'package:simple_live_app/modules/sync/local_sync/local_sync_page.dart';
 import 'package:simple_live_app/modules/mine/account/account_controller.dart';
 import 'package:simple_live_app/modules/mine/account/douyin/login_controller.dart';
 import 'package:simple_live_app/modules/mine/account/douyin/login_page.dart';
+import 'package:simple_live_app/modules/mine/account/douyu/login_controller.dart';
+import 'package:simple_live_app/modules/mine/account/douyu/login_page.dart';
 import 'package:simple_live_app/modules/mine/account/huya/login_controller.dart';
 import 'package:simple_live_app/modules/mine/account/huya/login_page.dart';
 import 'package:simple_live_app/modules/mine/account/account_page.dart';
@@ -190,6 +192,14 @@ class AppPages {
       page: () => const HuyaLoginPage(),
       bindings: [
         BindingsBuilder.put(() => HuyaLoginController()),
+      ],
+    ),
+
+    GetPage(
+      name: RoutePath.kDouyuLogin,
+      page: () => const DouyuLoginPage(),
+      bindings: [
+        BindingsBuilder.put(() => DouyuLoginController()),
       ],
     ),
     

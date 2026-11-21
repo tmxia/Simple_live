@@ -6,6 +6,7 @@ import 'package:simple_live_tv_app/app/controller/base_controller.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/routes/app_navigation.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
+import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
 
@@ -55,6 +56,7 @@ class SettingsController extends BaseController
   var updateFollowThreadFocusNode = AppFocusNode();
 
   var bilibiliFoucsNode = AppFocusNode();
+  var douyuFocusNode = AppFocusNode();
   var versionFocusNode = AppFocusNode();
   void douyinTap() async {
     if (DouyinAccountService.instance.logined.value) {
@@ -76,6 +78,47 @@ class SettingsController extends BaseController
     } else {
       showSyncHint("虎牙");
     }
+  }
+
+  /// 斗鱼：TV 端没有网页登录，票据来源是手机同步或手动粘贴。
+  ///
+  /// 已填写的交互顺序：先问「重新填写」，选否则再问「清除」，
+  /// 避免遥控器误触一下就把票据清掉。
+  void douyuTap() async {
+    final service = DouyuAccountService.instance;
+    if (service.hasAuth.value) {
+      final reinput = await Utils.showAlertDialog(
+        "当前已保存斗鱼授权（dy_auth）。\n选择「确定」重新填写，选择「取消」保持现状或清除。",
+        title: "斗鱼账号",
+        confirm: "重新填写",
+      );
+      if (!reinput) {
+        final clear = await Utils.showAlertDialog(
+          "确定要清除本机保存的斗鱼授权吗？\n清除后画质与播放地址有效期将恢复匿名默认。",
+          title: "清除授权",
+        );
+        if (clear) {
+          service.clearAuth();
+          SmartDialog.showToast("已清除斗鱼授权");
+        }
+        return;
+      }
+    }
+    final input = await Utils.showEditTextDialog(
+      "",
+      title: "填写 dy_auth",
+      hintText: "粘贴 dy_auth 的值，或整行 Cookie",
+    );
+    if (input == null || input.trim().isEmpty) {
+      return;
+    }
+    final value = DouyuAccountService.parseAuth(input);
+    if (value.isEmpty) {
+      SmartDialog.showToast("未识别到 dy_auth，请检查输入内容");
+      return;
+    }
+    service.setAuth(value);
+    SmartDialog.showToast("斗鱼授权已保存");
   }
 
   /// TV 端没有网页登录能力，用与斗鱼一致的一行提示（不再弹 Material 弹窗）

@@ -18,6 +18,7 @@ import 'package:simple_live_app/app/sites.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/modules/live_room/player/player_controller.dart';
 import 'package:simple_live_app/modules/settings/danmu_settings_page.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/db_service.dart';
 import 'package:simple_live_app/services/follow_service.dart';
 import 'package:simple_live_app/widgets/desktop_refresh_button.dart';
@@ -430,6 +431,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       SmartDialog.showToast("无法读取播放地址");
       return;
     }
+    _checkDouyuAuth();
     playUrls.value = playUrl.urls;
     playHeaders = playUrl.headers;
     _urlFetchedAt = DateTime.now();
@@ -443,6 +445,24 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     mediaErrorRetryCount = 0;
     initPlaylist();
     _scheduleUrlRefresh();
+  }
+
+  /// 斗鱼票据没生效时提示一次（同一房间只提示一次，避免每次重连都弹）
+  var _douyuAuthTipShown = false;
+  void _checkDouyuAuth() {
+    if (site.id != Constant.kDouyu || _douyuAuthTipShown) {
+      return;
+    }
+    final liveSite = site.liveSite;
+    if (liveSite is! DouyuSite || !liveSite.authNotEffective) {
+      return;
+    }
+    _douyuAuthTipShown = true;
+    final label = liveSite.lastDowngradeLabel;
+    SmartDialog.showToast(liveSite.lastAuthRejected
+        ? "斗鱼授权已失效，已按未登录取流（画质可能降档），请在账号管理中重新登录"
+        : "斗鱼授权未生效，仅拿到${label.isEmpty ? "降档" : "「$label」"}画质，建议重新登录");
+    DouyuAccountService.instance.markInvalid();
   }
 
   void changePlayLine(int index) {

@@ -14,6 +14,7 @@ import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/modules/live_room/player/player_controller.dart';
+import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 
@@ -252,6 +253,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       SmartDialog.showToast("无法读取播放地址");
       return;
     }
+    _checkDouyuAuth();
     playUrls.value = playUrl.urls;
     playHeaders = playUrl.headers;
     // 恢复该站点上次使用的线路（两端各自记忆，互不影响）
@@ -261,6 +263,24 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     
     mediaErrorRetryCount = 0;
     setPlayer();
+  }
+
+  /// 斗鱼票据没生效时提示一次
+  var _douyuAuthTipShown = false;
+  void _checkDouyuAuth() {
+    if (site.id != Constant.kDouyu || _douyuAuthTipShown) {
+      return;
+    }
+    final liveSite = site.liveSite;
+    if (liveSite is! DouyuSite || !liveSite.authNotEffective) {
+      return;
+    }
+    _douyuAuthTipShown = true;
+    final label = liveSite.lastDowngradeLabel;
+    SmartDialog.showToast(liveSite.lastAuthRejected
+        ? "斗鱼授权已失效，已按未登录取流，请在设置中重新填写或从手机同步"
+        : "斗鱼授权未生效，仅拿到${label.isEmpty ? "降档" : "「$label」"}画质");
+    DouyuAccountService.instance.markInvalid();
   }
 
   void changePlayLine(int index) {

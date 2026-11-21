@@ -82,6 +82,15 @@ class SyncDevicePage extends GetView<SyncDeviceController> {
                     controller.syncHuyaAccount();
                   },
                 ),
+                AppStyle.divider,
+                ListTile(
+                  leading: const Icon(Remix.account_circle_line),
+                  title: const Text("同步斗鱼账号"),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () {
+                    controller.syncDouyuAccount();
+                  },
+                ),
               ],
             ),
           ),

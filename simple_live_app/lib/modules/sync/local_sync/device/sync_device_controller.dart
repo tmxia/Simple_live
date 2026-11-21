@@ -9,6 +9,7 @@ import 'package:simple_live_app/models/sync_client_info_model.dart';
 import 'package:simple_live_app/requests/sync_client_request.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 import 'package:simple_live_app/services/db_service.dart';
 import 'package:simple_live_app/services/sync_service.dart';
@@ -129,6 +130,27 @@ class SyncDeviceController extends BaseController {
 
       await request.syncHuyaAccount(client, HuyaAccountService.instance.cookie);
       SmartDialog.showToast("已同步虎牙账号");
+    } catch (e) {
+      SmartDialog.showToast("同步失败:$e");
+      Log.logPrint(e);
+    } finally {
+      SmartDialog.dismiss();
+    }
+  }
+
+  /// 同步斗鱼票据（dy_auth）到对方设备
+  ///
+  /// 斗鱼只有票据一个字段，不涉及昵称等信息，因此这里只判断「是否已填写」。
+  void syncDouyuAccount() async {
+    try {
+      final service = DouyuAccountService.instance;
+      if (!service.hasAuth.value || service.auth.isEmpty) {
+        SmartDialog.showToast("未登录斗鱼，请先在账号管理中登录");
+        return;
+      }
+      SmartDialog.showLoading(msg: "同步中...");
+      await request.syncDouyuAccount(client, service.auth);
+      SmartDialog.showToast("已同步斗鱼账号");
     } catch (e) {
       SmartDialog.showToast("同步失败:$e");
       Log.logPrint(e);

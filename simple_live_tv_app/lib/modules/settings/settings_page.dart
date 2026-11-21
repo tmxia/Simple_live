@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
@@ -10,6 +9,7 @@ import 'package:simple_live_tv_app/modules/settings/settings_controller.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
 import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
+import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
@@ -435,18 +435,22 @@ class SettingsPage extends GetView<SettingsController> {
           ),
         ),
         AppStyle.vGap24,
-        HighlightListTile(
-          focusNode: AppFocusNode(),
-          title: "斗鱼账号",
-          subtitle: "无需登录",
-          leading: Image.asset(
-            "assets/images/douyu.png",
-            width: 64.w,
-            height: 64.w,
+        Obx(
+          () => HighlightListTile(
+            focusNode: controller.douyuFocusNode,
+            title: "斗鱼账号",
+            subtitle: !DouyuAccountService.instance.hasAuth.value
+                ? "未登录，点按粘贴 dy_auth（匿名只给降档画质）"
+                : DouyuAccountService.instance.authInvalid.value
+                    ? "授权已失效，建议重新填写或从手机同步"
+                    : "已填写授权，可观看原画",
+            leading: Image.asset(
+              "assets/images/douyu.png",
+              width: 64.w,
+              height: 64.w,
+            ),
+            onTap: controller.douyuTap,
           ),
-          onTap: () {
-            SmartDialog.showToast("无需登录斗鱼，您可以直接观看直播");
-          },
         ),
         AppStyle.vGap24,
         Obx(

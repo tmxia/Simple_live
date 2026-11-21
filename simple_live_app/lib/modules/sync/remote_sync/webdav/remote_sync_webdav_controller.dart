@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 import 'package:simple_live_app/app/log.dart';
@@ -187,7 +188,12 @@ class RemoteSyncWebDAVController extends GetxController {
         // 顺手回写，避免内存有值而本地存储为空导致下次启动丢失
         LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, douyin);
       }
-      final douyu = LocalStorageService.instance.getValue(LocalStorageService.kDouyuCookie, "");
+      // 斗鱼只需一个票据字段：优先取内存态（可能刚在 WebView 里登录），
+      // 再回退存储；旧字段 kDouyuCookie 里如果正好是 dy_auth 也能接住
+      final douyu = pick(
+        LocalStorageService.instance.getValue(LocalStorageService.kDouyuAuth, ""),
+        DouyuAccountService.instance.auth,
+      );
       if (douyu.isNotEmpty) accounts["douyu"] = douyu;
       final huya = pick(
         LocalStorageService.instance.getValue(LocalStorageService.kHuyaCookie, ""),
@@ -348,7 +354,15 @@ class RemoteSyncWebDAVController extends GetxController {
             LocalStorageService.instance.setValue(LocalStorageService.kDouyinCookie, cookie);
             try { Get.find<DouyinAccountService>().setCookie(cookie); } catch (_) {}
           }
-          if (accounts['douyu'] != null) LocalStorageService.instance.setValue(LocalStorageService.kDouyuCookie, accounts['douyu']);
+          if (accounts['douyu'] != null) {
+            final auth = accounts['douyu'] as String;
+            try {
+              Get.find<DouyuAccountService>().setAuth(auth);
+            } catch (_) {
+              LocalStorageService.instance
+                  .setValue(LocalStorageService.kDouyuAuth, auth);
+            }
+          }
           if (accounts['huya'] != null) {
             final cookie = accounts['huya'] as String;
             LocalStorageService.instance.setValue(LocalStorageService.kHuyaCookie, cookie);

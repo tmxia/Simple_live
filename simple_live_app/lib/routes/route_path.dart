@@ -62,6 +62,7 @@ class RoutePath {
 
   /// 虎牙账号登录（WebView 网页登录）
   static const kHuyaLogin = "/settings/account/huya/login";
+  static const kDouyuLogin = "/settings/account/douyu/login";
 
   /// 数据同步
   static const kLocalSync = "/local_sync";

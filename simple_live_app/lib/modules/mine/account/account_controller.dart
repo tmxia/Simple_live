@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_app/routes/route_path.dart';
 import 'package:simple_live_app/services/bilibili_account_service.dart';
+import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
 
@@ -184,6 +185,79 @@ class AccountController extends GetxController {
         ],
       ),
     );
+  }
+
+  void douyuTap() async {
+    final service = DouyuAccountService.instance;
+    if (service.hasAuth.value) {
+      var result = await Utils.showAlertDialog(
+        service.authInvalid.value
+            ? "当前斗鱼授权已被判定无效。要重新登录吗？\n选择「确定」重新填写，选择「取消」清除授权。"
+            : "确定要退出斗鱼账号吗？",
+        title: service.authInvalid.value ? "斗鱼授权已失效" : "退出登录",
+      );
+      if (result) {
+        douyuLogin();
+      } else if (service.authInvalid.value) {
+        service.clearAuth();
+        SmartDialog.showToast("已清除斗鱼授权");
+      }
+    } else {
+      douyuLogin();
+    }
+  }
+
+  void douyuLogin() {
+    Utils.showBottomSheet(
+      title: "登录斗鱼",
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Visibility(
+            visible: Platform.isAndroid || Platform.isIOS,
+            child: ListTile(
+              leading: const Icon(Icons.account_circle_outlined),
+              title: const Text("网页登录"),
+              subtitle: const Text("在页面内扫码或用斗鱼号登录"),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Get.back();
+                Get.toNamed(RoutePath.kDouyuLogin);
+              },
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.key_outlined),
+            title: const Text("粘贴 dy_auth"),
+            subtitle: const Text("手动粘贴票据值，或整行 Cookie"),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Get.back();
+              doDouyuAuthLogin();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void doDouyuAuthLogin() async {
+    var input = await Utils.showEditTextDialog(
+      "",
+      title: "请输入斗鱼 dy_auth",
+      hintText: "dy_auth=xxx 或整行 Cookie 均可",
+    );
+    if (input == null || input.trim().isEmpty) {
+      return;
+    }
+    final value = DouyuAccountService.parseAuth(input);
+    if (value.isEmpty) {
+      SmartDialog.showToast("未识别到 dy_auth，请检查输入内容");
+      return;
+    }
+    DouyuAccountService.instance.setAuth(value);
+    SmartDialog.showToast("斗鱼授权已保存");
+    await DouyuAccountService.instance.verify();
   }
 
   void doHuyaCookieLogin() async {

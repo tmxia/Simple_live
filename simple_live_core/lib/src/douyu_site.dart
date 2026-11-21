@@ -18,6 +18,25 @@ class DouyuSite implements LiveSite {
   /// 掐流的典型特征），签名与 dy_did/acf_did Cookie 保持一致。
   String deviceId = "";
 
+  /// 斗鱼登录票据 `dy_auth`（HttpOnly，只能从 WebView 的 Cookie 存储
+  /// 或手动粘贴获得）。空字符串表示匿名。
+  String dyAuth = "";
+
+  /// 取流首选 CDN（实测最稳，且原画授权只在 hw-h5 上稳定生效）
+  static const String kPreferredCdn = "hw-h5";
+
+  /// 上一次 getPlayUrls 是否因为票据被服务端拒绝而回退匿名取流
+  bool lastAuthRejected = false;
+
+  /// 上一次取流是否被服务端静默降档（请求原画却只给低档 / 地址短时过期）
+  bool lastQualityDowgraded = false;
+
+  /// 降档后服务端实际授予的档位名（如「蓝光4M」），未知时为空
+  String lastDowngradeLabel = "";
+
+  /// 票据是否实际未生效：取流被拒回退，或被静默降档
+  bool get authNotEffective => lastAuthRejected || lastQualityDowgraded;
+
   /// 进程内兜底设备号：App 层未注入时也保证同一进程内身份稳定。
   static final String _processFallbackDid = _generateHexDid(32);
 
@@ -72,6 +91,12 @@ class DouyuSite implements LiveSite {
     if (_cookieValue("acf_did").isEmpty && _cookieValue("acf_devid").isEmpty) {
       parts.add("acf_did=$did");
     }
+    // dy_auth 是完整登录态票据，独立于上面的设备号字段；
+    // 若用户的登录 Cookie 里已经带了，就不要再重复追加。
+    final auth = _normalizeAuthValue(dyAuth);
+    if (auth.isNotEmpty && _cookieValue("dy_auth").isEmpty) {
+      parts.add("dy_auth=$auth");
+    }
     return parts.join("; ");
   }
 
@@ -80,6 +105,30 @@ class DouyuSite implements LiveSite {
     'user-agent':
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     if (_deviceCookieHeader.isNotEmpty) 'Cookie': _deviceCookieHeader,
+  };
+
+  /// 清洗粘贴来的 dy_auth 值：去空白、去包裹引号、去结尾分号。
+  /// 值本身是 base64 风格（可能含 `+` `/` `=` `.`），不做其它改写，
+  /// 否则会破坏票据导致「填了却没效果」。
+  static String _normalizeAuthValue(String value) {
+    var v = value.trim();
+    if (v.length >= 2) {
+      final first = v[0];
+      final last = v[v.length - 1];
+      if ((first == '"' && last == '"') || (first == "'" && last == "'")) {
+        v = v.substring(1, v.length - 1).trim();
+      }
+    }
+    while (v.endsWith(";")) {
+      v = v.substring(0, v.length - 1).trim();
+    }
+    return v;
+  }
+
+  /// 取流请求头：在通用头基础上补房间 referer
+  Map<String, String> _playHeaders(String roomId) => {
+    ..._requestHeaders,
+    'referer': 'https://www.douyu.com/$roomId',
   };
 
   @override
@@ -159,12 +208,15 @@ class DouyuSite implements LiveSite {
     required LiveRoomDetail detail,
   }) async {
     var data = await _getFreshPlayArgs(detail.roomId, fallback: detail.data);
-    data += "&cdn=&rate=-1&ver=Douyu_223061205&iar=1&ive=1&hevc=0&fa=0";
+    // 注意：这里**不能**带 `ive=1`。实测 `ive=1` 会让服务端把画质压到
+    // 960×540/1029kbps（比任何一档都低），既不是原画也不是「不过期线路」，
+    // 属于用画质换稳定，已彻底移除；地址到期由上层重签续播处理。
+    data += "&cdn=&rate=-1&ver=Douyu_223061205&iar=1&hevc=0&fa=0";
     List<LivePlayQuality> qualities = [];
     var result = await HttpClient.instance.postJson(
       "https://www.douyu.com/lapi/live/getH5Play/${detail.roomId}",
       data: data,
-      header: _requestHeaders,
+      header: _playHeaders(detail.roomId),
       formUrlEncoded: true,
     );
     final errorCode = result is Map ? result["error"] : null;
@@ -193,6 +245,12 @@ class DouyuSite implements LiveSite {
       }
     }
 
+    // hw-h5 排第一：原画授权在该线路最稳定，scdn* 已在上面剔除
+    final hwIndex = cdns.indexWhere((e) => e.startsWith(kPreferredCdn));
+    if (hwIndex > 0) {
+      cdns.insert(0, cdns.removeAt(hwIndex));
+    }
+
     for (var item in payload["multirates"]) {
       qualities.add(
         LivePlayQuality(
@@ -209,21 +267,146 @@ class DouyuSite implements LiveSite {
     required LiveRoomDetail detail,
     required LivePlayQuality quality,
   }) async {
-    // The signed playback arguments expire while a room remains open.  A
-    // retry must fetch a new server script and sign it again; reusing the
-    // value captured by getRoomDetail causes Douyu to return a timestamp error
-    // after roughly ten minutes for high-quality anonymous streams.
-    var args = await _getFreshPlayArgs(detail.roomId, fallback: detail.data);
+    lastAuthRejected = false;
+    lastQualityDowgraded = false;
+    lastDowngradeLabel = "";
     var data = quality.data as DouyuPlayData;
+    var urls = await _fetchUrls(detail.roomId, data, fallback: detail.data);
 
-    List<String> urls = [];
-    for (var item in data.cdns) {
-      var url = await getPlayUrl(detail.roomId, args, data.rate, item);
-      if (url.isNotEmpty) {
-        urls.add(url);
+    // 带了 dy_auth 却一条线路都取不到：先怀疑票据失效，临时摘掉票据再试一次，
+    // 至少让用户还能看，而不是直接黑屏。
+    if (urls.isEmpty && _normalizeAuthValue(dyAuth).isNotEmpty) {
+      lastAuthRejected = true;
+      final saved = dyAuth;
+      dyAuth = "";
+      try {
+        urls = await _fetchUrls(detail.roomId, data, fallback: detail.data);
+      } finally {
+        dyAuth = saved;
+      }
+      // 回退也没取到，说明是签名过期或房间状态问题，不是票据的锅，撤销标记。
+      if (urls.isEmpty) {
+        lastAuthRejected = false;
       }
     }
+
+    if (urls.isEmpty) {
+      throw CoreError("斗鱼取流失败：未获取到任何可用线路");
+    }
     return LivePlayUrl(urls: urls);
+  }
+
+  /// 按清晰度逐 CDN 取流并去重；第一条成功的地址就足以判定是否被降档
+  Future<List<String>> _fetchUrls(
+    String roomId,
+    DouyuPlayData data, {
+    Object? fallback,
+  }) async {
+    final args = await _getFreshPlayArgs(roomId, fallback: fallback);
+    final urls = <String>[];
+    for (var cdn in data.cdns) {
+      final url = await getPlayUrl(roomId, args, data.rate, cdn);
+      if (url.isEmpty) {
+        continue;
+      }
+      if (!urls.contains(url)) {
+        urls.add(url);
+      }
+      if (urls.length == 1) {
+        _checkDowgraded(url, data.rate);
+      }
+    }
+    return urls;
+  }
+
+  /// 判断服务端是否把我们静默降档
+  ///
+  /// 匿名（或票据失效）请求 `rate=0` 时服务端不报错，只把画质压到低档，
+  /// 并给一个 300 秒过期的地址。判据（也是 [verifyAuth] 用的判据）：
+  /// 流名后缀 `_4000/_2000/_900`（服务端实际授予的码率），或 `expire > 0`。
+  /// 只在请求了原画（rate==0）时判断：用户主动选低档不算降档。
+  void _checkDowgraded(String url, int requestedRate) {
+    if (requestedRate != 0) {
+      return;
+    }
+    final fileName = Uri.decodeComponent(url.split('?').first.split('/').last);
+    final suffix = RegExp(r'_(\d+)\.(?:flv|m3u8)$').firstMatch(fileName);
+    if (suffix != null) {
+      lastQualityDowgraded = true;
+      lastDowngradeLabel = _rateSuffixLabel(suffix.group(1)!);
+      return;
+    }
+    final expire = _parseExpire(url);
+    if (expire != null && expire > 0) {
+      lastQualityDowgraded = true;
+      lastDowngradeLabel = "";
+    }
+  }
+
+  static String _rateSuffixLabel(String value) {
+    switch (value) {
+      case "4000":
+        return "蓝光4M";
+      case "2000":
+        return "超清";
+      case "900":
+        return "高清";
+      default:
+        return "${value}kbps";
+    }
+  }
+
+  static int? _parseExpire(String url) {
+    final m = RegExp(r'[?&]expire=(\d+)').firstMatch(url);
+    if (m == null) {
+      return null;
+    }
+    return int.tryParse(m.group(1)!);
+  }
+
+  /// 校验 dy_auth 是否真的有效（供账号页即时反馈）
+  ///
+  /// 不要用 www 站点的登录态接口判断 cookie（会误报），唯一可靠的验收标准
+  /// 是直接请求 getH5Play：能拿到「被降档」的证据 → 明确无效；
+  /// `expire > 0` → 明确无效；「无后缀 + expire=0」在单档房间匿名也成立，
+  /// 属于无法判断，返回 null，由调用方措辞为「已保存」。
+  Future<bool?> verifyAuth(String roomId, {String args = ""}) async {
+    if (_normalizeAuthValue(dyAuth).isEmpty) {
+      return false;
+    }
+    try {
+      var result = await HttpClient.instance.postJson(
+        "https://www.douyu.com/lapi/live/getH5Play/$roomId",
+        data: "$args&cdn=$kPreferredCdn&rate=0",
+        header: _playHeaders(roomId),
+        formUrlEncoded: true,
+      );
+      final data = result is Map ? result["data"] : null;
+      if (data is! Map) {
+        return null;
+      }
+      final rtmpLive = data["rtmp_live"]?.toString() ?? "";
+      if (rtmpLive.isEmpty) {
+        return null;
+      }
+      final url = rtmpLive;
+      final fileName = Uri.decodeComponent(url.split('?').first.split('/').last);
+      final suffix = RegExp(r'_(\d+)\.(?:flv|m3u8)$').firstMatch(fileName);
+      if (suffix != null) {
+        return false;
+      }
+      final expire = _parseExpire(url);
+      if (expire != null && expire > 0) {
+        return false;
+      }
+      final rates = data["multirates"];
+      if (rates is List && rates.length > 1) {
+        return true;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<String> getPlayUrl(
@@ -232,23 +415,34 @@ class DouyuSite implements LiveSite {
     int rate,
     String cdn,
   ) async {
-    args += "&cdn=$cdn&rate=$rate";
-    var result = await HttpClient.instance.postJson(
-      "https://www.douyu.com/lapi/live/getH5Play/$roomId",
-      data: args,
-      header: {..._requestHeaders, 'referer': 'https://www.douyu.com/$roomId'},
-      formUrlEncoded: true,
-    );
+    try {
+      var result = await HttpClient.instance.postJson(
+        "https://www.douyu.com/lapi/live/getH5Play/$roomId",
+        data: "$args&cdn=$cdn&rate=$rate",
+        header: _playHeaders(roomId),
+        formUrlEncoded: true,
+      );
 
-    final errorCode = result is Map ? result["error"] : null;
-    final data = result is Map ? result["data"] : null;
-    if (errorCode != null && errorCode.toString() != "0") {
-      throw CoreError("斗鱼播放地址请求失败：${result["msg"] ?? errorCode}");
+      final errorCode = result is Map ? result["error"] : null;
+      final data = result is Map ? result["data"] : null;
+      if (errorCode != null && errorCode.toString() != "0") {
+        return "";
+      }
+      if (data is! Map ||
+          data["rtmp_url"] == null ||
+          data["rtmp_live"] == null) {
+        return "";
+      }
+      final rtmpUrl = data["rtmp_url"].toString();
+      final rtmpLive = data["rtmp_live"].toString();
+      if (rtmpUrl.isEmpty || rtmpLive.isEmpty) {
+        return "";
+      }
+      return "$rtmpUrl/${HtmlUnescape().convert(rtmpLive)}";
+    } catch (_) {
+      // 单条 CDN 失败不能拖垮其它线路，交给上层汇总判断
+      return "";
     }
-    if (data is! Map || data["rtmp_url"] == null || data["rtmp_live"] == null) {
-      throw CoreError("斗鱼返回了无效的播放地址");
-    }
-    return "${data["rtmp_url"]}/${HtmlUnescape().convert(data["rtmp_live"].toString())}";
   }
 
   Future<String> _getFreshPlayArgs(String roomId, {Object? fallback}) async {
