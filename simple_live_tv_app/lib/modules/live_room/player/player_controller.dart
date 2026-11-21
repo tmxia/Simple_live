@@ -19,9 +19,12 @@ mixin PlayerMixin {
 
   /// 播放器实例
   late var player = Player(
-    configuration: const PlayerConfiguration(
+    configuration: PlayerConfiguration(
       title: "Simple Live Player",
-      bufferSize: 64 * 1024 * 1024, 
+      // 缓冲区大小接设置项（此前 TV 写死 64MB，设置里的“缓冲大小”是死开关）
+      bufferSize: AppSettingsController.instance.playerBufferSize.value *
+          1024 *
+          1024,
     ),
   );
 
@@ -64,13 +67,21 @@ mixin PlayerMixin {
   /// 视频控制器
   late var videoController = VideoController(
     player,
-    configuration: VideoControllerConfiguration(
-      enableHardwareAcceleration:
-          AppSettingsController.instance.hardwareDecode.value,
-      androidAttachSurfaceAfterVideoParameters: false,
-      width: 1920,
-      height: 1080,
-    ),
+    configuration: AppSettingsController.instance.playerCompatMode.value
+        ? const VideoControllerConfiguration(
+            vo: 'mediacodec_embed',
+            hwdec: 'mediacodec',
+            androidAttachSurfaceAfterVideoParameters: false,
+            width: 1920,
+            height: 1080,
+          )
+        : VideoControllerConfiguration(
+            enableHardwareAcceleration:
+                AppSettingsController.instance.hardwareDecode.value,
+            androidAttachSurfaceAfterVideoParameters: false,
+            width: 1920,
+            height: 1080,
+          ),
   );
 }
 mixin PlayerStateMixin on PlayerMixin {
@@ -348,21 +359,31 @@ void disposeStream() {
           await oldPlayer.dispose();
           
           player = Player(
-            configuration: const PlayerConfiguration(
+            configuration: PlayerConfiguration(
               title: "Simple Live Player",
-              bufferSize: 64 * 1024 * 1024,
+              bufferSize: AppSettingsController.instance.playerBufferSize.value *
+                  1024 *
+                  1024,
             ),
           );
           
           videoController = VideoController(
             player,
-            configuration: VideoControllerConfiguration(
-              enableHardwareAcceleration:
-                  AppSettingsController.instance.hardwareDecode.value,
-              androidAttachSurfaceAfterVideoParameters: false,
-              width: 1920,
-              height: 1080,
-            ),
+            configuration: AppSettingsController.instance.playerCompatMode.value
+                ? const VideoControllerConfiguration(
+                    vo: 'mediacodec_embed',
+                    hwdec: 'mediacodec',
+                    androidAttachSurfaceAfterVideoParameters: false,
+                    width: 1920,
+                    height: 1080,
+                  )
+                : VideoControllerConfiguration(
+                    enableHardwareAcceleration:
+                        AppSettingsController.instance.hardwareDecode.value,
+                    androidAttachSurfaceAfterVideoParameters: false,
+                    width: 1920,
+                    height: 1080,
+                  ),
           );
           
           initStream();

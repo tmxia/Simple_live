@@ -89,6 +89,7 @@ Future initServices() async {
     boxName: "TVLocalStorage",
     shieldBoxName: "TVDanmuShield",
   );
+  PlayerMemory.instance.lane = PlayerMemory.laneTv;
   await Get.put(DBService()).init();
   
   Get.put(AppSettingsController());

@@ -34,6 +34,10 @@ mixin PlayerMixin {
       logLevel: AppSettingsController.instance.logEnable.value
           ? MPVLogLevel.info
           : MPVLogLevel.error,
+      // 缓冲区大小接设置项（此前设置里的“缓冲大小”没有任何代码引用）
+      bufferSize: AppSettingsController.instance.playerBufferSize.value *
+          1024 *
+          1024,
     ),
   );
 
@@ -823,6 +827,7 @@ class PlayerController extends BaseController
             configuration: PlayerConfiguration(
               title: "Simple Live Player",
               logLevel: AppSettingsController.instance.logEnable.value ? MPVLogLevel.info : MPVLogLevel.error,
+              bufferSize: AppSettingsController.instance.playerBufferSize.value * 1024 * 1024,
             ),
           );
           

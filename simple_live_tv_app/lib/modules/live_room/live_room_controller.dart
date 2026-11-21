@@ -190,8 +190,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       qualites.value = playQualites;
 
       
-      var lastQualityName = LocalStorageService.instance.getValue<String>(
-          LocalStorageService.kLastQuality, "");
+      var lastQualityName = PlayerMemory.instance.lastQuality(site.id);
       int lastIdx = -1;
       if (lastQualityName.isNotEmpty) {
         lastIdx = playQualites.indexWhere((q) => q.quality == lastQualityName);
@@ -255,7 +254,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     }
     playUrls.value = playUrl.urls;
     playHeaders = playUrl.headers;
-    currentLineIndex = 0;
+    // 恢复该站点上次使用的线路（两端各自记忆，互不影响）
+    var lastLine = PlayerMemory.instance.lastLine(site.id);
+    currentLineIndex = lastLine < playUrl.urls.length ? lastLine : 0;
     currentLineInfo.value = "线路${currentLineIndex + 1}";
     
     mediaErrorRetryCount = 0;
@@ -264,6 +265,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   void changePlayLine(int index) {
     currentLineIndex = index;
+    PlayerMemory.instance.setLastLine(site.id, index);
     
     mediaErrorRetryCount = 0;
     setPlayer();

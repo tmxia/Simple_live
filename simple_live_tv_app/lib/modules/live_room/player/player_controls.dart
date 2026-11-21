@@ -576,10 +576,8 @@ void showPlayerSettings(LiveRoomController controller) {
                       controller.playReplayItem(controller.qualites[e]);
                     } else {
                       final qualityName = controller.qualites[e].quality;
-                      await LocalStorageService.instance.setValue(
-                        LocalStorageService.kLastQuality,
-                        qualityName,
-                      );
+                      await PlayerMemory.instance
+                          .setLastQuality(controller.site.id, qualityName);
                       controller.getPlayUrl();
                     }
                   },

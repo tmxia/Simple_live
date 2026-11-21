@@ -140,6 +140,7 @@ Future initServices() async {
   
   Log.d("Init LocalStorage Service");
   await Get.put(LocalStorageService()).init();
+  PlayerMemory.instance.lane = PlayerMemory.laneApp;
   await Get.put(DBService()).init();
   
   Get.put(AppSettingsController());

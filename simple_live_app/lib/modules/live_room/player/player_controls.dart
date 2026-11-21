@@ -729,7 +729,8 @@ void showQualitesInfo(LiveRoomController controller) {
               controller.player.open(Media(url));
               controller.player.play();
             } else {
-              await LocalStorageService.instance.setValue(LocalStorageService.kLastQuality, item.quality);
+              await PlayerMemory.instance
+                  .setLastQuality(controller.site.id, item.quality);
               controller.currentQuality = i;
               controller.getPlayUrl();
             }

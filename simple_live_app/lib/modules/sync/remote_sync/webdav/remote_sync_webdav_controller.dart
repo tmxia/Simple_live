@@ -152,6 +152,13 @@ class RemoteSyncWebDAVController extends GetxController {
       }
 
       
+      // 播放参数（清晰度/线路/解码开关等）单独存一份，带端标识
+      final prefBytes = utf8.encode(
+        jsonEncode(PlayerMemory.instance.toBackupJson()),
+      );
+      archive.addFile(
+          ArchiveFile('SimpleLive_player_prefs.json', prefBytes.length, prefBytes));
+
       final metaData = {
         "timestamp": DateTime.now().toIso8601String(),
         "device": "simple_live_app",
@@ -315,11 +322,19 @@ class RemoteSyncWebDAVController extends GetxController {
         }
       }
 
-      
+      var prefsFromOtherLane = false;
       for (final file in archive) {
         final fileContent = file.content as List<int>;
         final jsonStr = utf8.decode(fileContent);
         final dynamic decodedRaw = jsonDecode(jsonStr);
+
+        if (file.name == 'SimpleLive_player_prefs.json') {
+          // 手机与电视的播放能力不同，另一端的播放偏好不覆盖本机
+          if (decodedRaw is Map<String, dynamic>) {
+            prefsFromOtherLane = !PlayerMemory.instance.applyBackupJson(decodedRaw);
+          }
+          continue;
+        }
 
         if (file.name == 'SimpleLive_accounts.json') {
           final accounts = decodedRaw as Map<String, dynamic>;
@@ -379,7 +394,9 @@ class RemoteSyncWebDAVController extends GetxController {
       lastRecoverTime.value = Utils.parseTime(DateTime.now());
       LocalStorageService.instance.setValue(kWebDAVLastRecoverTime, DateTime.now().millisecondsSinceEpoch);
       SmartDialog.dismiss(status: SmartStatus.loading);
-      SmartDialog.showToast("已恢复，重启应用后生效");
+      SmartDialog.showToast(prefsFromOtherLane
+          ? "已恢复，重启应用后生效（播放参数来自另一端，已跳过）"
+          : "已恢复，重启应用后生效");
     } catch (e, st) {
       Log.e("WebDAV Recovery Error: $e", st);
       SmartDialog.dismiss(status: SmartStatus.loading);
