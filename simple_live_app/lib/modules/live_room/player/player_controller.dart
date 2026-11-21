@@ -18,6 +18,7 @@ import 'package:simple_live_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_app/app/controller/base_controller.dart';
 import 'package:simple_live_app/app/custom_throttle.dart';
 import 'package:simple_live_app/app/log.dart';
+import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
@@ -33,6 +34,17 @@ mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
   RxInt videoRefreshTick = 0.obs;
   GlobalKey globalDanmuKey = GlobalKey();
+
+  /// 视频信息浮层开关（左上角，每秒读一次 mpv 属性）
+  RxBool showVideoStats = LocalStorageService.instance
+      .getValue(LocalStorageService.kShowVideoStats, false)
+      .obs;
+
+  void setShowVideoStats(bool value) {
+    showVideoStats.value = value;
+    LocalStorageService.instance
+        .setValue(LocalStorageService.kShowVideoStats, value);
+  }
 
   /// 播放器实例
   late var player = Player(

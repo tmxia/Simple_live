@@ -65,6 +65,9 @@ class LocalStorageService extends GetxService {
   /// 硬件解码
   static const String kHardwareDecode = "HardwareDecode";
 
+  /// 播放器左上角视频信息浮层开关（app / TV 各自记忆）
+  static const String kShowVideoStats = "ShowVideoStats";
+
   /// 聊天区文字大小
   static const String kChatTextSize = "ChatTextSize";
 

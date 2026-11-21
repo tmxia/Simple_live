@@ -10,6 +10,7 @@ import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_tv_app/modules/live_room/live_room_controller.dart';
 import 'package:simple_live_tv_app/modules/live_room/player/player_controls.dart';
+import 'package:simple_live_tv_app/widgets/video_stats_overlay.dart';
 
 class LiveRoomPage extends GetView<LiveRoomController> {
   const LiveRoomPage({Key? key}) : super(key: key);
@@ -154,6 +155,15 @@ class LiveRoomPage extends GetView<LiveRoomController> {
           ),
         );
       }),
+        Positioned(
+          left: 16,
+          top: 16,
+          child: Obx(
+            () => controller.showVideoStats.value
+                ? VideoStatsOverlay(player: controller.player)
+                : const SizedBox.shrink(),
+          ),
+        ),
         Obx(
           () => Visibility(
             visible:

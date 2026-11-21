@@ -425,6 +425,17 @@ Widget buildControls(bool isPortrait, VideoState videoState, LiveRoomController 
                         ),
                       ),
                     ),
+                    IconButton(
+                      onPressed: () => controller
+                          .setShowVideoStats(!controller.showVideoStats.value),
+                      icon: Icon(
+                        Remix.information_line,
+                        color: controller.showVideoStats.value
+                            ? Colors.lightBlueAccent
+                            : Colors.white,
+                        size: 22,
+                      ),
+                    ),
                     Offstage(
                       offstage: isPortrait,
                       child: TextButton(

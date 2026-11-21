@@ -489,6 +489,7 @@ void showPlayerSettings(LiveRoomController controller) {
   var qualityFoucsNode = AppFocusNode();
   var lineFoucsNode = AppFocusNode();
   var scaleFoucsNode = AppFocusNode();
+  var statsFoucsNode = AppFocusNode();
   var danmakuFoucsNode = AppFocusNode();
   var danmakuSizeFoucsNode = AppFocusNode();
   var danmakuSpeedFoucsNode = AppFocusNode();
@@ -626,6 +627,20 @@ void showPlayerSettings(LiveRoomController controller) {
                   onChanged: (e) {
                     AppSettingsController.instance.setScaleMode(e);
                     controller.updateScaleMode();
+                  },
+                ),
+              ),
+              AppStyle.vGap24,
+              Obx(
+                () => SettingsItemWidget(
+                  foucsNode: statsFoucsNode,
+                  autofocus: statsFoucsNode.isFoucsed.value,
+                  title: "视频信息",
+                  items: const {false: "关", true: "开"},
+                  value: controller.showVideoStats.value,
+                  onChanged: (e) {
+                    Get.back();
+                    controller.setShowVideoStats(e);
                   },
                 ),
               ),

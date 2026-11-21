@@ -21,6 +21,7 @@ import 'package:simple_live_app/widgets/desktop_refresh_button.dart';
 import 'package:simple_live_app/widgets/follow_user_item.dart';
 import 'package:simple_live_app/widgets/keep_alive_wrapper.dart';
 import 'package:simple_live_app/widgets/net_image.dart';
+import 'package:simple_live_app/widgets/video_stats_overlay.dart';
 import 'package:simple_live_app/widgets/settings/settings_action.dart';
 import 'package:simple_live_app/widgets/settings/settings_card.dart';
 import 'package:simple_live_app/widgets/settings/settings_number.dart';
@@ -286,6 +287,17 @@ class LiveRoomPage extends GetView<LiveRoomController> {
           );
 
         }),
+        Positioned(
+          left: 8,
+          top: 8,
+          child: SafeArea(
+            child: Obx(
+              () => controller.showVideoStats.value
+                  ? VideoStatsOverlay(player: controller.player)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
         Obx(
           () => Visibility(
             visible: !controller.liveStatus.value,
