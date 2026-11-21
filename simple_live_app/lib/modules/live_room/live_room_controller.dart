@@ -432,21 +432,30 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     }
     playUrls.value = playUrl.urls;
     playHeaders = playUrl.headers;
+    _urlFetchedAt = DateTime.now();
+    _failedLines.clear();
+    _recoveryRounds = 0;
     // 恢复该站点上次使用的线路（两端各自记忆，互不影响）
     var lastLine = PlayerMemory.instance.lastLine(site.id);
     currentLineIndex = lastLine < playUrl.urls.length ? lastLine : 0;
     currentLineInfo.value = "线路${currentLineIndex + 1}";
-    
+
     mediaErrorRetryCount = 0;
     initPlaylist();
+    _scheduleUrlRefresh();
   }
 
   void changePlayLine(int index) {
     currentLineIndex = index;
     PlayerMemory.instance.setLastLine(site.id, index);
-    
+    // 用户主动选的线路，允许重试此前被判失败的同一线路
+    if (index >= 0 && index < playUrls.length) {
+      _failedLines.remove(_lineIdentity(playUrls[index]));
+    }
+
     mediaErrorRetryCount = 0;
     setPlayer();
+    _scheduleUrlRefresh();
   }
 
   
@@ -563,6 +572,8 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   @override
   void mediaEnd() async {
     super.mediaEnd();
+    // 直播真正结束（主播下播/回放播完）后不再续期
+    _cancelUrlRefresh();
     if (mediaErrorRetryCount < 2) {
       Log.d("播放结束，尝试第${mediaErrorRetryCount + 1}次刷新");
       if (mediaErrorRetryCount == 1) {
@@ -587,29 +598,182 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   }
 
   int mediaErrorRetryCount = 0;
+
+  /// 最近一次成功取到播放地址的时间（按 URL 里的 expire 安排主动续期）
+  DateTime? _urlFetchedAt;
+
+  /// 主动续期定时器
+  Timer? _urlRefreshTimer;
+
+  /// 本轮取流中已被证实失效的线路标识，避免在坏线路上来回打转
+  final Set<String> _failedLines = <String>{};
+
+  /// 重新取流的轮次，防止无限循环
+  int _recoveryRounds = 0;
+
+  /// 是否正在重新取流（避免续期定时器与 mediaError 并发取流）
+  bool _refreshingPlayUrl = false;
+
+  bool _disposed = false;
+
+  /// 线路标识：只取 host + path。
+  /// CDN 的鉴权参数每次取流都会变，直接比整条 URL 会把同一条线路当成新线路。
+  String _lineIdentity(String url) {
+    var uri = Uri.tryParse(url);
+    if (uri == null) {
+      return url;
+    }
+    return "${uri.host}${uri.path}";
+  }
+
+  /// 按当前线路 URL 的 expire 时间，安排到期前主动续期。
+  /// 未知格式（拿不到有效期）不猜，交给 mediaError 的故障恢复处理。
+  void _scheduleUrlRefresh() {
+    _urlRefreshTimer?.cancel();
+    _urlRefreshTimer = null;
+    if (_disposed || isVod.value || playUrls.isEmpty || currentLineIndex < 0) {
+      return;
+    }
+    var index = currentLineIndex.clamp(0, playUrls.length - 1);
+    var fetchedAt = _urlFetchedAt ?? DateTime.now();
+    var expiresAt = LiveStreamExpiry.expiresAt(
+      playUrls[index],
+      siteId: site.id,
+      fetchedAt: fetchedAt,
+    );
+    if (expiresAt == null) {
+      return;
+    }
+    var lifetime = expiresAt.difference(fetchedAt);
+    // 已过期或参数损坏的交给真实故障恢复，不构造「每 20 秒换源」的死循环
+    if (lifetime <= Duration.zero) {
+      Log.d("直播地址期限已过，不安排周期性换源");
+      return;
+    }
+    var lead = Duration(seconds: (lifetime.inSeconds ~/ 2).clamp(30, 300));
+    var delay = expiresAt.subtract(lead).difference(DateTime.now());
+    if (delay <= Duration.zero) {
+      return;
+    }
+    Log.d("安排 ${delay.inSeconds} 秒后主动续期，平台=${site.id}，线路${index + 1}");
+    _urlRefreshTimer = Timer(delay, () {
+      if (_disposed || isVod.value) {
+        return;
+      }
+      Log.d("主动续期触发");
+      _refreshPlayUrlAndResume();
+    });
+  }
+
+  void _cancelUrlRefresh() {
+    _urlRefreshTimer?.cancel();
+    _urlRefreshTimer = null;
+  }
+
+  /// 保持当前画质与线路重新取流并续播。
+  /// 失败不弹窗：交给 mediaError 的线路轮换处理。
+  Future<void> _refreshPlayUrlAndResume() async {
+    if (_refreshingPlayUrl || _disposed) {
+      return;
+    }
+    if (detail.value == null || qualites.isEmpty || currentQuality < 0) {
+      return;
+    }
+    _refreshingPlayUrl = true;
+    var keepLine = currentLineIndex;
+    try {
+      var playUrl = await site.liveSite.getPlayUrls(
+        detail: detail.value!,
+        quality: qualites[currentQuality],
+      );
+      if (playUrl.urls.isEmpty) {
+        throw CoreError("重新取流返回空地址");
+      }
+      playUrls.value = playUrl.urls;
+      playHeaders = playUrl.headers;
+      _urlFetchedAt = DateTime.now();
+      _failedLines.clear();
+      currentLineIndex = keepLine >= 0 && keepLine < playUrl.urls.length
+          ? keepLine
+          : 0;
+      currentLineInfo.value = "线路${currentLineIndex + 1}";
+      mediaErrorRetryCount = 0;
+      initPlaylist();
+      _scheduleUrlRefresh();
+    } catch (e) {
+      Log.d("主动续期失败: $e");
+    } finally {
+      _refreshingPlayUrl = false;
+    }
+  }
+
   @override
   void mediaError(String error) async {
-    super.mediaEnd();
-    if (mediaErrorRetryCount < 2) {
-      Log.d("播放失败，尝试第${mediaErrorRetryCount + 1}次刷新");
-      if (mediaErrorRetryCount == 1) {
-        
-        await Future.delayed(const Duration(seconds: 1));
-      }
-      mediaErrorRetryCount += 1;
-      
+    if (_disposed) {
+      return;
+    }
+    // 解码器/音频设备类错误重试没有意义，直接透出
+    if (error.contains('audio device') || error.contains('Could not open codec')) {
+      return;
+    }
+    _cancelUrlRefresh();
+    if (playUrls.isEmpty || isVod.value) {
+      super.mediaEnd();
+      return;
+    }
+
+    // 1) 同一条线路先重试 1 次，覆盖网络抖动
+    if (mediaErrorRetryCount < 1) {
+      mediaErrorRetryCount++;
+      Log.d("播放失败，当前线路重试 1 次: $error");
+      await Future.delayed(const Duration(milliseconds: 800));
       setPlayer();
       return;
     }
 
-    if (playUrls.length - 1 == currentLineIndex) {
-      errorMsg.value = "播放失败";
-      SmartDialog.showToast("播放失败:$error");
-    } else {
-      
-      
-      changePlayLine(currentLineIndex + 1);
+    // 2) 记下失败线路，轮换到「未失败且未过期」的线路
+    var currentIndex = currentLineIndex.clamp(0, playUrls.length - 1);
+    _failedLines.add(_lineIdentity(playUrls[currentIndex]));
+    var fetchedAt = _urlFetchedAt ?? DateTime.now();
+    var next = -1;
+    for (var step = 1; step <= playUrls.length; step++) {
+      var index = (currentIndex + step) % playUrls.length;
+      var url = playUrls[index];
+      if (_failedLines.contains(_lineIdentity(url))) {
+        continue;
+      }
+      var expiresAt = LiveStreamExpiry.expiresAt(
+        url,
+        siteId: site.id,
+        fetchedAt: fetchedAt,
+      );
+      if (expiresAt != null && !expiresAt.isAfter(DateTime.now())) {
+        continue;
+      }
+      next = index;
+      break;
     }
+    if (next >= 0) {
+      mediaErrorRetryCount = 0;
+      Log.d("自动切换到线路${next + 1}");
+      currentLineIndex = next;
+      currentLineInfo.value = "线路${next + 1}";
+      setPlayer();
+      _scheduleUrlRefresh();
+      return;
+    }
+
+    // 3) 当前画质所有线路都失效 → 重新取流，最多 2 轮
+    _recoveryRounds++;
+    if (_recoveryRounds > 2) {
+      mediaErrorRetryCount = 0;
+      errorMsg.value = "当前画质的所有线路均不可用，请刷新或切换清晰度";
+      SmartDialog.showToast("播放失败：当前清晰度所有线路均不可用");
+      return;
+    }
+    mediaErrorRetryCount = 0;
+    Log.d("当前画质线路全部失效，重新取流（第$_recoveryRounds轮）");
+    await _refreshPlayUrlAndResume();
   }
 
   /// 读取SC
@@ -1183,7 +1347,9 @@ ${error?.stackTrace}''');
 
     liveDanmaku.stop();
     danmakuController = null;
-    _liveDurationTimer?.cancel(); 
+    _liveDurationTimer?.cancel();
+    _disposed = true;
+    _cancelUrlRefresh();
     super.onClose();
   }
 }

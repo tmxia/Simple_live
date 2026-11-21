@@ -55,6 +55,11 @@ class WebScoketUtils {
   int reconnectTime = 0;
   Timer? reconnectTimer;
 
+  /// 是否已被主动关闭（切房间/退出页面）
+  /// 主动关闭后任何 onDone / onError 都不能再拉起重连，
+  /// 否则会出现「退出直播间后旧弹幕连接仍在后台重连、消息串到新房间」。
+  bool _manuallyClosed = false;
+
   /// 最大重连次数
   int maxReconnectTime = 5;
 
@@ -70,7 +75,11 @@ class WebScoketUtils {
   }
 
   void connect({bool retry = false}) async {
-    close();
+    // 这里是「我要连接」，不是「用户关掉了」，不能走 close()，
+    // 否则会把 _manuallyClosed 置 true 并取消正在等待的重连定时器，
+    // 导致重连彻底失效。
+    _manuallyClosed = false;
+    _reset();
     final urls = retry ? _connectUrls.skip(1).toList() : _connectUrls;
     Object? lastError;
     StackTrace? lastStackTrace;
@@ -98,6 +107,9 @@ class WebScoketUtils {
   /// 连接完成
   void ready() {
     status = SocketStatus.connected;
+    // 连接成功后要把重连计数与定时器清掉，否则 next 轮故障会从上一次的次数继续
+    reconnectTimer?.cancel();
+    reconnectTimer = null;
 
     streamSubscription = webSocket?.stream.listen(
       (data) => receiveMessage(data),
@@ -110,6 +122,8 @@ class WebScoketUtils {
   }
 
   void initHeartBeat() {
+    // 旧心跳 timer 必须先取消，否则多次重连会叠加多份心跳
+    heartBeatTimer?.cancel();
     heartBeatTimer = Timer.periodic(Duration(milliseconds: heartBeatTime), (
       timer,
     ) {
@@ -124,16 +138,20 @@ class WebScoketUtils {
   }
 
   void onError(e, s) {
+    if (_manuallyClosed) {
+      return;
+    }
     status = SocketStatus.failed;
     onClose?.call(e.toString());
+    _scheduleReconnect();
   }
 
   void onDone() {
-    if (status == SocketStatus.closed) {
+    if (_manuallyClosed) {
       return;
     }
     onReconnect?.call();
-    reconnect();
+    _scheduleReconnect();
   }
 
   void sendMessage(dynamic message) {
@@ -142,33 +160,55 @@ class WebScoketUtils {
     }
   }
 
-  void close() {
+  /// 释放当前连接资源，但不改变「是否主动关闭」的语义
+  void _reset() {
     status = SocketStatus.closed;
 
     streamSubscription?.cancel();
+    streamSubscription = null;
 
     reconnectTimer?.cancel();
     reconnectTimer = null;
 
-    webSocket?.sink.close();
+    try {
+      webSocket?.sink.close();
+    } catch (_) {
+      // 已关闭的连接再 close 会抛异常，忽略即可
+    }
+    webSocket = null;
 
     heartBeatTimer?.cancel();
     heartBeatTimer = null;
   }
 
-  void reconnect() {
-    status = SocketStatus.closed;
-    if (reconnectTime < maxReconnectTime) {
-      reconnectTime++;
-      reconnectTimer ??= Timer.periodic(Duration(seconds: 5), (timer) {
-        connect();
-      });
-    } else {
-      onClose?.call("重连超过最大次数，与服务器断开连接");
-      reconnectTimer?.cancel();
-      reconnectTimer = null;
-      close();
+  /// 主动关闭：之后不再自动重连
+  void close() {
+    _manuallyClosed = true;
+    _reset();
+  }
+
+  /// 排队一次重连（单次定时器；重连成功后由 [ready] 清零）。
+  /// 旧实现用 Timer.periodic，连接成功后仍会周期性再连，导致多连接叠加。
+  void _scheduleReconnect() {
+    if (_manuallyClosed) {
       return;
     }
+    reconnectTimer?.cancel();
+    reconnectTimer = null;
+    status = SocketStatus.closed;
+    if (reconnectTime >= maxReconnectTime) {
+      onClose?.call("重连超过最大次数，与服务器断开连接");
+      _manuallyClosed = true;
+      _reset();
+      return;
+    }
+    reconnectTime++;
+    reconnectTimer = Timer(const Duration(seconds: 5), () {
+      reconnectTimer = null;
+      connect();
+    });
   }
+
+  /// 兼容旧调用点
+  void reconnect() => _scheduleReconnect();
 }
