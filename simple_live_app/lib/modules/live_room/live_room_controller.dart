@@ -541,8 +541,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     final mediaList =
         tunedUrls.map((url) => Media(url, httpHeaders: playHeaders)).toList();
 
-    await initializePlayer();
-    await applyStreamTuning(mediaList.map((e) => e.uri).toList());
+    await prepareStream(mediaList.map((e) => e.uri).toList());
     _pictureGuard.opened();
 
     await player.open(Playlist(mediaList));
@@ -642,7 +641,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   Future<String> _maybeRelay(String url) async {
     if (isVod.value ||
         site.id != Constant.kBiliBili ||
-        !isHlsLiveUrl(url) ||
+        !StreamTuning.isHlsUrl(url) ||
         HlsSegmentRelay.isRelayUrl(url)) {
       return url;
     }

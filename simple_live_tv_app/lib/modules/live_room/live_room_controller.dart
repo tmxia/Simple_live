@@ -389,8 +389,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     var url = playUrls[currentLineIndex];
     url = await _maybeRelay(url);
 
-    await initializePlayer();
-    await applyStreamTuning(url);
+    await prepareStream([url]);
     _pictureGuard.opened();
 
     await player.open(
@@ -411,7 +410,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   Future<String> _maybeRelay(String url) async {
     if (isVod.value ||
         site.id != Constant.kBiliBili ||
-        !isHlsLiveUrl(url) ||
+        !StreamTuning.isHlsUrl(url) ||
         HlsSegmentRelay.isRelayUrl(url)) {
       return url;
     }

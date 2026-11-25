@@ -13,13 +13,6 @@ import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
-/// 是否是 HLS 直播地址（.m3u8 结尾或带查询参数）
-bool isHlsLiveUrl(String url) {
-  final lower = url.toLowerCase();
-  final path = Uri.tryParse(lower)?.path ?? lower;
-  return path.endsWith('.m3u8') || lower.contains('.m3u8?');
-}
-
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
   RxInt videoRefreshTick = 0.obs;
@@ -37,113 +30,83 @@ mixin PlayerMixin {
   }
 
   /// 播放器实例
-  late var player = Player(
-    configuration: PlayerConfiguration(
-      title: "Simple Live Player",
-      // 缓冲区大小接设置项（此前 TV 写死 64MB，设置里的“缓冲大小”是死开关）
-      bufferSize: AppSettingsController.instance.playerBufferSize.value *
-          1024 *
-          1024,
-    ),
-  );
+  late var player = _createPlayer();
 
-  /// 初始化播放器并设置 mpv 属性
+  Player _createPlayer() {
+    return Player(
+      configuration: PlayerConfiguration(
+        title: "Simple Live Player",
+        // 缓冲区大小接设置项（此前 TV 写死 64MB，设置里的“缓冲大小”是死开关）
+        bufferSize: AppSettingsController.instance.playerBufferSize.value *
+            1024 *
+            1024,
+      ),
+    );
+  }
+
+  /// 初始化播放器并写通用 mpv 属性
   ///
-  /// 这套参数与移动端保持一致：移动端当初为直播流掉帧/起播慢专门调过，
-  /// TV 端此前缺了 mediacodec-surface-iostream（Android 零拷贝直贴 Surface）、
-  /// back-bytes 上限、探测大小与 cache-pause-wait，导致大码率直播（抖音原画）
-  /// 更容易掉帧。
+  /// 参数表在 shared 的 StreamTuning 里只有一份，两端写同一张表：
+  /// TV 端此前缺过 mediacodec-surface-iostream（Android 零拷贝直贴 Surface）、
+  /// back-bytes 上限、探测大小与 cache-pause-wait，大码率直播（抖音原画）
+  /// 更容易掉帧——这类「一端有、一端没有」的走样以后不会再出现。
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
 
-    if (Platform.isAndroid) {
-      await pp.setProperty('force-seekable', 'yes');
-    }
-
-    var lowEnd = Platform.numberOfProcessors <= 4;
-    var maxBytes = lowEnd ? 48 * 1024 * 1024 : 96 * 1024 * 1024;
-    var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
-    await pp.setProperty('demuxer-max-bytes', '$maxBytes');
-    await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
-    await pp.setProperty('demuxer-readahead-secs', '8');
-    await pp.setProperty('cache', 'yes');
-    await pp.setProperty('cache-secs', '30');
-    await pp.setProperty('cache-pause-wait', '5');
-    await pp.setProperty('network-timeout', '15');
-    // 音频留余量 + 切换不关设备（与移动端一致），起播与切线路不再有声音一顿或爆音
-    await pp.setProperty('audio-buffer', '0.5');
-    await pp.setProperty('audio-stream-silence', 'yes');
-    await pp.setProperty('hwdec-software-fallback', '1');
-    await pp.setProperty('framedrop', 'decoder+vo');
-    await pp.setProperty('demuxer-lavf-probesize', '2097152');
-    await pp.setProperty('demuxer-lavf-analyzeduration', '2');
-    // 与移动端一致：缓存只放内存（默认写临时文件且只增不减），并限制协议白名单
-    await pp.setProperty('cache-on-disk', 'no');
-    await pp.setProperty(
-      'demuxer-lavf-o',
-      'protocol_whitelist=[tcp,tls,http,https,crypto]',
-    );
-    if (Platform.isAndroid) {
-      // mediacodec 直接输出到 Surface，少一次 GPU 纹理拷贝，低端盒子更稳
-      await pp.setProperty('mediacodec-surface-iostream', 'yes');
-    }
-    if (lowEnd) {
-      await pp.setProperty('vd-lavc-threads', '2');
+    for (var e in StreamTuning.baseOptions(
+      lowEnd: Platform.numberOfProcessors <= 4,
+      android: Platform.isAndroid,
+    ).entries) {
+      await pp.setProperty(e.key, e.value);
     }
   }
 
   /// 按直播流类型补参数（打开新地址前调用）：HLS 先攒缓冲再播，FLV 直接开播
-  Future<void> applyStreamTuning(String url) async {
+  Future<void> applyStreamTuning(List<String> urls) async {
     try {
       if (player.platform is! NativePlayer) {
         return;
       }
       final pp = player.platform as NativePlayer;
-      final hls = isHlsLiveUrl(url);
-      await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
-      // 卡顿后缓冲多久再继续播：统一 5 秒（连续流压太小会一来抖动就反复转圈）
-      await pp.setProperty('cache-pause-wait', '5');
-      // 连续流多预读 2 秒；HLS 8 秒（约两段）
-      await pp.setProperty('demuxer-readahead-secs', hls ? '8' : '10');
-      // 连续流网络超时短一些，真断了尽快重连
-      await pp.setProperty('network-timeout', hls ? '15' : '10');
-      // demuxer-lavf-o 是单个字符串属性，必须整串写（否则会把协议白名单覆盖掉）
-      await pp.setProperty(
-        'demuxer-lavf-o',
-        [
-          'seg_max_retry=${hls ? 10 : 5}',
-          if (hls) 'max_reload=20',
-          if (hls) 'http_persistent=1',
-          if (hls) 'http_multiple=1',
-          'strict=experimental',
-          'allowed_extensions=ALL',
-          'protocol_whitelist=[tcp,tls,http,https,crypto]',
-        ].join(','),
-      );
+      final hls = StreamTuning.isHls(urls);
+      for (var e in StreamTuning.streamOptions(hls: hls).entries) {
+        await pp.setProperty(e.key, e.value);
+      }
     } catch (e) {
       Log.logPrint("applyStreamTuning: $e");
     }
   }
 
+  /// 打开一路直播流前的固定顺序：先建参数，再按流类型补参数。
+  /// 两端入口都走这里，避免哪天顺序被改反（反了 HLS 首播会先出一帧再卡住）
+  Future<void> prepareStream(List<String> urls) async {
+    await initializePlayer();
+    await applyStreamTuning(urls);
+  }
+
   /// 视频控制器
-  late var videoController = VideoController(
-    player,
-    configuration: AppSettingsController.instance.playerCompatMode.value
-        ? const VideoControllerConfiguration(
-            vo: 'mediacodec_embed',
-            hwdec: 'mediacodec',
-            androidAttachSurfaceAfterVideoParameters: false,
-            width: 1920,
-            height: 1080,
-          )
-        : VideoControllerConfiguration(
-            enableHardwareAcceleration:
-                AppSettingsController.instance.hardwareDecode.value,
-            androidAttachSurfaceAfterVideoParameters: false,
-            width: 1920,
-            height: 1080,
-          ),
-  );
+  late var videoController = _createVideoController();
+
+  VideoController _createVideoController() {
+    return VideoController(
+      player,
+      configuration: AppSettingsController.instance.playerCompatMode.value
+          ? const VideoControllerConfiguration(
+              vo: 'mediacodec_embed',
+              hwdec: 'mediacodec',
+              androidAttachSurfaceAfterVideoParameters: false,
+              width: 1920,
+              height: 1080,
+            )
+          : VideoControllerConfiguration(
+              enableHardwareAcceleration:
+                  AppSettingsController.instance.hardwareDecode.value,
+              androidAttachSurfaceAfterVideoParameters: false,
+              width: 1920,
+              height: 1080,
+            ),
+    );
+  }
 }
 mixin PlayerStateMixin on PlayerMixin {
   /// 是否显示弹幕
@@ -420,45 +383,23 @@ void disposeStream() {
           final currentUri = player.state.playlist.medias.first.uri;
           Log.w("检测到直播流中断: $error, 准备彻底重建底层渲染器: $currentUri");
           
+          // 播放列表先留一份：Media 对象里带着 httpHeaders（B 站 referer、
+          // 虎牙 Cookie），重建后要原样播回去，否则平台侧 403 就是一直转圈
+          final oldPlaylist = player.state.playlist;
           final oldPlayer = player;
           disposeStream();
           
           await oldPlayer.stop();
           await oldPlayer.dispose();
           
-          player = Player(
-            configuration: PlayerConfiguration(
-              title: "Simple Live Player",
-              bufferSize: AppSettingsController.instance.playerBufferSize.value *
-                  1024 *
-                  1024,
-            ),
-          );
-          
-          videoController = VideoController(
-            player,
-            configuration: AppSettingsController.instance.playerCompatMode.value
-                ? const VideoControllerConfiguration(
-                    vo: 'mediacodec_embed',
-                    hwdec: 'mediacodec',
-                    androidAttachSurfaceAfterVideoParameters: false,
-                    width: 1920,
-                    height: 1080,
-                  )
-                : VideoControllerConfiguration(
-                    enableHardwareAcceleration:
-                        AppSettingsController.instance.hardwareDecode.value,
-                    androidAttachSurfaceAfterVideoParameters: false,
-                    width: 1920,
-                    height: 1080,
-                  ),
-          );
+          player = _createPlayer();
+          videoController = _createVideoController();
           
           initStream();
           update(); 
           
-          await initializePlayer();
-          await player.open(Media(currentUri));
+          await prepareStream(oldPlaylist.medias.map((e) => e.uri).toList());
+          await player.open(Playlist(oldPlaylist.medias));
           Log.i("底层播放器硬重建成功");
         }
       } catch (e) {

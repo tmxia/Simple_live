@@ -23,13 +23,6 @@ import 'package:simple_live_app/app/utils.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 import 'package:window_manager/window_manager.dart';
 
-/// 是否是 HLS 直播地址（.m3u8 结尾或带查询参数）
-bool isHlsLiveUrl(String url) {
-  final lower = url.toLowerCase();
-  final path = Uri.tryParse(lower)?.path ?? lower;
-  return path.endsWith('.m3u8') || lower.contains('.m3u8?');
-}
-
 mixin PlayerMixin {
   GlobalKey<VideoState> globalPlayerKey = GlobalKey<VideoState>();
   RxInt videoRefreshTick = 0.obs;
@@ -47,20 +40,24 @@ mixin PlayerMixin {
   }
 
   /// 播放器实例
-  late var player = Player(
-    configuration: PlayerConfiguration(
-      title: "Simple Live Player",
-      logLevel: AppSettingsController.instance.logEnable.value
-          ? MPVLogLevel.info
-          : MPVLogLevel.error,
-      // 缓冲区大小接设置项（此前设置里的“缓冲大小”没有任何代码引用）
-      bufferSize: AppSettingsController.instance.playerBufferSize.value *
-          1024 *
-          1024,
-    ),
-  );
+  late var player = _createPlayer();
 
-  /// 初始化播放器并设置 ao 参数
+  Player _createPlayer() {
+    return Player(
+      configuration: PlayerConfiguration(
+        title: "Simple Live Player",
+        logLevel: AppSettingsController.instance.logEnable.value
+            ? MPVLogLevel.info
+            : MPVLogLevel.error,
+        // 缓冲区大小接设置项（此前设置里的“缓冲大小”没有任何代码引用）
+        bufferSize: AppSettingsController.instance.playerBufferSize.value *
+            1024 *
+            1024,
+      ),
+    );
+  }
+
+  /// 初始化播放器：先写端内自定的输出参数（ao），再按 shared 的参数表写通用项
   Future<void> initializePlayer() async {
     var pp = player.platform as NativePlayer;
     
@@ -73,47 +70,11 @@ mixin PlayerMixin {
       }
     }
     
-    if(Platform.isAndroid){
-      await pp.setProperty('force-seekable', 'yes');
-    }
-    
-    var lowEnd = Platform.numberOfProcessors <= 4;
-    var maxBytes = lowEnd ? 48 * 1024 * 1024 : 96 * 1024 * 1024;
-    var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
-    await pp.setProperty('demuxer-max-bytes', '$maxBytes');
-    await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
-    await pp.setProperty('demuxer-readahead-secs', '8');
-    await pp.setProperty('cache', 'yes');
-    await pp.setProperty('cache-secs', '30');
-    await pp.setProperty('cache-pause-wait', '5');
-    await pp.setProperty('network-timeout', '15');
-    // 音频单独留余量：media_kit 默认音频设备缓冲只有 0.2 秒，播放器缓存够、
-    // 音频设备先欠载时表现就是「画面在走、声音卡一下」，起播/切线路时尤其明显。
-    // 抬到 0.5 秒，代价是音画延迟多几百毫秒（直播可接受）。
-    await pp.setProperty('audio-buffer', '0.5');
-    // 音频流结束/切换时不关设备、改灌静音：切线路、切清晰度不会再有设备重开的爆音与停顿
-    await pp.setProperty('audio-stream-silence', 'yes');
-    
-    await pp.setProperty('hwdec-software-fallback', '1');
-    
-    await pp.setProperty('framedrop', 'decoder+vo');
-    await pp.setProperty('demuxer-lavf-probesize', '2097152');
-    await pp.setProperty('demuxer-lavf-analyzeduration', '2');
-    // 直播缓存只放内存。media_kit 默认把缓存写进临时文件，文件只增不减、
-    // 内存上限只管元数据，挂得越久占得越多（实测每路少占约 36 MB）。
-    await pp.setProperty('cache-on-disk', 'no');
-    // 协议白名单：播放地址来自平台接口与第三方订阅源，列表里若写 file:///、
-    // data:、concat: 之类，ffmpeg 直接拒绝，不会去读本机文件（已知的 HLS 攻击手法）。
-    // 直播只需要 http(s) 及底层 tcp/tls，AES-128 加密的 HLS 还要 crypto。
-    await pp.setProperty(
-      'demuxer-lavf-o',
-      'protocol_whitelist=[tcp,tls,http,https,crypto]',
-    );
-    if (Platform.isAndroid) {
-      await pp.setProperty('mediacodec-surface-iostream', 'yes');
-    }
-    if (lowEnd) {
-      await pp.setProperty('vd-lavc-threads', '2');
+    for (var e in StreamTuning.baseOptions(
+      lowEnd: Platform.numberOfProcessors <= 4,
+      android: Platform.isAndroid,
+    ).entries) {
+      await pp.setProperty(e.key, e.value);
     }
   }
 
@@ -127,55 +88,45 @@ mixin PlayerMixin {
         return;
       }
       final pp = player.platform as NativePlayer;
-      final hls = urls.isNotEmpty && urls.every(isHlsLiveUrl);
-      await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
-      // 卡顿后缓冲多久再继续播：统一 5 秒。HLS 按段下载，等两段左右再播；
-      // FLV 连续流压到 1~2 秒时一点抖动就用光，表现是刚起播就反复转圈
-      await pp.setProperty('cache-pause-wait', '5');
-      // 预读：连续流多留 2 秒，个别频道码率起伏大，预读太短会隔一阵欠载一次
-      await pp.setProperty('demuxer-readahead-secs', hls ? '8' : '10');
-      // 网络超时：HLS 分段/列表跨境慢，放宽到 15 秒；连续流短一些，真断了尽快重连
-      await pp.setProperty('network-timeout', hls ? '15' : '10');
-      // 分段与列表失败时多重试几次。注意 demuxer-lavf-o 是**单个字符串属性**，
-      // 只能整串写，不能分多次 setProperty，否则后写的会把前面的覆盖掉，
-      // 协议白名单也就一起丢了
-      await pp.setProperty(
-        'demuxer-lavf-o',
-        [
-          'seg_max_retry=${hls ? 10 : 5}',
-          if (hls) 'max_reload=20',
-          if (hls) 'http_persistent=1',
-          if (hls) 'http_multiple=1',
-          'strict=experimental',
-          // 本机中转的分段地址没有扩展名，不给这个 fmp4 分段会被拒
-          'allowed_extensions=ALL',
-          'protocol_whitelist=[tcp,tls,http,https,crypto]',
-        ].join(','),
-      );
+      final hls = StreamTuning.isHls(urls);
+      for (var e in StreamTuning.streamOptions(hls: hls).entries) {
+        await pp.setProperty(e.key, e.value);
+      }
     } catch (e) {
       Log.logPrint("applyStreamTuning: $e");
     }
   }
 
+  /// 打开一路直播流前的固定顺序：先建参数，再按流类型补参数。
+  /// 两端入口都走这里，避免哪天顺序被改反（反了 HLS 首播会先出一帧再卡住）
+  Future<void> prepareStream(List<String> urls) async {
+    await initializePlayer();
+    await applyStreamTuning(urls);
+  }
+
   /// 视频控制器
-  late var videoController = VideoController(
-    player,
-    configuration: AppSettingsController.instance.customPlayerOutput.value
-        ? VideoControllerConfiguration(
-            vo: AppSettingsController.instance.videoOutputDriver.value,
-            hwdec: AppSettingsController.instance.videoHardwareDecoder.value,
-          )
-        : AppSettingsController.instance.playerCompatMode.value
-            ? const VideoControllerConfiguration(
-                vo: 'mediacodec_embed',
-                hwdec: 'mediacodec',
-              )
-            : VideoControllerConfiguration(
-                enableHardwareAcceleration:
-                    AppSettingsController.instance.hardwareDecode.value,
-                androidAttachSurfaceAfterVideoParameters: false,
-              ),
-  );
+  late var videoController = _createVideoController();
+
+  VideoController _createVideoController() {
+    return VideoController(
+      player,
+      configuration: AppSettingsController.instance.customPlayerOutput.value
+          ? VideoControllerConfiguration(
+              vo: AppSettingsController.instance.videoOutputDriver.value,
+              hwdec: AppSettingsController.instance.videoHardwareDecoder.value,
+            )
+          : AppSettingsController.instance.playerCompatMode.value
+              ? const VideoControllerConfiguration(
+                  vo: 'mediacodec_embed',
+                  hwdec: 'mediacodec',
+                )
+              : VideoControllerConfiguration(
+                  enableHardwareAcceleration:
+                      AppSettingsController.instance.hardwareDecode.value,
+                  androidAttachSurfaceAfterVideoParameters: false,
+                ),
+    );
+  }
 }
 
 mixin PlayerStateMixin on PlayerMixin {
@@ -892,44 +843,24 @@ class PlayerController extends BaseController
           final currentUri = player.state.playlist.medias.first.uri;
           Log.w("检测到直播流中断: $error, 准备彻底重建底层渲染器: $currentUri");
           
+          // 播放列表先留一份：Media 对象里带着 httpHeaders（B 站 referer、
+          // 虎牙 Cookie），重建后要原样播回去，否则平台侧 403 就是一直转圈
+          final oldPlaylist = player.state.playlist;
           final oldPlayer = player;
           disposeStream();
           
           await oldPlayer.stop();
           await oldPlayer.dispose();
           
-          player = Player(
-            configuration: PlayerConfiguration(
-              title: "Simple Live Player",
-              logLevel: AppSettingsController.instance.logEnable.value ? MPVLogLevel.info : MPVLogLevel.error,
-              bufferSize: AppSettingsController.instance.playerBufferSize.value * 1024 * 1024,
-            ),
-          );
-          
-          videoController = VideoController(
-            player,
-            configuration: AppSettingsController.instance.customPlayerOutput.value
-                ? VideoControllerConfiguration(
-                    vo: AppSettingsController.instance.videoOutputDriver.value,
-                    hwdec: AppSettingsController.instance.videoHardwareDecoder.value,
-                  )
-                : AppSettingsController.instance.playerCompatMode.value
-                    ? const VideoControllerConfiguration(
-                        vo: 'mediacodec_embed',
-                        hwdec: 'mediacodec',
-                      )
-                    : VideoControllerConfiguration(
-                        enableHardwareAcceleration: AppSettingsController.instance.hardwareDecode.value,
-                        androidAttachSurfaceAfterVideoParameters: false,
-                      ),
-          );
+          player = _createPlayer();
+          videoController = _createVideoController();
           
           initStream();
           player.setVolume(AppSettingsController.instance.playerVolume.value);
           update(); 
           
-          await initializePlayer();
-          await player.open(Media(currentUri));
+          await prepareStream(oldPlaylist.medias.map((e) => e.uri).toList());
+          await player.open(Playlist(oldPlaylist.medias));
           Log.i("底层播放器硬重建成功");
         }
       } catch (e) {
