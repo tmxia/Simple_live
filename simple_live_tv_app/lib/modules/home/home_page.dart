@@ -9,6 +9,7 @@ import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/modules/home/home_controller.dart';
+import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
@@ -206,6 +207,10 @@ class HomePage extends GetView<HomeController> {
                         () => AnchorCard(
                           face: item.face,
                           name: item.userName,
+                          // 首页「我的关注」是主入口：备注以数据库为准，
+                          // 否则 WebDAV/局域网同步写完仍是旧对象、胶囊不出现
+                          note: DBService.instance.followBox.get(item.id)?.note ??
+                              item.note,
                           siteId: item.siteId,
                           liveStatus: item.liveStatus.value,
                           roomId: item.roomId,
