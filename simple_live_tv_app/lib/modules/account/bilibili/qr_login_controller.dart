@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:get/get.dart';
+import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/log.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
@@ -15,6 +16,9 @@ enum QRStatus {
 }
 
 class BiliBiliQRLoginController extends GetxController {
+  /// 页内焦点节点固定持有：每帧新建会在 Obx 刷新时把遥控器焦点丢掉
+  var backFocusNode = AppFocusNode();
+  var retryFocusNode = AppFocusNode();
   @override
   void onInit() {
     loadQRCode();

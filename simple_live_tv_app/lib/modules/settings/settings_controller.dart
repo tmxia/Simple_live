@@ -9,6 +9,10 @@ import 'package:simple_live_tv_app/services/bilibili_account_service.dart';
 import 'package:simple_live_tv_app/services/douyu_account_service.dart';
 import 'package:simple_live_tv_app/services/douyin_account_service.dart';
 import 'package:simple_live_tv_app/services/huya_account_service.dart';
+import 'package:simple_live_tv_app/app/app_style.dart';
+import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
+
+enum _DouyuAction { reinput, clear }
 
 class SettingsController extends BaseController
     with GetTickerProviderStateMixin {
@@ -88,23 +92,21 @@ class SettingsController extends BaseController
   ///
   /// 已填写的交互顺序：先问「重新填写」，选否则再问「清除」，
   /// 避免遥控器误触一下就把票据清掉。
+  /// 斗鱼：TV 端没有网页登录，票据来源是手机同步或手动粘贴。
+  ///
+  /// 已填写时给三选一：重新填写 / 清除授权 / 取消，默认聚焦「取消」。
+  /// 以前是「先问重填、点取消再问清除」的两段式，遥控器上点取消反而会进入
+  /// 清除流程，像"取消没生效"，这里改成一次说清、取消就是什么都不做。
   void douyuTap() async {
     final service = DouyuAccountService.instance;
     if (service.hasAuth.value) {
-      final reinput = await Utils.showAlertDialog(
-        "当前已保存斗鱼授权（dy_auth）。\n选择「确定」重新填写，选择「取消」保持现状或清除。",
-        title: "斗鱼账号",
-        confirm: "重新填写",
-      );
-      if (!reinput) {
-        final clear = await Utils.showAlertDialog(
-          "确定要清除本机保存的斗鱼授权吗？\n清除后画质与播放地址有效期将恢复匿名默认。",
-          title: "清除授权",
-        );
-        if (clear) {
-          service.clearAuth();
-          SmartDialog.showToast("已清除斗鱼授权");
-        }
+      final action = await _showDouyuChoice();
+      if (action == null) {
+        return;
+      }
+      if (action == _DouyuAction.clear) {
+        service.clearAuth();
+        SmartDialog.showToast("已清除斗鱼授权");
         return;
       }
     }
@@ -123,6 +125,53 @@ class SettingsController extends BaseController
     }
     service.setAuth(value);
     SmartDialog.showToast("斗鱼授权已保存");
+  }
+
+  Future<_DouyuAction?> _showDouyuChoice() async {
+    final cancel = AppFocusNode();
+    final reinput = AppFocusNode();
+    final clear = AppFocusNode();
+    var result = await Get.dialog<_DouyuAction>(
+      AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
+        backgroundColor: Get.theme.cardColor,
+        surfaceTintColor: Colors.transparent,
+        title: Text("斗鱼账号", style: AppStyle.titleStyleWhite),
+        content: Text(
+          "本机已保存斗鱼授权（dy_auth）。\n可以重新填写，或清除授权（清除后画质与地址有效期恢复匿名默认）。",
+          style: AppStyle.textStyleWhite,
+        ),
+        actions: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              HighlightButton(
+                focusNode: cancel,
+                autofocus: true,
+                iconData: Icons.close,
+                text: "取消",
+                onTap: () => Get.back<_DouyuAction>(result: null),
+              ),
+              AppStyle.hGap16,
+              HighlightButton(
+                focusNode: reinput,
+                iconData: Icons.edit,
+                text: "重新填写",
+                onTap: () => Get.back<_DouyuAction>(result: _DouyuAction.reinput),
+              ),
+              AppStyle.hGap16,
+              HighlightButton(
+                focusNode: clear,
+                iconData: Icons.delete_outline,
+                text: "清除授权",
+                onTap: () => Get.back<_DouyuAction>(result: _DouyuAction.clear),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    return result;
   }
 
   /// TV 端没有网页登录能力，用与斗鱼一致的一行提示（不再弹 Material 弹窗）

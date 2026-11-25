@@ -51,12 +51,31 @@ class HighlightWidget extends StatefulWidget {
 class _HighlightWidgetState extends State<HighlightWidget> {
   Timer? _longPressTimer;
   bool _longPressTriggered = false;
+  // 只有本次「按下」被我们受理过，才处理配对的「抬起」。
+  // 弹窗在按下的瞬间就响应并关闭，焦点随即回到本按钮，同一个按键的抬起
+  // 会落回这里：以前会再触发一次 onTap（表现为弹窗又被调起、点"取消"没反应）。
+  bool _enterDown = false;
+
+  void _resetKeyState() {
+    _longPressTimer?.cancel();
+    _longPressTriggered = false;
+    _enterDown = false;
+  }
+
+  @override
+  void didUpdateWidget(covariant HighlightWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focusNode != widget.focusNode) {
+      _resetKeyState();
+    }
+  }
 
   void _handleKeyEvent(KeyEvent e) {
     if (e is KeyDownEvent) {
       if (e.logicalKey == LogicalKeyboardKey.enter ||
           e.logicalKey == LogicalKeyboardKey.select ||
           e.logicalKey == LogicalKeyboardKey.space) {
+        _enterDown = true;
         _longPressTriggered = false;
         _longPressTimer?.cancel();
         _longPressTimer = Timer(const Duration(milliseconds: 600), () {
@@ -68,10 +87,16 @@ class _HighlightWidgetState extends State<HighlightWidget> {
       if (e.logicalKey == LogicalKeyboardKey.enter ||
           e.logicalKey == LogicalKeyboardKey.select ||
           e.logicalKey == LogicalKeyboardKey.space) {
+        // 没有对应的按下（例如弹窗刚关闭、焦点才回到本按钮）就不触发
+        if (!_enterDown) {
+          return;
+        }
+        _enterDown = false;
         _longPressTimer?.cancel();
         if (!_longPressTriggered) {
           widget.onTap?.call();
         }
+        _longPressTriggered = false;
       }
     }
   }
@@ -89,7 +114,12 @@ class _HighlightWidgetState extends State<HighlightWidget> {
       child: Focus(
         focusNode: widget.focusNode,
         autofocus: widget.autofocus,
-        onFocusChange: widget.onFocusChange,
+        onFocusChange: (hasFocus) {
+          if (!hasFocus) {
+            _resetKeyState();
+          }
+          widget.onFocusChange?.call(hasFocus);
+        },
         onKeyEvent: (node, e) {
           if (e is KeyDownEvent) {
             if (e.logicalKey == LogicalKeyboardKey.arrowRight) {

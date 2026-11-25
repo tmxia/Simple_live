@@ -5,7 +5,9 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
+import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
 
 class Utils {
   static late PackageInfo packageInfo;
@@ -74,20 +76,26 @@ class Utils {
                 ),
         ),
         actions: [
-          TextButton(
-            onPressed: (() => Get.back(result: false)),
-            child: Text(
-              cancel.isEmpty ? "取消" : cancel,
-              style: AppStyle.textStyleWhite,
-            ),
-          ),
-          TextButton(
-            autofocus: true,
-            onPressed: (() => Get.back(result: true)),
-            child: Text(
-              confirm.isEmpty ? "确定" : confirm,
-              style: AppStyle.textStyleWhite,
-            ),
+          // 遥控器上一个箭头就得能到达"取消"，所以按钮用端内的 HighlightButton，
+          // 而不是 Material TextButton（焦点遍历在电视上不可靠），并且默认聚焦取消。
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              HighlightButton(
+                focusNode: AppFocusNode(),
+                autofocus: true,
+                iconData: Icons.close,
+                text: cancel.isEmpty ? "取消" : cancel,
+                onTap: () => Get.back(result: false),
+              ),
+              AppStyle.hGap24,
+              HighlightButton(
+                focusNode: AppFocusNode(),
+                iconData: Icons.check,
+                text: confirm.isEmpty ? "确定" : confirm,
+                onTap: () => Get.back(result: true),
+              ),
+            ],
           ),
           ...?actions,
         ],
@@ -266,27 +274,52 @@ class Utils {
   }) async {
     final TextEditingController textEditingController =
         TextEditingController(text: content);
-    var result = await Get.dialog(
+    var result = await Get.dialog<String?>(
       AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: textEditingController,
-          autofocus: true,
-          maxLines: 1,
-          decoration: InputDecoration(
-            border: const OutlineInputBorder(),
-            hintText: hintText ?? title,
-          ),
+        shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
+        backgroundColor: Get.theme.cardColor,
+        surfaceTintColor: Colors.transparent,
+        title: Text(title, style: AppStyle.titleStyleWhite),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: textEditingController,
+              autofocus: true,
+              maxLines: 1,
+              decoration: InputDecoration(
+                border: const OutlineInputBorder(),
+                hintText: hintText ?? title,
+              ),
+            ),
+            AppStyle.vGap24,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // 取消放在前面并默认聚焦：遥控器上左移一格就能退，不会误提交
+                HighlightButton(
+                  focusNode: AppFocusNode(),
+                  autofocus: true,
+                  iconData: Icons.close,
+                  text: "取消",
+                  onTap: () => Get.back<String?>(result: null),
+                ),
+                AppStyle.hGap24,
+                HighlightButton(
+                  focusNode: AppFocusNode(),
+                  iconData: Icons.check,
+                  text: "确定",
+                  onTap: () =>
+                      Get.back<String?>(result: textEditingController.text),
+                ),
+              ],
+            ),
+          ],
         ),
-        actions: [
-          TextButton(onPressed: Get.back, child: const Text("取消")),
-          TextButton(
-            onPressed: () => Get.back(result: textEditingController.text),
-            child: const Text("确定"),
-          ),
-        ],
       ),
     );
-    return result;
+    // 返回空串等同未输入，调用方判断 null 或空都视为取消
+    return (result == null || result.isEmpty) ? null : result;
   }
 }
