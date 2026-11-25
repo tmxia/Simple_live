@@ -495,6 +495,7 @@ void showPlayerSettings(LiveRoomController controller) {
   var danmakuSpeedFoucsNode = AppFocusNode();
   var danmakuAreaFoucsNode = AppFocusNode();
   var danmakuOpacityFoucsNode = AppFocusNode();
+  var noteFocusNode = AppFocusNode();
   Utils.showSystemRightDialog(
     width: 800.w,
     child: Column(
@@ -543,6 +544,24 @@ void showPlayerSettings(LiveRoomController controller) {
                       controller.removeFollowUser();
                     }
                   },
+                ),
+              ),
+              // 频道备注：紧紧跟在「关注用户」下面，遥控器下移一格就到
+              AppStyle.vGap24,
+              Obx(
+                () => Padding(
+                  padding: AppStyle.edgeInsetsH20,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: HighlightButton(
+                      focusNode: noteFocusNode,
+                      iconData: Icons.edit_note,
+                      text: controller.followNote.value.isEmpty
+                          ? "编辑备注"
+                          : "编辑备注：${controller.followNote.value}",
+                      onTap: () => controller.editFollowNote(),
+                    ),
+                  ),
                 ),
               ),
 

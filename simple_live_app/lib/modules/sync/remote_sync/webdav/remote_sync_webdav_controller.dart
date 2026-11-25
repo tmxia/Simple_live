@@ -125,6 +125,9 @@ class RemoteSyncWebDAVController extends GetxController {
         
         if (remoteTime.millisecondsSinceEpoch > localMax + 60000) {
           // 覆盖云端备份属于不可逆操作，保留一次轻量确认（单行文案）
+          // 确认框会被 loading 遮罩压住点不到，先把遮罩收掉再弹
+          SmartDialog.dismiss(status: SmartStatus.loading);
+          loadingMsg.value = "等待确认是否覆盖云端备份...";
           final confirm = await Get.dialog<bool>(
             AlertDialog(
               content: Text("云端备份更新（${Utils.parseTime(remoteTime)}），继续上传会覆盖它"),
@@ -136,9 +139,12 @@ class RemoteSyncWebDAVController extends GetxController {
           );
           if (confirm != true) {
             isLoading.value = false;
+            loadingMsg.value = "";
             SmartDialog.dismiss(status: SmartStatus.loading);
             return;
           }
+          SmartDialog.showLoading(msg: "上传中...");
+          loadingMsg.value = "正在上传备份...";
         }
       }
 
@@ -326,6 +332,13 @@ class RemoteSyncWebDAVController extends GetxController {
             "本地共 ${localFollowCount}关注/${localHistoryCount}历史，"
             "云端共 ${remoteFollowCount}关注/${remoteHistoryCount}历史");
 
+        // 对比已经算完：先撤掉"恢复中..."的遮罩，否则确认框被它压住，
+        // 屏幕上只剩一个转圈、点什么都点不到（用户看到的就是"一直卡在对比"）
+        SmartDialog.dismiss(status: SmartStatus.loading);
+        loadingMsg.value = "";
+        // 等待用户点确认期间不算"处理中"：否则页面上还挂着一行转圈，观感就是卡住
+        isLoading.value = false;
+
         final confirm = await Get.dialog<bool>(
           AlertDialog(
             content: const Text("云端与本地数据不一致，恢复会完全覆盖本地"),
@@ -341,9 +354,14 @@ class RemoteSyncWebDAVController extends GetxController {
 
         if (confirm != true) {
           isLoading.value = false;
+          loadingMsg.value = "";
           SmartDialog.dismiss(status: SmartStatus.loading);
           return;
         }
+        // 用户确认要覆盖，再挂上遮罩继续写入
+        isLoading.value = true;
+        SmartDialog.showLoading(msg: "正在覆盖本地数据...");
+        loadingMsg.value = "正在覆盖本地数据...";
       }
 
       var prefsFromOtherLane = false;

@@ -271,6 +271,7 @@ class Utils {
     String content, {
     String title = '',
     String? hintText,
+    int? maxLength,
   }) async {
     final TextEditingController textEditingController =
         TextEditingController(text: content);
@@ -288,6 +289,7 @@ class Utils {
               controller: textEditingController,
               autofocus: true,
               maxLines: 1,
+              maxLength: maxLength,
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
                 hintText: hintText ?? title,

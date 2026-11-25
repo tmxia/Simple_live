@@ -40,6 +40,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   Rx<LiveRoomDetail?> detail = Rx<LiveRoomDetail?>(null);
   var online = 0.obs;
   var followed = false.obs;
+
+  /// 当前房间的关注备注（TV 只在这里编辑，列表/侧栏只读展示）
+  var followNote = "".obs;
   var liveStatus = false.obs;
 
   /// 清晰度数据
@@ -90,6 +93,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     initTimer();
     showDanmakuState.value = AppSettingsController.instance.danmuEnable.value;
     followed.value = DBService.instance.getFollowExist("${site.id}_$roomId");
+    loadFollowNote();
 
     loadData();
 
@@ -668,6 +672,42 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     DBService.instance.addOrUpdateHistory(history);
   }
 
+  /// 读当前房间的关注备注（未关注为空）
+  void loadFollowNote() {
+    followNote.value =
+        DBService.instance.followBox.get("${site.id}_$roomId")?.note ?? "";
+  }
+
+  /// 编辑备注：入口在菜单键打开的设置里「关注用户」下面
+  Future<void> editFollowNote() async {
+    final id = "${site.id}_$roomId";
+    final follow = DBService.instance.followBox.get(id);
+    if (follow == null) {
+      SmartDialog.showToast("先在设置里打开「关注用户」，才能加备注");
+      return;
+    }
+    final input = await Utils.showEditTextDialog(
+      follow.note,
+      title: "频道备注",
+      hintText: "例如：主机游戏 / 深夜杂谈（最多 12 字）",
+      maxLength: 12,
+    );
+    if (input == null) {
+      return;
+    }
+    final text = input.trim();
+    if (text == follow.note) {
+      return;
+    }
+    follow.note = text;
+    await DBService.instance.followBox.put(id, follow);
+    loadFollowNote();
+    // 关注页与侧栏共用同一批对象，重算一遍避免还显示旧备注
+    FollowUserService.instance.refreshData();
+    EventBus.instance.emit(Constant.kUpdateFollow, id);
+    SmartDialog.showToast(text.isEmpty ? "已清除备注" : "备注已保存");
+  }
+
   /// 关注用户
   void followUser() {
     if (detail.value == null) {
@@ -685,6 +725,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       ),
     );
     followed.value = true;
+    loadFollowNote();
     EventBus.instance.emit(Constant.kUpdateFollow, id);
     SmartDialog.showToast("已关注");
   }

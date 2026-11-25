@@ -421,7 +421,9 @@ class FollowService extends GetxService {
             "face": item.face,
             "addTime": item.addTime.toString(),
             "tag": item.tag,
-            "isPinned": item.isPinned
+            "isPinned": item.isPinned,
+            // 备注要跟着走，否则导出/导入文本或文件后再同步就丢了
+            "note": item.note,
           },
         )
         .toList();
