@@ -78,15 +78,21 @@ mixin PlayerMixin {
     }
     
     var lowEnd = Platform.numberOfProcessors <= 4;
-    var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
+    var maxBytes = lowEnd ? 48 * 1024 * 1024 : 96 * 1024 * 1024;
     var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
     await pp.setProperty('demuxer-max-bytes', '$maxBytes');
     await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
     await pp.setProperty('demuxer-readahead-secs', '8');
     await pp.setProperty('cache', 'yes');
     await pp.setProperty('cache-secs', '30');
-    await pp.setProperty('cache-pause-wait', '4');
+    await pp.setProperty('cache-pause-wait', '5');
     await pp.setProperty('network-timeout', '15');
+    // 音频单独留余量：media_kit 默认音频设备缓冲只有 0.2 秒，播放器缓存够、
+    // 音频设备先欠载时表现就是「画面在走、声音卡一下」，起播/切线路时尤其明显。
+    // 抬到 0.5 秒，代价是音画延迟多几百毫秒（直播可接受）。
+    await pp.setProperty('audio-buffer', '0.5');
+    // 音频流结束/切换时不关设备、改灌静音：切线路、切清晰度不会再有设备重开的爆音与停顿
+    await pp.setProperty('audio-stream-silence', 'yes');
     
     await pp.setProperty('hwdec-software-fallback', '1');
     
@@ -114,7 +120,7 @@ mixin PlayerMixin {
   /// 按直播流类型补参数（打开新地址前调用）
   ///
   /// HLS 按整段（2~6 秒）下载：先攒够 `cache-pause-wait` 再播，避免「一开播卡一下」；
-  /// FLV 是连续流，保持直接开播、尽快出画面。
+  /// FLV 是连续流，直接开播、尽快出画面，但缓冲与预读留足余量。
   Future<void> applyStreamTuning(List<String> urls) async {
     try {
       if (player.platform is! NativePlayer) {
@@ -123,9 +129,13 @@ mixin PlayerMixin {
       final pp = player.platform as NativePlayer;
       final hls = urls.isNotEmpty && urls.every(isHlsLiveUrl);
       await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
-      // 卡顿后缓冲多久再继续播：HLS 按段下载，等两段左右（约 5 秒）再播，
-      // 一次停得稍久，之后不再一卡一卡；FLV 连续流保持原来的 4 秒
-      await pp.setProperty('cache-pause-wait', hls ? '5' : '4');
+      // 卡顿后缓冲多久再继续播：统一 5 秒。HLS 按段下载，等两段左右再播；
+      // FLV 连续流压到 1~2 秒时一点抖动就用光，表现是刚起播就反复转圈
+      await pp.setProperty('cache-pause-wait', '5');
+      // 预读：连续流多留 2 秒，个别频道码率起伏大，预读太短会隔一阵欠载一次
+      await pp.setProperty('demuxer-readahead-secs', hls ? '8' : '10');
+      // 网络超时：HLS 分段/列表跨境慢，放宽到 15 秒；连续流短一些，真断了尽快重连
+      await pp.setProperty('network-timeout', hls ? '15' : '10');
       // 分段与列表失败时多重试几次。注意 demuxer-lavf-o 是**单个字符串属性**，
       // 只能整串写，不能分多次 setProperty，否则后写的会把前面的覆盖掉，
       // 协议白名单也就一起丢了

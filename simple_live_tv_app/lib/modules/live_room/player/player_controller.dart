@@ -61,15 +61,18 @@ mixin PlayerMixin {
     }
 
     var lowEnd = Platform.numberOfProcessors <= 4;
-    var maxBytes = lowEnd ? 40 * 1024 * 1024 : 96 * 1024 * 1024;
+    var maxBytes = lowEnd ? 48 * 1024 * 1024 : 96 * 1024 * 1024;
     var maxBackBytes = lowEnd ? 5 * 1024 * 1024 : 8 * 1024 * 1024;
     await pp.setProperty('demuxer-max-bytes', '$maxBytes');
     await pp.setProperty('demuxer-max-back-bytes', '$maxBackBytes');
     await pp.setProperty('demuxer-readahead-secs', '8');
     await pp.setProperty('cache', 'yes');
     await pp.setProperty('cache-secs', '30');
-    await pp.setProperty('cache-pause-wait', '4');
+    await pp.setProperty('cache-pause-wait', '5');
     await pp.setProperty('network-timeout', '15');
+    // 音频留余量 + 切换不关设备（与移动端一致），起播与切线路不再有声音一顿或爆音
+    await pp.setProperty('audio-buffer', '0.5');
+    await pp.setProperty('audio-stream-silence', 'yes');
     await pp.setProperty('hwdec-software-fallback', '1');
     await pp.setProperty('framedrop', 'decoder+vo');
     await pp.setProperty('demuxer-lavf-probesize', '2097152');
@@ -98,8 +101,12 @@ mixin PlayerMixin {
       final pp = player.platform as NativePlayer;
       final hls = isHlsLiveUrl(url);
       await pp.setProperty('cache-pause-initial', hls ? 'yes' : 'no');
-      // 卡顿后缓冲多久再继续播：HLS 等两段左右再播，FLV 保持原来的值
-      await pp.setProperty('cache-pause-wait', hls ? '5' : '4');
+      // 卡顿后缓冲多久再继续播：统一 5 秒（连续流压太小会一来抖动就反复转圈）
+      await pp.setProperty('cache-pause-wait', '5');
+      // 连续流多预读 2 秒；HLS 8 秒（约两段）
+      await pp.setProperty('demuxer-readahead-secs', hls ? '8' : '10');
+      // 连续流网络超时短一些，真断了尽快重连
+      await pp.setProperty('network-timeout', hls ? '15' : '10');
       // demuxer-lavf-o 是单个字符串属性，必须整串写（否则会把协议白名单覆盖掉）
       await pp.setProperty(
         'demuxer-lavf-o',
