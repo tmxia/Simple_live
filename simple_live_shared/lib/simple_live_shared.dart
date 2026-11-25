@@ -16,6 +16,8 @@ export 'src/requests/http_client.dart';
 export 'src/services/signalr_service.dart';
 export 'src/services/playback_stall_policy.dart';
 export 'src/services/stream_tuning.dart';
+export 'src/services/video_stats_reader.dart';
+export 'src/services/bili_hls_relay.dart';
 export 'src/services/stream_line_label.dart';
 export 'src/services/picture_guard.dart';
 export 'src/services/video_stats.dart';

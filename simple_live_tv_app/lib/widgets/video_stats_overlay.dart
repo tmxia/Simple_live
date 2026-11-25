@@ -1,12 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
-import 'package:simple_live_tv_app/app/log.dart';
 
 /// TV 端播放器左上角的视频信息（分辨率、帧率、码率、缓冲、下载速度…）。
-/// 只在显示时每秒读取一次 mpv 属性；不拦截遥控器焦点。位置由外层 Positioned 决定
+///
+/// 遥控器坐在三米外看，所以字号、内边距、背景不透明度都比手机端大一档；
+/// 不参与焦点遍历、不拦遥控器按键（IgnorePointer）。
+/// 「每秒读什么、怎么整理」在 shared 的 [VideoStatsReader] 里，与手机端共用。
 class VideoStatsOverlay extends StatefulWidget {
   final Player player;
 
@@ -27,66 +27,33 @@ class _VideoStatsOverlayState extends State<VideoStatsOverlay> {
     shadows: [Shadow(blurRadius: 2)],
   );
 
-  Timer? _timer;
+  late final VideoStatsReader _reader = VideoStatsReader(widget.player);
   bool _tickerEnabled = true;
-  bool _reading = false;
   List<(String, String)> _lines = VideoStats.lines(const <String, String>{});
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _tickerEnabled = TickerMode.valuesOf(context).enabled;
+    // TickerMode.of 返回本页是否允许动画：被盖住/退后台就停止读取
+    _tickerEnabled = TickerMode.of(context);
     _sync();
   }
 
   void _sync() {
-    var active = mounted && _tickerEnabled;
-    if (active && _timer == null) {
-      _read();
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _read());
-    } else if (!active && _timer != null) {
-      _timer!.cancel();
-      _timer = null;
-    }
-  }
-
-  Future<String> _property(NativePlayer native, String name) async {
-    try {
-      return await native.getProperty(name);
-    } catch (_) {
-      return "";
-    }
-  }
-
-  Future<void> _read() async {
-    var native = widget.player.platform;
-    if (_reading || native is! NativePlayer) {
-      return;
-    }
-    _reading = true;
-    try {
-      var values = await Future.wait(
-        VideoStats.properties.map((e) => _property(native, e)),
-      );
-      if (!mounted || _timer == null) {
-        return;
-      }
-      setState(() {
-        _lines = VideoStats.lines(
-          Map.fromIterables(VideoStats.properties, values),
-        );
+    if (mounted && _tickerEnabled) {
+      _reader.start((lines) {
+        if (mounted) {
+          setState(() => _lines = lines);
+        }
       });
-    } catch (e) {
-      Log.logPrint("视频信息读取失败：$e");
-    } finally {
-      _reading = false;
+    } else {
+      _reader.stop();
     }
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
-    _timer = null;
+    _reader.stop();
     super.dispose();
   }
 

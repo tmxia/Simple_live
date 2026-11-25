@@ -1,7 +1,7 @@
 name: simple_live_shared
 description: "App / TV 端共用组件与数据模型"
 publish_to: "none"
-version: 1.0.1
+version: 1.0.2
 
 environment:
   sdk: ">=3.0.5 <4.0.0"
@@ -13,6 +13,8 @@ dependencies:
   hive: 2.2.3
   get: ^4.7.2
   dio: ^5.9.0
+  # 只有 VideoStatsReader 用到：读 mpv 属性，不涉及任何界面
+  media_kit: ^1.2.1
   signalr_netcore: ^1.4.4
   simple_live_core:
     path: ../simple_live_core

@@ -405,25 +405,16 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   // ------- B 站 HLS 本机中转 -------
   DateTime? _relayRestartAt;
 
-  /// B 站 HLS 直播走本机中转：mpv 接管 IO 后 ffmpeg 会关掉长连接与并行下载，
-  /// 分段追不上码率、过期被跳过，缺参考帧导致持续花屏
-  Future<String> _maybeRelay(String url) async {
-    if (isVod.value ||
-        site.id != Constant.kBiliBili ||
-        !StreamTuning.isHlsUrl(url) ||
-        HlsSegmentRelay.isRelayUrl(url)) {
-      return url;
-    }
-    try {
-      return await HlsSegmentRelay.instance.register(
-        url,
-        headers: playHeaders,
-        onRestart: _onRelayRestart,
-      );
-    } catch (e) {
-      Log.logPrint("HLS 中转登记失败：$e");
-      return url;
-    }
+  /// B 站 HLS 直播走本机中转：判断与登记在 shared 的 BiliHlsRelay 里，
+  /// 「初始化分段变了要重开」的节流仍在本端（两端重开时机不同）
+  Future<String> _maybeRelay(String url) {
+    return BiliHlsRelay.maybeRegister(
+      url: url,
+      isVod: isVod.value,
+      isBiliBili: site.id == Constant.kBiliBili,
+      headers: playHeaders,
+      onRestart: _onRelayRestart,
+    );
   }
 
   /// 中转发现初始化分段换了（主播重新推流）：必须重新打开，
