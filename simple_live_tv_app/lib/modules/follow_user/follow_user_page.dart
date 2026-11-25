@@ -5,6 +5,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
+import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
@@ -69,7 +70,9 @@ class FollowUserPage extends StatelessWidget {
                   return AnchorCard(
                     face: item.face,
                     name: item.userName,
-                    note: item.note,
+                    // 以数据库为准：WebDAV/局域网同步写入后，页面里可能还是旧对象
+                    note: DBService.instance.followBox.get(item.id)?.note ??
+                        item.note,
                     siteId: item.siteId,
                     liveStatus: item.liveStatus.value,
                     roomId: item.roomId,

@@ -12,6 +12,7 @@ import 'package:simple_live_tv_app/app/controller/app_settings_controller.dart';
 import 'package:simple_live_tv_app/app/sites.dart';
 import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/modules/live_room/live_room_controller.dart';
+import 'package:simple_live_tv_app/services/db_service.dart';
 import 'package:simple_live_tv_app/services/follow_user_service.dart';
 import 'package:simple_live_tv_app/widgets/button/highlight_button.dart';
 import 'package:simple_live_tv_app/widgets/card/anchor_card.dart';
@@ -860,7 +861,8 @@ void showFollowUser(LiveRoomController controller) {
                     return AnchorCard(
                       face: item.face,
                       name: item.userName,
-                      note: item.note,
+                      note: DBService.instance.followBox.get(item.id)?.note ??
+                          item.note,
                       siteId: item.siteId,
                       liveStatus: item.liveStatus.value,
                       roomId: item.roomId,

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:archive/archive.dart';
 import 'package:flutter/material.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
+import 'package:simple_live_tv_app/app/constant.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
@@ -432,6 +433,8 @@ class RemoteSyncWebDAVController extends GetxController {
               await DBService.instance.followBox.put(item['id'], FollowUser.fromJson(item));
             } catch (e) { Log.e("Import Follow Error: $e", StackTrace.current); }
           }
+          // 恢复后立刻通知关注页重建，否则页面还拿着恢复前的旧对象（备注为空的）
+          EventBus.instance.emit(Constant.kUpdateFollow, 0);
         } else if (file.name == 'SimpleLive_tags.json') {
           DBService.instance.followTagBox.clear();
           for (final item in list) {

@@ -8,6 +8,7 @@ import 'package:simple_live_app/services/bilibili_account_service.dart';
 import 'package:simple_live_app/services/douyu_account_service.dart';
 import 'package:simple_live_app/services/douyin_account_service.dart';
 import 'package:simple_live_app/services/huya_account_service.dart';
+import 'package:simple_live_app/app/constant.dart';
 import 'package:simple_live_app/app/log.dart';
 import 'package:simple_live_app/app/utils.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
@@ -424,6 +425,8 @@ class RemoteSyncWebDAVController extends GetxController {
               await DBService.instance.followBox.put(item['id'], FollowUser.fromJson(item));
             } catch (e) { Log.e("Import Follow Error: $e", StackTrace.current); }
           }
+          // 恢复完立即刷新关注列表，备注等字段无需重启即可看到
+          EventBus.instance.emit(Constant.kUpdateFollow, 0);
         } else if (file.name == 'SimpleLive_tags.json') {
           DBService.instance.tagBox.clear();
           for (final item in list) {
