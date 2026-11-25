@@ -381,6 +381,16 @@ class HomePage extends GetView<HomeController> {
   void showSearchDialog() {
     var textController = TextEditingController();
     var mode = 0.obs;
+    // 搜索框：遥控器确定键要能弹出软键盘，向下则跳到「搜索」按钮
+    var searchFieldFocus = AppFocusNode();
+    Utils.bindTvEditableFocus(
+      searchFieldFocus,
+      onArrowDown: () {
+        FocusManager.instance.primaryFocus?.unfocus();
+        Utils.hideSoftKeyboard();
+        searchBtnFocusNode.requestFocus();
+      },
+    );
     var roomFocusNode = AppFocusNode()..isFoucsed.value = true;
     var anchorFocusNode = AppFocusNode();
     showDialog(
@@ -430,19 +440,11 @@ class HomePage extends GetView<HomeController> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Focus(
-                  onKeyEvent: (node, event) {
-                    if (event is KeyDownEvent && event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      searchBtnFocusNode.requestFocus();
-                      return KeyEventResult.handled;
-                    }
-                    return KeyEventResult.ignored;
-                  },
-                  child: SizedBox(
-                    width: 500.w, 
+                SizedBox(
+                    width: 500.w,
                     child: TextField(
                       controller: textController,
+                      focusNode: searchFieldFocus,
                       style: AppStyle.textStyleWhite,
                       textInputAction: TextInputAction.search,
                       onSubmitted: (e) {
@@ -467,7 +469,6 @@ class HomePage extends GetView<HomeController> {
                         contentPadding: AppStyle.edgeInsetsA32,
                       ),
                     ),
-                  ),
                 ),
                 SizedBox(width: 48.w), 
                 HighlightButton(

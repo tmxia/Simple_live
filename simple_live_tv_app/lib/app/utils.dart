@@ -268,6 +268,48 @@ class Utils {
   ///
   /// TV 遥控器没有软键盘习惯，但设置页允许用户外接键盘或用手机远控输入；
   /// 这里保持与移动端一致的交互，只是文案更短、按钮更少。
+  /// 电视遥控器的「确定」在 Android 上映射成 select（DPAD_CENTER）。
+  /// 输入框拿到焦点后系统往往不会自己弹软键盘（接了硬件键盘、电视盒子尤其明显），
+  /// 必须显式调起输入法，否则只能"看着光标不能编辑"。
+  static void showSoftKeyboard() {
+    SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+  }
+
+  static void hideSoftKeyboard() {
+    SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+  }
+
+  /// 给输入框的焦点节点挂上电视按键习惯：
+  /// · 确定(select / 手柄 A) → 弹出软键盘
+  /// · 上/下 → 交给调用方（跳到按钮、相邻输入框等）
+  /// 回车(enter) 不拦，保持输入框自身的"提交"语义。
+  static void bindTvEditableFocus(
+    FocusNode node, {
+    VoidCallback? onArrowDown,
+    VoidCallback? onArrowUp,
+  }) {
+    node.onKeyEvent = (n, event) {
+      if (event is! KeyDownEvent) {
+        return KeyEventResult.ignored;
+      }
+      final key = event.logicalKey;
+      if (key == LogicalKeyboardKey.select ||
+          key == LogicalKeyboardKey.gameButtonA) {
+        showSoftKeyboard();
+        return KeyEventResult.handled;
+      }
+      if (onArrowDown != null && key == LogicalKeyboardKey.arrowDown) {
+        onArrowDown();
+        return KeyEventResult.handled;
+      }
+      if (onArrowUp != null && key == LogicalKeyboardKey.arrowUp) {
+        onArrowUp();
+        return KeyEventResult.handled;
+      }
+      return KeyEventResult.ignored;
+    };
+  }
+
   static Future<String?> showEditTextDialog(
     String content, {
     String title = '',
@@ -320,23 +362,27 @@ class _EditTextDialogState extends State<_EditTextDialog> {
     // 单行输入框会把上下方向键当成光标移动吃掉，遥控器就永远走不到下面的
     // 按钮（表现为「无法移动到确定」）。在输入框自己的焦点节点上先截住
     // 上/下，直接落到按钮区；正常打字不受影响。
-    _fieldFocus = FocusNode(
-      debugLabel: 'tv_edit_text_field',
-      onKeyEvent: (node, event) {
-        if (event is KeyDownEvent &&
-            (event.logicalKey == LogicalKeyboardKey.arrowDown ||
-                event.logicalKey == LogicalKeyboardKey.arrowUp)) {
-          _cancelFocus.requestFocus();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
+    _fieldFocus = FocusNode(debugLabel: 'tv_edit_text_field');
+    // 确定键弹键盘；上/下落到按钮区（单行输入框原本会把上下键当光标移动吃掉）
+    Utils.bindTvEditableFocus(
+      _fieldFocus,
+      onArrowDown: () => _cancelFocus.requestFocus(),
+      onArrowUp: () => _cancelFocus.requestFocus(),
     );
+    _fieldFocus.addListener(_onFieldFocusChanged);
+  }
+
+  /// 焦点离开输入框（比如按 ↓ 到「取消」）时收起键盘，别挡着按钮
+  void _onFieldFocusChanged() {
+    if (!_fieldFocus.hasFocus) {
+      Utils.hideSoftKeyboard();
+    }
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _fieldFocus.removeListener(_onFieldFocusChanged);
     _fieldFocus.dispose();
     _cancelFocus.dispose();
     _confirmFocus.dispose();

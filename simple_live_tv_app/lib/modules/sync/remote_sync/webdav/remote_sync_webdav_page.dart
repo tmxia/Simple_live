@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
+import 'package:simple_live_tv_app/app/utils.dart';
 import 'package:simple_live_tv_app/modules/sync/remote_sync/webdav/remote_sync_webdav_controller.dart';
 import 'package:simple_live_shared/simple_live_shared.dart';
 import 'package:simple_live_tv_app/widgets/app_scaffold.dart';
@@ -32,6 +33,14 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
   @override
   void initState() {
     super.initState();
+    // 三个输入框：遥控器确定键弹软键盘，上/下在输入框之间切换
+    for (final node in [urlFocus, userFocus, passFocus]) {
+      Utils.bindTvEditableFocus(
+        node,
+        onArrowDown: () => node.nextFocus(),
+        onArrowUp: () => node.previousFocus(),
+      );
+    }
     urlController = TextEditingController(
       text: LocalStorageService.instance.getValue(RemoteSyncWebDAVController.kWebDAVUri, ""),
     );
@@ -286,22 +295,7 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           ),
           alignment: Alignment.centerLeft,
           padding: EdgeInsets.symmetric(horizontal: 20.w),
-          child: Focus(
-            onKeyEvent: (node, event) {
-              
-              if (event is KeyDownEvent) {
-                if (event.logicalKey == LogicalKeyboardKey.arrowDown) {
-                  node.nextFocus();
-                  return KeyEventResult.handled;
-                }
-                if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
-                  node.previousFocus();
-                  return KeyEventResult.handled;
-                }
-              }
-              return KeyEventResult.ignored;
-            },
-            child: Theme(
+          child: Theme(
               
               data: Theme.of(Get.context!).copyWith(
                 textSelectionTheme: const TextSelectionThemeData(
@@ -333,7 +327,6 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                 },
               ),
             ),
-          ),
         ),
       ],
     );
