@@ -171,48 +171,47 @@ class _AnchorCardState extends State<AnchorCard> {
                                 ),
                               ),
                             ),
-                            // 备注固定在名字右侧：名字再长也只吃自己那一格，
-                            // 特色信息不会因为长名字被挤走（没有备注则不占位）
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Text.rich(
+                              TextSpan(
+                                children: [
+                                  WidgetSpan(
+                                    child: Image.asset(site.logo, width: 32.w),
+                                  ),
+                                  TextSpan(text: " ${site.name}"),
+                                ],
+                              ),
+                              style: TextStyle(
+                                fontSize: 24.w,
+                                color: _localFocusNode.isFoucsed.value
+                                    ? Colors.black
+                                    : Colors.white,
+                              ),
+                            ),
+                            // 备注跟平台名同一行，紧跟其后（纯文字，不做底色/边框），
+                            // 名字行只留名字，长名字也不会把备注挤没
                             if (widget.note.isNotEmpty)
-                              Container(
-                                constraints: BoxConstraints(maxWidth: 150.w),
-                                margin: EdgeInsets.only(left: 8.w),
-                                padding: EdgeInsets.symmetric(
-                                    horizontal: 8.w, vertical: 2.w),
-                                decoration: BoxDecoration(
-                                  color: _localFocusNode.isFoucsed.value
-                                      ? Colors.black12
-                                      : Colors.white24,
-                                  borderRadius: BorderRadius.circular(6.w),
-                                ),
-                                child: Text(
-                                  widget.note,
-                                  maxLines: 1,
-                                  softWrap: false,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 22.w,
-                                    color: _localFocusNode.isFoucsed.value
-                                        ? Colors.black87
-                                        : Colors.white70,
+                              Flexible(
+                                child: Padding(
+                                  padding: EdgeInsets.only(left: 12.w),
+                                  child: Text(
+                                    widget.note,
+                                    maxLines: 1,
+                                    softWrap: false,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 24.w,
+                                      color: _localFocusNode.isFoucsed.value
+                                          ? Colors.black54
+                                          : Colors.white54,
+                                    ),
                                   ),
                                 ),
                               ),
                           ],
-                        ),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              WidgetSpan(
-                                child: Image.asset(site.logo, width: 32.w),
-                              ),
-                              TextSpan(text: " ${site.name}"),
-                            ],
-                          ),
-                          style: TextStyle(
-                            fontSize: 24.w,
-                            color: _localFocusNode.isFoucsed.value ? Colors.black : Colors.white,
-                          ),
                         ),
                       ],
                     ),

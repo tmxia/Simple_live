@@ -303,6 +303,8 @@ class HomePage extends GetView<HomeController> {
                     itemBuilder: (_, i) {
                       var item = FollowUserService.instance.list[i];
                       var foucsNode = AppFocusNode();
+                      var note = DBService.instance.followBox.get(item.id)?.note ??
+                          item.note;
                       return HighlightListTile(
                         autofocus: i == 0,
                         leading: NetImage(
@@ -311,7 +313,9 @@ class HomePage extends GetView<HomeController> {
                           height: 64.w,
                           borderRadius: 64.w,
                         ),
-                        title: item.userName, 
+                        title: item.userName,
+                        // 备注放在第二行（原 subtitle 位置），不留灰底
+                        subtitle: note.isEmpty ? null : note,
                         titleWidget: Obx(
                           () => Row(
                             mainAxisSize: MainAxisSize.min,
