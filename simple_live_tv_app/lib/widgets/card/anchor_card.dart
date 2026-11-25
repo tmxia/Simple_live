@@ -43,6 +43,11 @@ class AnchorCard extends StatefulWidget {
 }
 
 class _AnchorCardState extends State<AnchorCard> {
+  /// 备注配色：深色卡片用暖琥珀（比白灰更跳），白底高亮态换深琥珀，
+  /// 两种背景都保证一眼能读到，且不与"直播中"的绿色抢视觉
+  static const Color _noteColor = Color(0xFFFFC15E);
+  static const Color _noteColorOnWhite = Color(0xFF8A5A00);
+
   Timer? _timer;
   bool _isLongPressTriggered = false;
   // 抬起必须配对过本次按下：弹窗在按下瞬间就关闭，焦点回来后残留的抬起
@@ -204,9 +209,11 @@ class _AnchorCardState extends State<AnchorCard> {
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 24.w,
+                                      fontWeight: FontWeight.w500,
+                                      letterSpacing: 0.5,
                                       color: _localFocusNode.isFoucsed.value
-                                          ? Colors.black54
-                                          : Colors.white54,
+                                          ? _noteColorOnWhite
+                                          : _noteColor,
                                     ),
                                   ),
                                 ),
