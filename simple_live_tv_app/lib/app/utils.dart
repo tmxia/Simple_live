@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:simple_live_tv_app/app/app_focus_node.dart';
 import 'package:simple_live_tv_app/app/app_style.dart';
@@ -273,47 +274,145 @@ class Utils {
     String? hintText,
     int? maxLength,
   }) async {
-    final TextEditingController textEditingController =
-        TextEditingController(text: content);
-    var result = await Get.dialog<String?>(
-      AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
-        backgroundColor: Get.theme.cardColor,
-        surfaceTintColor: Colors.transparent,
-        title: Text(title, style: AppStyle.titleStyleWhite),
-        content: Column(
+    final result = await Get.dialog<String?>(
+      _EditTextDialog(
+        content: content,
+        title: title,
+        hintText: hintText,
+        maxLength: maxLength,
+      ),
+    );
+    // 返回空串等同未输入，调用方判断 null 或空都视为取消
+    return (result == null || result.isEmpty) ? null : result;
+  }
+}
+
+/// TV 文本编辑弹窗。
+/// 独立成 StatefulWidget 是为了自己持有焦点节点并在销毁时释放，
+/// 避免在静态方法里 new 节点、await 结束后手动 dispose 引发的竞态。
+class _EditTextDialog extends StatefulWidget {
+  final String content;
+  final String title;
+  final String? hintText;
+  final int? maxLength;
+
+  const _EditTextDialog({
+    required this.content,
+    required this.title,
+    this.hintText,
+    this.maxLength,
+  });
+
+  @override
+  State<_EditTextDialog> createState() => _EditTextDialogState();
+}
+
+class _EditTextDialogState extends State<_EditTextDialog> {
+  late final TextEditingController _controller;
+  final AppFocusNode _cancelFocus = AppFocusNode();
+  final AppFocusNode _confirmFocus = AppFocusNode();
+  late final FocusNode _fieldFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.content);
+    // 单行输入框会把上下方向键当成光标移动吃掉，遥控器就永远走不到下面的
+    // 按钮（表现为「无法移动到确定」）。在输入框自己的焦点节点上先截住
+    // 上/下，直接落到按钮区；正常打字不受影响。
+    _fieldFocus = FocusNode(
+      debugLabel: 'tv_edit_text_field',
+      onKeyEvent: (node, event) {
+        if (event is KeyDownEvent &&
+            (event.logicalKey == LogicalKeyboardKey.arrowDown ||
+                event.logicalKey == LogicalKeyboardKey.arrowUp)) {
+          _cancelFocus.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _fieldFocus.dispose();
+    _cancelFocus.dispose();
+    _confirmFocus.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    Get.back<String?>(result: _controller.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: AppStyle.radius16),
+      backgroundColor: Get.theme.cardColor,
+      surfaceTintColor: Colors.transparent,
+      title: Text(widget.title, style: AppStyle.titleStyleWhite),
+      content: Focus(
+        skipTraversal: true,
+        canRequestFocus: false,
+        onKeyEvent: (node, event) {
+          if (event is! KeyDownEvent) {
+            return KeyEventResult.ignored;
+          }
+          // 焦点在按钮上：上回输入框，左右在「取消/确定」之间走
+          if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
+            _fieldFocus.requestFocus();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowRight &&
+              _cancelFocus.hasFocus) {
+            _confirmFocus.requestFocus();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft &&
+              _confirmFocus.hasFocus) {
+            _cancelFocus.requestFocus();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
-              controller: textEditingController,
+              controller: _controller,
+              focusNode: _fieldFocus,
               autofocus: true,
               maxLines: 1,
-              maxLength: maxLength,
+              maxLength: widget.maxLength,
+              textInputAction: TextInputAction.done,
+              // 单行输入框敲回车等于点「确定」，不必再挪焦点
+              onSubmitted: (_) => _submit(),
               decoration: InputDecoration(
                 border: const OutlineInputBorder(),
-                hintText: hintText ?? title,
+                hintText: widget.hintText ?? widget.title,
               ),
             ),
             AppStyle.vGap24,
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // 取消放在前面并默认聚焦：遥控器上左移一格就能退，不会误提交
+                // 取消在左，从输入框往下落就是「取消」，不会误提交
                 HighlightButton(
-                  focusNode: AppFocusNode(),
-                  autofocus: true,
+                  focusNode: _cancelFocus,
                   iconData: Icons.close,
                   text: "取消",
                   onTap: () => Get.back<String?>(result: null),
                 ),
                 AppStyle.hGap24,
                 HighlightButton(
-                  focusNode: AppFocusNode(),
+                  focusNode: _confirmFocus,
                   iconData: Icons.check,
                   text: "确定",
-                  onTap: () =>
-                      Get.back<String?>(result: textEditingController.text),
+                  onTap: _submit,
                 ),
               ],
             ),
@@ -321,7 +420,5 @@ class Utils {
         ),
       ),
     );
-    // 返回空串等同未输入，调用方判断 null 或空都视为取消
-    return (result == null || result.isEmpty) ? null : result;
   }
 }
