@@ -70,6 +70,27 @@ class FollowUserItem extends StatelessWidget {
             ),
             overflow: TextOverflow.ellipsis,
           ),
+          // 备注：用户自己写的频道特色标签，跟平台名同一行，长度受 Wrap 约束
+          if (item.note.isNotEmpty)
+            Padding(
+              padding: AppStyle.edgeInsetsL8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  item.note,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
           if (playing)
             Padding(
               padding: AppStyle.edgeInsetsL8,

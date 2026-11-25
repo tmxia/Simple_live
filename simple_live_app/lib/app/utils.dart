@@ -231,6 +231,7 @@ class Utils {
     String confirm = '',
     String cancel = '',
     TextValidate? validate,
+    int? maxLength,
   }) async {
     final TextEditingController textEditingController =
         TextEditingController(text: content);
@@ -251,6 +252,7 @@ class Utils {
             
             
             autofocus: true,
+            maxLength: maxLength,
           ),
         ),
         actions: [

@@ -17,6 +17,8 @@ class AnchorCard extends StatefulWidget {
   final int liveStatus;
   final bool autofocus;
   final bool isPinned;
+  /// 频道备注（用户手写的特色标签），空则不占位
+  final String note;
   final Function()? onTap;
   final Function()? onLongPress;
   final AppFocusNode? focusNode;
@@ -30,6 +32,7 @@ class AnchorCard extends StatefulWidget {
     required this.roomId,
     this.autofocus = false,
     this.isPinned = false,
+    this.note = "",
     this.focusNode,
     this.onTap,
     this.onLongPress,
@@ -42,6 +45,9 @@ class AnchorCard extends StatefulWidget {
 class _AnchorCardState extends State<AnchorCard> {
   Timer? _timer;
   bool _isLongPressTriggered = false;
+  // 抬起必须配对过本次按下：弹窗在按下瞬间就关闭，焦点回来后残留的抬起
+  // 会把卡片再"点"一次（表现为弹窗反复弹出）
+  bool _enterDown = false;
   late AppFocusNode _localFocusNode;
 
   @override
@@ -80,6 +86,7 @@ class _AnchorCardState extends State<AnchorCard> {
         if (event is KeyDownEvent && 
            (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
           
+          _enterDown = true;
           if (event is! KeyRepeatEvent) {
             _startTimer();
           }
@@ -87,6 +94,10 @@ class _AnchorCardState extends State<AnchorCard> {
         } else if (event is KeyUpEvent && 
                   (event.logicalKey == LogicalKeyboardKey.select || event.logicalKey == LogicalKeyboardKey.enter)) {
           _cancelTimer();
+          if (!_enterDown) {
+            return KeyEventResult.handled;
+          }
+          _enterDown = false;
           if (_isLongPressTriggered) {
             _isLongPressTriggered = false;
             return KeyEventResult.handled; 
@@ -151,6 +162,8 @@ class _AnchorCardState extends State<AnchorCard> {
                             Expanded(
                               child: Text(
                                 widget.name,
+                                maxLines: 1,
+                                softWrap: false,
                                 style: TextStyle(
                                   fontSize: 36.w,
                                   overflow: TextOverflow.ellipsis,
@@ -158,6 +171,33 @@ class _AnchorCardState extends State<AnchorCard> {
                                 ),
                               ),
                             ),
+                            // 备注固定在名字右侧：名字再长也只吃自己那一格，
+                            // 特色信息不会因为长名字被挤走（没有备注则不占位）
+                            if (widget.note.isNotEmpty)
+                              Container(
+                                constraints: BoxConstraints(maxWidth: 150.w),
+                                margin: EdgeInsets.only(left: 8.w),
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8.w, vertical: 2.w),
+                                decoration: BoxDecoration(
+                                  color: _localFocusNode.isFoucsed.value
+                                      ? Colors.black12
+                                      : Colors.white24,
+                                  borderRadius: BorderRadius.circular(6.w),
+                                ),
+                                child: Text(
+                                  widget.note,
+                                  maxLines: 1,
+                                  softWrap: false,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 22.w,
+                                    color: _localFocusNode.isFoucsed.value
+                                        ? Colors.black87
+                                        : Colors.white70,
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         Text.rich(

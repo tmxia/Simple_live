@@ -25,13 +25,15 @@ class FollowUserAdapter extends TypeAdapter<FollowUser> {
       addTime: fields[5] as DateTime,
       tag: fields[6] ?? "全部",
       isPinned: fields[7] as bool? ?? false,
+      // 旧版本没有 note 字段，读出来是 null，必须给默认空串
+      note: fields[8] as String? ?? "",
     );
   }
 
   @override
   void write(BinaryWriter writer, FollowUser obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +49,9 @@ class FollowUserAdapter extends TypeAdapter<FollowUser> {
       ..writeByte(6)
       ..write(obj.tag)
       ..writeByte(7)
-      ..write(obj.isPinned);
+      ..write(obj.isPinned)
+      ..writeByte(8)
+      ..write(obj.note);
   }
 
   @override

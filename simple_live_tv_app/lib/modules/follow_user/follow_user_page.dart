@@ -69,6 +69,7 @@ class FollowUserPage extends StatelessWidget {
                   return AnchorCard(
                     face: item.face,
                     name: item.userName,
+                    note: item.note,
                     siteId: item.siteId,
                     liveStatus: item.liveStatus.value,
                     roomId: item.roomId,

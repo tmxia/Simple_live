@@ -371,6 +371,35 @@ class LiveRoomPage extends GetView<LiveRoomController> {
                           color: Colors.grey,
                         ),
                       ),
+                      // 频道备注：主播名不再靠加长名字表达特色，特色放这个胶囊里
+                      Obx(() {
+                        if (controller.followNote.value.isEmpty) {
+                          return const SizedBox.shrink();
+                        }
+                        return Padding(
+                          padding: AppStyle.edgeInsetsL8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              controller.followNote.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 ],
@@ -828,6 +857,24 @@ class LiveRoomPage extends GetView<LiveRoomController> {
               onTap: () {
                 controller.isVod.value = false;
                 controller.refreshRoom();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.edit_note),
+              title: const Text("编辑备注"),
+              subtitle: Obx(() => Text(
+                    controller.followNote.value.isEmpty
+                        ? "给这个频道写个特色标签（最多 12 字）"
+                        : controller.followNote.value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12),
+                  )),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                // 先收起菜单再弹输入框，避免两层浮层叠着
+                Navigator.pop(sheetContext);
+                controller.editFollowNote();
               },
             ),
             ListTile(

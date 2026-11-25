@@ -52,6 +52,9 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   Rx<LiveRoomDetail?> detail = Rx<LiveRoomDetail?>(null);
   var online = 0.obs;
   var followed = false.obs;
+
+  /// 当前房间的关注备注（只读展示用；编辑走「更多」菜单里的编辑备注）
+  var followNote = "".obs;
   var liveStatus = false.obs;
   RxList<LiveSuperChatMessage> superChats = RxList<LiveSuperChatMessage>();
 
@@ -118,6 +121,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     initAutoExit();
     showDanmakuState.value = AppSettingsController.instance.danmuEnable.value;
     followed.value = DBService.instance.getFollowExist("${site.id}_$roomId");
+    loadFollowNote();
     loadData();
 
     scrollController.addListener(scrollListener);
@@ -326,6 +330,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       addHistory();
       
       followed.value = DBService.instance.getFollowExist("${site.id}_$roomId");
+      loadFollowNote();
       online.value = detail.value!.online;
       liveStatus.value = detail.value!.status || detail.value!.isRecord;
       if (liveStatus.value) {
@@ -1061,6 +1066,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       ),
     );
     followed.value = true;
+    loadFollowNote();
     EventBus.instance.emit(Constant.kUpdateFollow, id);
   }
 
@@ -1077,6 +1083,43 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     DBService.instance.deleteFollow(id);
     followed.value = false;
     EventBus.instance.emit(Constant.kUpdateFollow, id);
+  }
+
+  /// 读当前房间的关注备注（未关注时为空）
+  void loadFollowNote() {
+    followNote.value =
+        DBService.instance.followBox.get("${site.id}_$roomId")?.note ?? "";
+  }
+
+  /// 编辑备注：入口在「更多」菜单里刷新下面一项。
+  /// 取消不改动；留空即清除备注。
+  Future<void> editFollowNote() async {
+    final id = "${site.id}_$roomId";
+    final follow = DBService.instance.followBox.get(id);
+    if (follow == null) {
+      SmartDialog.showToast("先关注该主播，才能给这个频道加备注");
+      return;
+    }
+    final input = await Utils.showEditTextDialog(
+      follow.note,
+      title: "频道备注",
+      hintText: "例如：主机游戏 / 深夜杂谈（最多 12 字）",
+      maxLength: 12,
+    );
+    if (input == null) {
+      return;
+    }
+    final text = input.trim();
+    if (text == follow.note) {
+      return;
+    }
+    follow.note = text;
+    await DBService.instance.followBox.put(id, follow);
+    loadFollowNote();
+    // 关注列表、侧栏都拿同一批对象，统一重算一遍，避免列表里还显示旧备注
+    FollowService.instance.filterData();
+    EventBus.instance.emit(Constant.kUpdateFollow, id);
+    SmartDialog.showToast(text.isEmpty ? "已清除备注" : "备注已保存");
   }
 
   void share() {
