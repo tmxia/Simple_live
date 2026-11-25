@@ -455,7 +455,7 @@ class SettingsPage extends GetView<SettingsController> {
         AppStyle.vGap24,
         Obx(
           () => HighlightListTile(
-            focusNode: AppFocusNode(),
+            focusNode: controller.huyaFocusNode,
             title: "虎牙账号",
             subtitle: HuyaAccountService.instance.logined.value
                 ? "已登录：${HuyaAccountService.instance.name.value}"
@@ -471,7 +471,7 @@ class SettingsPage extends GetView<SettingsController> {
         AppStyle.vGap24,
         Obx(
           () => HighlightListTile(
-            focusNode: AppFocusNode(),
+            focusNode: controller.douyinFocusNode,
             title: "抖音账号",
             subtitle: DouyinAccountService.instance.logined.value
                 ? "已登录：${DouyinAccountService.instance.name.value}"

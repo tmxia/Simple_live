@@ -85,14 +85,25 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
             ),
           ),
           const SizedBox(height: 16),
-          TextField(
-            controller: passController,
-            obscureText: true,
-            decoration: const InputDecoration(
-              labelText: "密码",
-              hintText: "请输入密码",
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.lock),
+          Obx(
+            () => TextField(
+              controller: passController,
+              obscureText: !controller.passwordVisible.value,
+              decoration: InputDecoration(
+                labelText: "密码",
+                hintText: "请输入密码",
+                border: const OutlineInputBorder(),
+                prefixIcon: const Icon(Icons.lock),
+                // 密码填错是 WebDAV 连不上最常见的原因，给一个明文回看开关
+                suffixIcon: IconButton(
+                  icon: Icon(controller.passwordVisible.value
+                      ? Icons.visibility_off
+                      : Icons.visibility),
+                  tooltip: "显示/隐藏密码",
+                  onPressed: () => controller.passwordVisible.value =
+                      !controller.passwordVisible.value,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -110,6 +121,15 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
             ),
             child: const Text("保存并连接", style: TextStyle(fontSize: 16)),
           ),
+          if (LocalStorageService.instance
+              .getValue(RemoteSyncWebDAVController.kWebDAVUri, "")
+              .isNotEmpty) ...[
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => controller.notLogin.value = false,
+              child: const Text("取消，返回同步面板"),
+            ),
+          ],
         ],
       ),
     );
@@ -154,21 +174,52 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
-          
-          
-          OutlinedButton.icon(
-            onPressed: () => controller.backup(),
+          // 上传/恢复的结果此前只写进 controller，页面上完全看不到，这里显示出来
+          Obx(() => controller.statusMsg.value.isEmpty
+              ? const SizedBox.shrink()
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(
+                    controller.statusMsg.value,
+                    style: TextStyle(
+                      color: controller.statusMsg.value.startsWith("❌")
+                          ? Colors.redAccent
+                          : Colors.green,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )),
+          Obx(() => controller.isLoading.value
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(controller.loadingMsg.value),
+                    ],
+                  ),
+                )
+              : const SizedBox.shrink()),
+          Obx(() => OutlinedButton.icon(
+            onPressed:
+                controller.isLoading.value ? null : () => controller.backup(),
             icon: const Icon(Icons.upload),
             label: const Text("立即上传备份"),
             style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          ),
+          )),
           const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => controller.recovery(),
+          Obx(() => OutlinedButton.icon(
+            onPressed:
+                controller.isLoading.value ? null : () => controller.recovery(),
             icon: const Icon(Icons.download),
             label: const Text("从云端恢复"),
             style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-          ),
+          )),
           const SizedBox(height: 32),
           
           

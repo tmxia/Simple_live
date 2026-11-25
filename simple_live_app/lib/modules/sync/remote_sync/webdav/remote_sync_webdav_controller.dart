@@ -31,6 +31,9 @@ class RemoteSyncWebDAVController extends GetxController {
   var lastUploadTime = "--".obs;
   var notLogin = true.obs;
   var isLoading = false.obs;
+  // 面板上的操作结果与进行中文案：此前只弹 toast，页面本身没有任何反馈
+  var statusMsg = "".obs;
+  var loadingMsg = "".obs;
 
   @override
   void onInit() {
@@ -62,45 +65,55 @@ class RemoteSyncWebDAVController extends GetxController {
     }
   }
 
+  /// 保存并连接：先拿临时客户端验证，验证通过才落盘。
+  /// 旧实现是先写本地存储再 ping，填错一次就把好好的配置覆盖掉了。
   Future<void> saveConfig(String uri, String user, String pass) async {
     if (uri.trim().isEmpty) {
       SmartDialog.showToast("服务器地址不能为空");
       return;
     }
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
-    notLogin.value = true;
-    
-    LocalStorageService.instance.setValue(kWebDAVUri, uri.trim());
-    LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
-    LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
-    
+    loadingMsg.value = "正在测试连接...";
+    statusMsg.value = "";
     SmartDialog.showLoading(msg: "连接中...");
     try {
-      davClient = DAVClient(uri.trim(), user.trim(), pass.trim());
-      bool isOk = await davClient.pingCompleter.future;
-      
+      var candidate = DAVClient(uri.trim(), user.trim(), pass.trim());
+      bool isOk = await candidate.pingCompleter.future;
       if (isOk) {
+        davClient = candidate;
+        LocalStorageService.instance.setValue(kWebDAVUri, uri.trim());
+        LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
+        LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
+        // 形参 user 遮蔽了同名字段，这里显式写 this.user
+        this.user.value = user.trim();
         notLogin.value = false;
-        SmartDialog.dismiss(status: SmartStatus.loading);
         SmartDialog.showToast("WebDAV 已连接");
       } else {
+        // 不落盘、不换掉原来的客户端：填错的配置不该顶掉能用的配置
         notLogin.value = true;
-        SmartDialog.dismiss(status: SmartStatus.loading);
         SmartDialog.showToast(
-            "连接失败：${davClient.lastError ?? "请检查地址或账号密码"}");
+            "连接失败：${candidate.lastError ?? "请检查地址或账号密码"}");
       }
     } catch (e) {
       notLogin.value = true;
-      SmartDialog.dismiss(status: SmartStatus.loading);
       SmartDialog.showToast("连接异常：$e");
     } finally {
       isLoading.value = false;
+      loadingMsg.value = "";
       SmartDialog.dismiss(status: SmartStatus.loading);
     }
   }
 
   Future<void> backup() async {
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
+    loadingMsg.value = "正在上传备份...";
+    statusMsg.value = "";
     SmartDialog.showLoading(msg: "上传中...");
     try {
       
@@ -233,7 +246,12 @@ class RemoteSyncWebDAVController extends GetxController {
   }
 
   Future<void> recovery() async {
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
+    loadingMsg.value = "正在读取云端备份...";
+    statusMsg.value = "";
     SmartDialog.showLoading(msg: "恢复中...");
     try {
       

@@ -16,6 +16,7 @@ class AccountController extends GetxController {
       var result = await Utils.showAlertDialog("确定要退出哔哩哔哩账号吗？", title: "退出登录");
       if (result) {
         BiliBiliAccountService.instance.logout();
+        SmartDialog.showToast("已退出哔哩哔哩账号");
       }
     } else {
       bilibiliLogin();
@@ -77,6 +78,9 @@ class AccountController extends GetxController {
     }
     BiliBiliAccountService.instance.setCookie(cookie);
     await BiliBiliAccountService.instance.loadUserInfo();
+    SmartDialog.showToast(BiliBiliAccountService.instance.logined.value
+        ? "哔哩哔哩已登录：${BiliBiliAccountService.instance.name.value}"
+        : "Cookie 已保存，但未取到用户信息（可能已过期）");
   }
 
   void douyinTap() async {
@@ -190,17 +194,25 @@ class AccountController extends GetxController {
   void douyuTap() async {
     final service = DouyuAccountService.instance;
     if (service.hasAuth.value) {
-      var result = await Utils.showAlertDialog(
-        service.authInvalid.value
-            ? "当前斗鱼授权已被判定无效。要重新登录吗？\n选择「确定」重新填写，选择「取消」清除授权。"
-            : "确定要退出斗鱼账号吗？",
-        title: service.authInvalid.value ? "斗鱼授权已失效" : "退出登录",
-      );
+      if (service.authInvalid.value) {
+        // 授权已失效：确定＝重新填写，取消＝清除
+        var result = await Utils.showAlertDialog(
+          "当前斗鱼授权已被判定无效。要重新登录吗？\n选择「确定」重新填写，选择「取消」清除授权。",
+          title: "斗鱼授权已失效",
+        );
+        if (result) {
+          douyuLogin();
+        } else {
+          service.clearAuth();
+          SmartDialog.showToast("已清除斗鱼授权");
+        }
+        return;
+      }
+      // 正常已登录：确定＝退出登录（原来这里错走了"重新填写"，等于退不掉）
+      var result = await Utils.showAlertDialog("确定要退出斗鱼账号吗？", title: "退出登录");
       if (result) {
-        douyuLogin();
-      } else if (service.authInvalid.value) {
         service.clearAuth();
-        SmartDialog.showToast("已清除斗鱼授权");
+        SmartDialog.showToast("已退出斗鱼账号");
       }
     } else {
       douyuLogin();

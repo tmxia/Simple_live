@@ -19,6 +19,9 @@ import 'package:simple_live_tv_app/services/db_service.dart';
 class RemoteSyncWebDAVController extends GetxController {
   var statusMsg = "".obs;
 
+  /// 当前正在做什么（连接测试 / 上传 / 恢复），页面用它显示进度文案
+  var loadingMsg = "".obs;
+
   static const String kWebDAVUri = "WebDAVUri";
   static const String kWebDAVUser = "WebDAVUser";
   static const String kWebDAVPassword = "kWebDAVPassword";
@@ -66,28 +69,33 @@ class RemoteSyncWebDAVController extends GetxController {
     }
   }
 
+  /// 保存并连接：先拿临时客户端验证，验证通过才落盘（填错的配置不顶掉能用的配置）
   Future<void> saveConfig(String uri, String user, String pass) async {
     if (uri.trim().isEmpty) {
       Get.snackbar("提示", "服务器地址不能为空");
       return;
     }
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
-    notLogin.value = true;
-    
-    LocalStorageService.instance.setValue(kWebDAVUri, uri.trim());
-    LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
-    LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
-    
+    loadingMsg.value = "正在测试连接...";
+    statusMsg.value = "";
     try {
-      davClient = DAVClient(uri.trim(), user.trim(), pass.trim());
-      bool isOk = await davClient.pingCompleter.future;
-      
+      var candidate = DAVClient(uri.trim(), user.trim(), pass.trim());
+      bool isOk = await candidate.pingCompleter.future;
       if (isOk) {
+        davClient = candidate;
+        LocalStorageService.instance.setValue(kWebDAVUri, uri.trim());
+        LocalStorageService.instance.setValue(kWebDAVUser, user.trim());
+        LocalStorageService.instance.setValue(kWebDAVPassword, pass.trim());
+        // 形参 user 遮蔽了同名字段，这里显式写 this.user
+        this.user.value = user.trim();
         notLogin.value = false;
       } else {
         notLogin.value = true;
         Get.snackbar("连接失败",
-            davClient.lastError ?? "请检查地址、账号或密码是否正确",
+            candidate.lastError ?? "请检查地址、账号或密码是否正确",
             backgroundColor: Colors.red);
       }
     } catch (e) {
@@ -95,11 +103,17 @@ class RemoteSyncWebDAVController extends GetxController {
       Get.snackbar("连接异常", "$e", backgroundColor: Colors.red);
     } finally {
       isLoading.value = false;
+      loadingMsg.value = "";
     }
   }
 
   Future<void> backup() async {
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
+    loadingMsg.value = "正在上传备份...";
+    statusMsg.value = "";
     try {
       
       final remoteTime = await davClient.getRemoteFileMTime();
@@ -222,11 +236,17 @@ class RemoteSyncWebDAVController extends GetxController {
       statusMsg.value = "❌ 备份上传失败: $e";
     } finally {
       isLoading.value = false;
+      loadingMsg.value = "";
     }
   }
 
   Future<void> recovery() async {
+    if (isLoading.value) {
+      return;
+    }
     isLoading.value = true;
+    loadingMsg.value = "正在读取云端备份...";
+    statusMsg.value = "";
     try {
       
       final zipData = await davClient.recovery();
@@ -440,6 +460,7 @@ class RemoteSyncWebDAVController extends GetxController {
       statusMsg.value = "❌ 恢复失败: $e";
     } finally {
       isLoading.value = false;
+      loadingMsg.value = "";
     }
   }
 }

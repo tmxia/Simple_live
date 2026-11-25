@@ -80,7 +80,9 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
             child: SingleChildScrollView(
               child: Obx(() {
                 
-                if (controller.isLoading.value) {
+                // 只有"还没连上、正在测连接"才整块占位；上传/恢复时面板要留着，
+                // 否则按下去画面直接空白，看不出是在传还是在恢复
+                if (controller.isLoading.value && controller.notLogin.value) {
                   return SizedBox(
                     height: 400.w,
                     child: Center(
@@ -89,7 +91,8 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                         children: [
                           CircularProgressIndicator(color: Colors.white),
                           AppStyle.vGap24,
-                          Text("正在测试连接，请稍候...", style: AppStyle.textStyleWhite),
+                          Text(controller.loadingMsg.value,
+                              style: AppStyle.textStyleWhite),
                         ],
                       ),
                     ),
@@ -119,6 +122,18 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
         _buildInputRow("账号", userController, userFocus, hint: "请输入账号"),
         AppStyle.vGap24,
         _buildInputRow("密码", passController, passFocus, hint: "请输入密码", obscure: true),
+        AppStyle.vGap48,
+        if (LocalStorageService.instance
+            .getValue(RemoteSyncWebDAVController.kWebDAVUri, "")
+            .isNotEmpty) ...[
+          AppStyle.vGap24,
+          HighlightButton(
+            focusNode: AppFocusNode(),
+            iconData: Icons.close,
+            text: "取消，返回同步面板",
+            onTap: () => controller.notLogin.value = false,
+          ),
+        ],
         AppStyle.vGap48,
         HighlightButton(
           focusNode: saveBtnFocusNode, 
@@ -181,17 +196,34 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
             Icon(Icons.cloud_download, color: Colors.white70, size: 28.w),
             AppStyle.hGap12,
             Text("最后恢复时间: ${controller.lastRecoverTime.value}", style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w)),
-        AppStyle.vGap24,
-        Obx(() => Text(
-          controller.statusMsg.value,
-          style: TextStyle(
-            color: controller.statusMsg.value.startsWith("❌") ? Colors.redAccent : Colors.greenAccent,
-            fontSize: 24.w,
-            fontWeight: FontWeight.bold,
-          ),
-        )),
           ],
         ),
+        AppStyle.vGap24,
+        // 状态行单独一行：原来被塞进「最后恢复时间」那一行里，文字跑到时间后面
+        Obx(() => controller.isLoading.value
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 22.w,
+                    height: 22.w,
+                    child: const CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  AppStyle.hGap12,
+                  Text(controller.loadingMsg.value,
+                      style: AppStyle.textStyleWhite.copyWith(fontSize: 24.w)),
+                ],
+              )
+            : Text(
+                controller.statusMsg.value,
+                style: TextStyle(
+                  color: controller.statusMsg.value.startsWith("❌")
+                      ? Colors.redAccent
+                      : Colors.greenAccent,
+                  fontSize: 24.w,
+                  fontWeight: FontWeight.bold,
+                ),
+              )),
         AppStyle.vGap48,
         
         Row(
@@ -201,14 +233,20 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
               focusNode: AppFocusNode(),
               iconData: Icons.cloud_upload,
               text: "立即上传备份",
-              onTap: () => controller.backup(),
+              onTap: () {
+                if (controller.isLoading.value) return;
+                controller.backup();
+              },
             ),
             AppStyle.hGap48,
             HighlightButton(
               focusNode: AppFocusNode(),
               iconData: Icons.cloud_download,
               text: "从云端恢复",
-              onTap: () => controller.recovery(),
+              onTap: () {
+                if (controller.isLoading.value) return;
+                controller.recovery();
+              },
             ),
           ],
         ),

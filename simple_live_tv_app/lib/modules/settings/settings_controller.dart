@@ -57,12 +57,15 @@ class SettingsController extends BaseController
 
   var bilibiliFoucsNode = AppFocusNode();
   var douyuFocusNode = AppFocusNode();
+  var huyaFocusNode = AppFocusNode();
+  var douyinFocusNode = AppFocusNode();
   var versionFocusNode = AppFocusNode();
   void douyinTap() async {
     if (DouyinAccountService.instance.logined.value) {
       var result = await Utils.showAlertDialog("确定要退出抖音账号吗？", title: "退出登录");
       if (result) {
         DouyinAccountService.instance.logout();
+        SmartDialog.showToast("已退出抖音账号");
       }
     } else {
       showSyncHint("抖音");
@@ -74,6 +77,7 @@ class SettingsController extends BaseController
       var result = await Utils.showAlertDialog("确定要退出虎牙账号吗？", title: "退出登录");
       if (result) {
         HuyaAccountService.instance.logout();
+        SmartDialog.showToast("已退出虎牙账号");
       }
     } else {
       showSyncHint("虎牙");
@@ -133,6 +137,7 @@ class SettingsController extends BaseController
       var result = await Utils.showAlertDialog("确定要退出哔哩哔哩账号吗？", title: "退出登录");
       if (result) {
         BiliBiliAccountService.instance.logout();
+        SmartDialog.showToast("已退出哔哩哔哩账号");
       }
     } else {
       AppNavigator.toBiliBiliLogin();
