@@ -110,7 +110,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
     liveDanmaku.stop();
 
-    loadData();
+    loadData().then((_) => _restoreFocus());
   }
 
   /// 初始化弹幕接收事件
@@ -159,7 +159,7 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   }
 
   /// 加载直播间信息
-  void loadData() async {
+  Future<void> loadData() async {
     try {
       SmartDialog.showLoading(msg: "");
       pageLoadding.value = true;
@@ -180,7 +180,10 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     } catch (e) {
       SmartDialog.showToast(e.toString());
     } finally {
-      SmartDialog.dismiss(status: SmartStatus.loading);
+      // 等遮罩真的收起来再算加载结束：收起来之前焦点还在遮罩上
+      try {
+        await SmartDialog.dismiss(status: SmartStatus.loading);
+      } catch (_) {}
       pageLoadding.value = false;
     }
   }
@@ -747,6 +750,10 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
   }
 
   void resetRoom(Site site, String roomId) async {
+    await resetRoomAndWait(site, roomId);
+  }
+
+  Future<void> resetRoomAndWait(Site site, String roomId) async {
     if (this.site == site && this.roomId == roomId) {
       return;
     }
@@ -763,10 +770,27 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     liveDanmaku = site.liveSite.getDanmaku();
 
     
-    await player.stop();
+    // stop/open 都加超时兜底：万一播放器内部卡住，不能让切换流程永远挂着，
+    // 否则后续按键会被"正在切换"守卫吞掉，感觉又变成只能切一次
+    await player.stop().timeout(const Duration(seconds: 5), onTimeout: () {});
 
-    
-    loadData();
+    await loadData().timeout(const Duration(seconds: 12), onTimeout: () {});
+    // 关键：加载遮罩一出现就把键盘焦点抢走了，遮罩关闭后焦点落在根节点，
+    // 遥控器的上/下再按就没人接收 —— 表现就是"频道只能切一次"。
+    _restoreFocus();
+  }
+
+  /// 把键盘焦点还给播放页；有弹窗在上面时让给弹窗
+  void _restoreFocus() {
+    if (isClosed) return;
+    void restore() {
+      if (isClosed) return;
+      if (Get.isDialogOpen ?? false) return;
+      focusNode.requestFocus();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => restore());
+    // 遮罩收起有动画，稍后再补一次，确保焦点真的回到播放页
+    Future.delayed(const Duration(milliseconds: 400), restore);
   }
 
   /// 频道切换游标：上一次切到的房间 id。
@@ -796,7 +820,12 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
 
   /// step = 1 下一个，-1 上一个。切换后把游标记下来，
   /// 下次即使当前房间不在列表里，也能从上次的位置继续走。
-  void _switchChannel(int step) {
+  bool _switching = false;
+
+  void _switchChannel(int step) async {
+    if (_switching) {
+      return;
+    }
     final channels = _channelCandidates();
     if (channels.isEmpty) {
       SmartDialog.showToast("关注列表为空，暂时没有可切换的频道");
@@ -830,7 +859,13 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
       return;
     }
     _channelCursorId = target.id;
-    resetRoom(targetSite, target.roomId);
+    _switching = true;
+    try {
+      await resetRoomAndWait(targetSite, target.roomId);
+    } finally {
+      _switching = false;
+      _restoreFocus();
+    }
   }
 
   @override
