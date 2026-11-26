@@ -769,50 +769,68 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     loadData();
   }
 
-  void nextChannel() {
-    
-    var liveChannels = FollowUserService.instance.livingList;
-    if (liveChannels.isEmpty) {
-      SmartDialog.showToast("没有正在直播的频道");
-      return;
-    }
-    var index = liveChannels
-        .indexWhere((element) => element.id == "${site.id}_$roomId");
-    
-    
+  /// 频道切换游标：上一次切到的房间 id。
+  /// 以前每次都用 indexWhere 在当前列表里找"自己"，一旦当前房间不在这个列表
+  /// 里（从历史/搜索进来、或者开播状态还没刷新完），index 就是 -1，
+  /// 于是每次都被顶回同一个频道 —— 表现就是"只能切一次"。
+  String _channelCursorId = "";
 
-    
-    
-    index += 1;
-    if (index >= liveChannels.length) {
-      index = 0;
+  /// 可切换的频道：以「我的关注」全量为准（不再只看正在直播的），
+  /// 关注为空时退回观看记录。这样关注里有几十个频道时能一路翻下去。
+  List<_ChannelRef> _channelCandidates() {
+    final follows = FollowUserService.instance.list;
+    if (follows.isNotEmpty) {
+      return follows
+          .map((e) => _ChannelRef(e.id, e.siteId, e.roomId))
+          .toList();
     }
-    var nextChannel = liveChannels[index];
-
-    resetRoom(Sites.allSites[nextChannel.siteId]!, nextChannel.roomId);
+    return DBService.instance
+        .getHistores()
+        .map((e) => _ChannelRef(e.id, e.siteId, e.roomId))
+        .toList();
   }
 
-  void prevChannel() {
-    
-    var liveChannels = FollowUserService.instance.livingList;
-    if (liveChannels.isEmpty) {
-      SmartDialog.showToast("没有正在直播的频道");
+  void nextChannel() => _switchChannel(1);
+
+  void prevChannel() => _switchChannel(-1);
+
+  /// step = 1 下一个，-1 上一个。切换后把游标记下来，
+  /// 下次即使当前房间不在列表里，也能从上次的位置继续走。
+  void _switchChannel(int step) {
+    final channels = _channelCandidates();
+    if (channels.isEmpty) {
+      SmartDialog.showToast("关注列表为空，暂时没有可切换的频道");
       return;
     }
-    var index = liveChannels
-        .indexWhere((element) => element.id == "${site.id}_$roomId");
-    
-    
-
-    
-    
-    index -= 1;
-    if (index < 0) {
-      index = liveChannels.length - 1;
+    if (channels.length == 1) {
+      SmartDialog.showToast("只有一个频道，无法切换");
+      return;
     }
-    var nextChannel = liveChannels[index];
-
-    resetRoom(Sites.allSites[nextChannel.siteId]!, nextChannel.roomId);
+    var index =
+        channels.indexWhere((e) => e.id == "${site.id}_$roomId");
+    if (index < 0) {
+      index = channels.indexWhere((e) => e.id == _channelCursorId);
+    }
+    if (index < 0) {
+      // 当前房间和游标都不在列表里：下一个从第一个开始，上一个从最后一个开始
+      index = step > 0 ? -1 : 0;
+    }
+    index = (index + step) % channels.length;
+    if (index < 0) {
+      index += channels.length;
+    }
+    final target = channels[index];
+    if (target.id == "${site.id}_$roomId") {
+      SmartDialog.showToast("只有一个频道，无法切换");
+      return;
+    }
+    final targetSite = Sites.allSites[target.siteId];
+    if (targetSite == null) {
+      SmartDialog.showToast("该频道所属平台已下线");
+      return;
+    }
+    _channelCursorId = target.id;
+    resetRoom(targetSite, target.roomId);
   }
 
   @override
@@ -843,4 +861,13 @@ class LiveRoomController extends PlayerController with WidgetsBindingObserver {
     danmakuController = null;
     super.onClose();
   }
+}
+
+/// 频道切换用的轻量引用：关注列表和历史记录都能转成它
+class _ChannelRef {
+  final String id;
+  final String siteId;
+  final String roomId;
+
+  const _ChannelRef(this.id, this.siteId, this.roomId);
 }
