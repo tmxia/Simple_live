@@ -174,25 +174,16 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
           const SizedBox(height: 24),
           const Divider(),
           const SizedBox(height: 24),
-          // 上传/恢复的结果此前只写进 controller，页面上完全看不到，这里显示出来
-          Obx(() => controller.statusMsg.value.isEmpty
-              ? const SizedBox.shrink()
-              : Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    controller.statusMsg.value,
-                    style: TextStyle(
-                      color: controller.statusMsg.value.startsWith("❌")
-                          ? Colors.redAccent
-                          : Colors.green,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )),
-          Obx(() => controller.isLoading.value
-              ? Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
+          // 状态区固定占位：上传/恢复时"菊花+提示"与结果文字反复出现/消失，
+          // 下面两个按钮会跟着上下跳。这里固定高度，只换内容、不动布局。
+          SizedBox(
+            height: 48,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Obx(() {
+                if (controller.isLoading.value) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       const SizedBox(
                         width: 16,
@@ -200,11 +191,35 @@ class _RemoteSyncWebDAVPageState extends State<RemoteSyncWebDAVPage> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       ),
                       const SizedBox(width: 8),
-                      Text(controller.loadingMsg.value),
+                      Flexible(
+                        child: Text(
+                          controller.loadingMsg.value,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
+                  );
+                }
+                final msg = controller.statusMsg.value;
+                if (msg.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                // 只占一行：文字再长也省略，绝不把按钮顶下去
+                return Text(
+                  msg.replaceAll("\n", " "),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: msg.startsWith("❌")
+                        ? Colors.redAccent
+                        : Colors.green,
+                    fontWeight: FontWeight.bold,
                   ),
-                )
-              : const SizedBox.shrink()),
+                );
+              }),
+            ),
+          ),
           Obx(() => OutlinedButton.icon(
             onPressed:
                 controller.isLoading.value ? null : () => controller.backup(),
